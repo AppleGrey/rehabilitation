@@ -1,0 +1,88 @@
+# =========================
+# Secrets / Environment
+# =========================
+.env
+.env.*
+!.env.example
+
+# =========================
+# Logs / Runtime files
+# =========================
+logs/
+*.log
+*.pid
+*.out
+*.err
+
+# =========================
+# Python (backend)
+# =========================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.python-version
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.pyre/
+.hypothesis/
+.tox/
+.nox/
+.coverage
+.coverage.*
+htmlcov/
+dist/
+build/
+site/
+.eggs/
+*.egg
+*.egg-info/
+pip-wheel-metadata/
+.venv/
+venv/
+env/
+ENV/
+
+# =========================
+# Flutter / Dart (frontend)
+# =========================
+frontend/.dart_tool/
+frontend/.flutter-plugins
+frontend/.flutter-plugins-dependencies
+frontend/.packages
+frontend/.metadata
+frontend/build/
+frontend/coverage/
+
+# Android (Flutter)
+frontend/android/.gradle/
+frontend/android/local.properties
+frontend/android/captures/
+frontend/android/app/debug/
+frontend/android/app/profile/
+frontend/android/app/release/
+
+# iOS (Flutter)
+frontend/ios/Pods/
+frontend/ios/.symlinks/
+frontend/ios/Flutter/ephemeral/
+frontend/ios/Flutter/Generated.xcconfig
+frontend/ios/Flutter/flutter_export_environment.sh
+
+# macOS / Linux / Windows generated
+frontend/macos/Flutter/ephemeral/
+frontend/linux/flutter/ephemeral/
+frontend/windows/flutter/ephemeral/
+
+# Web generated
+frontend/web/.dart_tool/
+
+# =========================
+# IDE / OS files
+# =========================
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db

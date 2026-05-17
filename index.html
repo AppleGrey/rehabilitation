@@ -1,0 +1,1338 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>运动康复 - 智能康复辅助</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        :root {
+            --primary: #00A68C;
+            --primary-light: #E6F7F4;
+            --primary-dark: #00856F;
+            --secondary: #FF8C42;
+            --secondary-light: #FFF4EE;
+            --text-primary: #1A1A1A;
+            --text-secondary: #666666;
+            --text-tertiary: #999999;
+            --bg-primary: #FFFFFF;
+            --bg-secondary: #F5F7FA;
+            --bg-tertiary: #EBEDF0;
+            --success: #52C41A;
+            --warning: #FAAD14;
+            --error: #FF4D4F;
+            --border: #E8E8E8;
+            --shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Helvetica, Arial, sans-serif;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+        .phone-frame {
+            width: 100%;
+            max-width: 414px;
+            min-height: 100vh;
+            margin: 0 auto;
+            background: var(--bg-primary);
+            position: relative;
+        }
+        .page { display: none; min-height: 100vh; padding-bottom: 70px; }
+        .page.active { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .status-bar {
+            height: 44px;
+            background: var(--bg-primary);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .status-icons { display: flex; gap: 6px; align-items: center; }
+        .status-icons svg { width: 18px; height: 18px; }
+        .header {
+            padding: 16px 20px;
+            background: var(--bg-primary);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .header-title { font-size: 18px; font-weight: 600; text-align: center; }
+        .header-back {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        .header-back svg { width: 20px; height: 20px; color: var(--text-primary); }
+        .content { padding: 0 20px 20px; }
+        .btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            height: 50px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn:active { transform: scale(0.98); }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-secondary { background: var(--bg-secondary); color: var(--text-primary); }
+        .btn-outline { background: transparent; border: 1.5px solid var(--primary); color: var(--primary); }
+        .input-group { margin-bottom: 20px; }
+        .input-label { font-size: 14px; color: var(--text-secondary); margin-bottom: 8px; display: block; }
+        .input-field {
+            width: 100%;
+            height: 50px;
+            border: 1.5px solid var(--border);
+            border-radius: 12px;
+            padding: 0 16px;
+            font-size: 16px;
+            transition: border-color 0.2s ease;
+        }
+        .input-field:focus { outline: none; border-color: var(--primary); }
+        .input-field::placeholder { color: var(--text-tertiary); }
+        .textarea-field { min-height: 100px; padding: 12px 16px; resize: none; font-family: inherit; }
+        .card { background: var(--bg-primary); border-radius: 16px; padding: 20px; box-shadow: var(--shadow); }
+        .card + .card { margin-top: 16px; }
+        .nav-bar {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 414px;
+            height: 70px;
+            background: var(--bg-primary);
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding-bottom: env(safe-area-inset-bottom);
+            z-index: 1000;
+        }
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            color: var(--text-tertiary);
+            font-size: 11px;
+            cursor: pointer;
+            padding: 8px 16px;
+            transition: color 0.2s ease;
+        }
+        .nav-item.active { color: var(--primary); }
+        .nav-item svg { width: 24px; height: 24px; }
+        .welcome-bg {
+            background: linear-gradient(180deg, var(--primary-light) 0%, var(--bg-primary) 60%);
+            min-height: calc(100vh - 70px);
+            display: flex;
+            flex-direction: column;
+            padding-bottom: 40px;
+        }
+        .welcome-logo {
+            width: 120px;
+            height: 120px;
+            background: var(--primary);
+            border-radius: 30px;
+            margin: 60px auto 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 32px rgba(0, 166, 140, 0.3);
+        }
+        .welcome-logo svg { width: 60px; height: 60px; color: white; }
+        .welcome-title { font-size: 28px; font-weight: 700; text-align: center; margin-bottom: 12px; }
+        .welcome-subtitle { font-size: 15px; color: var(--text-secondary); text-align: center; margin-bottom: 60px; padding: 0 40px; }
+        .welcome-features { padding: 0 32px; margin-bottom: 40px; }
+        .welcome-feature { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
+        .welcome-feature-icon {
+            width: 44px;
+            height: 44px;
+            background: var(--primary-light);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .welcome-feature-icon svg { width: 22px; height: 22px; color: var(--primary); }
+        .welcome-feature-text h3 { font-size: 15px; font-weight: 600; margin-bottom: 2px; }
+        .welcome-feature-text p { font-size: 13px; color: var(--text-secondary); }
+        .welcome-btn { padding: 0 32px; }
+        .progress-ring { width: 180px; height: 180px; margin: 0 auto 24px; position: relative; }
+        .progress-ring svg { transform: rotate(-90deg); }
+        .progress-ring-bg { fill: none; stroke: var(--bg-tertiary); stroke-width: 12; }
+        .progress-ring-fill { fill: none; stroke: var(--primary); stroke-width: 12; stroke-linecap: round; stroke-dasharray: 440; stroke-dashoffset: 110; transition: stroke-dashoffset 0.5s ease; }
+        .progress-ring-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }
+        .progress-ring-value { font-size: 36px; font-weight: 700; color: var(--primary); }
+        .progress-ring-label { font-size: 13px; color: var(--text-secondary); }
+        .section-title { font-size: 17px; font-weight: 600; margin-bottom: 12px; }
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .section-more { font-size: 13px; color: var(--text-tertiary); cursor: pointer; }
+        .exercise-card {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+        .exercise-card:active { transform: scale(0.98); }
+        .exercise-thumb {
+            width: 100%;
+            height: 140px;
+            background: linear-gradient(135deg, var(--primary-light) 0%, var(--bg-tertiary) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        .exercise-thumb svg { width: 48px; height: 48px; color: var(--primary); }
+        .exercise-duration {
+            position: absolute;
+            right: 12px;
+            bottom: 12px;
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+        .exercise-info { padding: 14px; }
+        .exercise-title { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+        .exercise-meta { display: flex; gap: 12px; font-size: 12px; color: var(--text-tertiary); }
+        .exercise-list { display: flex; flex-direction: column; gap: 12px; }
+        .exercise-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            background: var(--bg-secondary);
+            border-radius: 14px;
+            padding: 14px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+        .exercise-item:active { background: var(--bg-tertiary); }
+        .exercise-item-thumb {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary-light) 0%, var(--bg-tertiary) 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .exercise-item-thumb svg { width: 28px; height: 28px; color: var(--primary); }
+        .exercise-item-info { flex: 1; }
+        .exercise-item-title { font-size: 15px; font-weight: 500; margin-bottom: 4px; }
+        .exercise-item-meta { font-size: 12px; color: var(--text-tertiary); }
+        .exercise-item-status {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 2px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .exercise-item-status.done { background: var(--primary); border-color: var(--primary); color: white; }
+        .exercise-item-status svg { width: 14px; height: 14px; }
+        .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 24px; }
+        .stat-card { background: var(--bg-secondary); border-radius: 14px; padding: 16px; text-align: center; }
+        .stat-value { font-size: 24px; font-weight: 700; color: var(--primary); margin-bottom: 4px; }
+        .stat-label { font-size: 12px; color: var(--text-secondary); }
+        .timeline { position: relative; padding-left: 24px; }
+        .timeline::before { content: ''; position: absolute; left: 7px; top: 0; bottom: 0; width: 2px; background: var(--border); }
+        .timeline-item { position: relative; padding-bottom: 24px; }
+        .timeline-item:last-child { padding-bottom: 0; }
+        .timeline-dot {
+            position: absolute;
+            left: -24px;
+            top: 2px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--primary);
+            border: 3px solid var(--bg-primary);
+            box-shadow: 0 0 0 2px var(--primary);
+        }
+        .timeline-date { font-size: 12px; color: var(--text-tertiary); margin-bottom: 6px; }
+        .timeline-content { background: var(--bg-secondary); border-radius: 12px; padding: 14px; }
+        .timeline-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+        .timeline-desc { font-size: 13px; color: var(--text-secondary); }
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 12px;
+            background: var(--primary-light);
+            color: var(--primary);
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .tag + .tag { margin-left: 8px; }
+        .plan-card {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            border-radius: 20px;
+            padding: 24px;
+            color: white;
+            margin-bottom: 16px;
+        }
+        .plan-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+        .plan-title { font-size: 20px; font-weight: 600; }
+        .plan-badge { background: rgba(255, 255, 255, 0.2); padding: 4px 10px; border-radius: 8px; font-size: 12px; }
+        .plan-desc { font-size: 14px; opacity: 0.9; margin-bottom: 20px; line-height: 1.6; }
+        .plan-stats { display: flex; gap: 24px; }
+        .plan-stat { text-align: center; }
+        .plan-stat-value { font-size: 20px; font-weight: 700; }
+        .plan-stat-label { font-size: 11px; opacity: 0.8; }
+        .form-section { margin-bottom: 24px; }
+        .form-section-title { font-size: 15px; font-weight: 600; margin-bottom: 16px; }
+        .radio-group { display: flex; flex-wrap: wrap; gap: 10px; }
+        .radio-item {
+            padding: 10px 18px;
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .radio-item.selected { border-color: var(--primary); background: var(--primary-light); color: var(--primary); }
+        .checkbox-group { display: flex; flex-wrap: wrap; gap: 10px; }
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .checkbox-item.selected { border-color: var(--primary); background: var(--primary-light); color: var(--primary); }
+        .checkbox-item .icon { width: 18px; height: 18px; border: 2px solid var(--border); border-radius: 4px; display: flex; align-items: center; justify-content: center; }
+        .checkbox-item.selected .icon { background: var(--primary); border-color: var(--primary); color: white; }
+        .checkbox-item .icon svg { width: 12px; height: 12px; }
+        .range-track { width: 100%; height: 6px; background: var(--bg-tertiary); border-radius: 3px; position: relative; }
+        .range-fill { height: 100%; background: var(--primary); border-radius: 3px; width: 50%; }
+        .range-thumb { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 22px; height: 22px; background: white; border: 2px solid var(--primary); border-radius: 50%; cursor: pointer; }
+        .range-labels { display: flex; justify-content: space-between; margin-top: 8px; font-size: 12px; color: var(--text-tertiary); }
+        .article-card { display: flex; gap: 14px; padding: 16px 0; border-bottom: 1px solid var(--border); cursor: pointer; }
+        .article-card:last-child { border-bottom: none; }
+        .article-thumb {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--secondary-light) 0%, var(--bg-tertiary) 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .article-thumb svg { width: 36px; height: 36px; color: var(--secondary); }
+        .article-info { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+        .article-title { font-size: 15px; font-weight: 500; margin-bottom: 6px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .article-meta { font-size: 12px; color: var(--text-tertiary); }
+        .video-container { position: relative; width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 16px; overflow: hidden; margin-bottom: 20px; }
+        .video-placeholder { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: white; }
+        .video-placeholder svg { width: 64px; height: 64px; margin-bottom: 12px; opacity: 0.8; }
+        .video-placeholder span { font-size: 14px; opacity: 0.6; }
+        .action-btns { display: flex; gap: 12px; margin-top: 20px; }
+        .action-btns .btn { flex: 1; }
+        .result-card { background: var(--bg-secondary); border-radius: 16px; padding: 20px; margin-bottom: 16px; }
+        .result-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+        .result-icon { width: 48px; height: 48px; background: var(--primary-light); border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+        .result-icon svg { width: 24px; height: 24px; color: var(--primary); }
+        .result-title { font-size: 16px; font-weight: 600; }
+        .result-subtitle { font-size: 13px; color: var(--text-secondary); }
+        .result-bar { height: 8px; background: var(--bg-tertiary); border-radius: 4px; overflow: hidden; margin-bottom: 8px; }
+        .result-bar-fill { height: 100%; background: var(--primary); border-radius: 4px; }
+        .result-bar-labels { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-tertiary); }
+        .alert-box { background: var(--secondary-light); border-radius: 12px; padding: 16px; margin-bottom: 20px; display: flex; gap: 12px; }
+        .alert-box svg { width: 20px; height: 20px; color: var(--secondary); flex-shrink: 0; margin-top: 2px; }
+        .alert-box-content { flex: 1; }
+        .alert-box-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+        .alert-box-text { font-size: 13px; color: var(--text-secondary); }
+        .profile-header { text-align: center; padding: 30px 20px; background: linear-gradient(180deg, var(--primary-light) 0%, var(--bg-primary) 100%); }
+        .profile-avatar { width: 80px; height: 80px; background: var(--primary); border-radius: 50%; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center; font-size: 32px; color: white; font-weight: 600; }
+        .profile-name { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
+        .profile-meta { font-size: 13px; color: var(--text-secondary); }
+        .menu-list { padding: 0 20px; }
+        .menu-item { display: flex; align-items: center; gap: 14px; padding: 16px 0; border-bottom: 1px solid var(--border); cursor: pointer; }
+        .menu-item:last-child { border-bottom: none; }
+        .menu-item-icon { width: 40px; height: 40px; background: var(--bg-secondary); border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+        .menu-item-icon svg { width: 20px; height: 20px; color: var(--text-secondary); }
+        .menu-item-info { flex: 1; }
+        .menu-item-title { font-size: 15px; }
+        .menu-item-desc { font-size: 12px; color: var(--text-tertiary); }
+        .menu-item-arrow { color: var(--text-tertiary); }
+        .menu-item-arrow svg { width: 20px; height: 20px; }
+        .switch { width: 44px; height: 26px; background: var(--bg-tertiary); border-radius: 13px; position: relative; cursor: pointer; transition: background 0.2s ease; }
+        .switch.active { background: var(--primary); }
+        .switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; background: white; border-radius: 50%; transition: transform 0.2s ease; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2); }
+        .switch.active::after { transform: translateX(18px); }
+        .chart-container { height: 200px; margin-bottom: 20px; }
+        .chart-placeholder { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-tertiary); }
+        .chart-placeholder svg { width: 48px; height: 48px; margin-bottom: 8px; opacity: 0.5; }
+        .divider { height: 8px; background: var(--bg-secondary); margin: 0 -20px; }
+        .quick-actions { display: flex; gap: 12px; margin-bottom: 24px; }
+        .quick-action { flex: 1; background: var(--bg-secondary); border-radius: 14px; padding: 16px 12px; text-align: center; cursor: pointer; transition: background 0.2s ease; }
+        .quick-action:active { background: var(--bg-tertiary); }
+        .quick-action-icon { width: 44px; height: 44px; background: var(--primary-light); border-radius: 12px; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; }
+        .quick-action-icon svg { width: 22px; height: 22px; color: var(--primary); }
+        .quick-action-title { font-size: 13px; font-weight: 500; }
+        .toast { position: fixed; top: 100px; left: 50%; transform: translateX(-50%) translateY(-20px); background: rgba(0, 0, 0, 0.8); color: white; padding: 12px 24px; border-radius: 24px; font-size: 14px; z-index: 3000; opacity: 0; visibility: hidden; transition: all 0.3s ease; }
+        .toast.active { opacity: 1; visibility: visible; transform: translateX(-50%) translateY(0); }
+        .loading-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255, 255, 255, 0.9); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 2500; opacity: 0; visibility: hidden; transition: all 0.3s ease; }
+        .loading-overlay.active { opacity: 1; visibility: visible; }
+        .loading-spinner { width: 48px; height: 48px; border: 4px solid var(--bg-tertiary); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-text { margin-top: 16px; font-size: 14px; color: var(--text-secondary); }
+    </style>
+</head>
+<body>
+    <div class="phone-frame">
+        <div id="welcomePage" class="page active">
+            <div class="welcome-bg">
+                <div class="welcome-logo">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.698 16.685c-.091.28-.157.577-.191.89m14.208-1.89c.034-.313.1-.612.191-.89m-3.856 0a50.524 50.524 0 00-2.632-1.71m-14.208 0c.085.463.22.9.35 1.28m14.208 0c-.13-.38-.265-.817-.35-1.28m-14.208 1.89c.112.57.26 1.12.44 1.64m14.208 0c.18-.52.328-1.07.44-1.64m-14.208 1.64c.36.52.77 1 1.22 1.42m-14.208 0c.45.42.86.9 1.22 1.42m-14.208 1.42c.54.36 1.14.64 1.79.86m0 0c.65-.22 1.25-.5 1.79-.86m-3.58 0c.54.36 1.14.64 1.79.86m0 0c.65-.22 1.25-.5 1.79-.86"/></svg>
+                </div>
+                <h1 class="welcome-title">运动康复</h1>
+                <p class="welcome-subtitle">智能康复辅助系统，让专业的康复服务触手可及</p>
+                <div class="welcome-features">
+                    <div class="welcome-feature">
+                        <div class="welcome-feature-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/></svg></div>
+                        <div class="welcome-feature-text"><h3>个性化评估</h3><p>智能分析身体状况，精准定位问题</p></div>
+                    </div>
+                    <div class="welcome-feature">
+                        <div class="welcome-feature-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z"/></svg></div>
+                        <div class="welcome-feature-text"><h3>专业视频指导</h3><p>海量康复动作视频，标准示范教学</p></div>
+                    </div>
+                    <div class="welcome-feature">
+                        <div class="welcome-feature-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z"/></svg></div>
+                        <div class="welcome-feature-text"><h3>科学康复方案</h3><p>基于知识图谱，定制专属计划</p></div>
+                    </div>
+                </div>
+                <div class="welcome-btn"><button class="btn btn-primary" onclick="navigateTo('registerPage')">立即开始</button></div>
+            </div>
+        </div>
+
+        <div id="registerPage" class="page">
+            <div class="status-bar"><span class="time">9:41</span><div class="status-icons"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg><svg fill="currentColor" viewBox="0 0 24 24"><path d="M15.5 1h-8C6.12 1 5 2.12 5 3.5v17C5 21.88 6.12 23 7.5 23h8c1.38 0 2.5-1.12 2.5-2.5v-17C18 2.12 16.88 1 15.5 1zm-4 21c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm4.5-4H7V4h9v14z"/></svg><svg fill="currentColor" viewBox="0 0 24 24"><path d="M17 4h-3V2h-4v2H7v18h10V4z"/></svg></div></div>
+            <div class="header"><div class="header-back" onclick="navigateTo('welcomePage')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/></svg></div><div class="header-title">注册</div></div>
+            <div class="content">
+                <div class="input-group"><label class="input-label">手机号</label><input type="tel" class="input-field" placeholder="请输入手机号码" value="13812345678"></div>
+                <div class="input-group"><label class="input-label">验证码</label><div style="display: flex; gap: 12px;"><input type="text" class="input-field" placeholder="请输入验证码" value="123456" style="flex: 1;"><button class="btn btn-secondary" style="width: 110px; flex-shrink: 0;">获取验证码</button></div></div>
+                <div class="input-group"><label class="input-label">设置密码</label><input type="password" class="input-field" placeholder="请设置登录密码" value="123456"></div>
+                <div style="margin-bottom: 20px;"><div class="checkbox-item selected" style="border: none; padding: 0;"><div class="icon"><svg fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg></div><span style="font-size: 13px; color: var(--text-secondary);">我已阅读并同意<a href="#" style="color: var(--primary);">《用户服务协议》</a>和<a href="#" style="color: var(--primary);">《隐私政策》</a></span></div></div>
+                <button class="btn btn-primary" onclick="showToast('注册成功'); setTimeout(() => navigateTo('profilePage'), 500);">注册</button>
+            </div>
+        </div>
+
+        <div id="profilePage" class="page">
+            <div class="status-bar"><span class="time">9:41</span><div class="status-icons"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg><svg fill="currentColor" viewBox="0 0 24 24"><path d="M15.5 1h-8C6.12 1 5 2.12 5 3.5v17C5 21.88 6.12 23 7.5 23h8c1.38 0 2.5-1.12 2.5-2.5v-17C18 2.12 16.88 1 15.5 1zm-4 21c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm4.5-4H7V4h9v14z"/></svg><svg fill="currentColor" viewBox="0 0 24 24"><path d="M17 4h-3V2h-4v2H7v18h10V4z"/></svg></div></div>
+            <div class="header"><div class="header-back" onclick="navigateTo('registerPage')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/></svg></div><div class="header-title">完善健康档案</div></div>
+            <div class="content">
+                <div class="alert-box"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"/></svg><div class="alert-box-content"><div class="alert-box-title">为什么要填写这些信息？</div><div class="alert-box-text">准确的信息有助于我们为您制定更精准的康复方案，您的个人隐私会受到严格保护。</div></div></div>
+                <div class="form-section">
+                    <div class="form-section-title">基本信息</div>
+                    <div class="input-group"><label class="input-label">姓名</label><input type="text" class="input-field" placeholder="请输入您的姓名" value="李明"></div>
+                    <div class="input-group"><label class="input-label">性别</label><div class="radio-group"><div class="radio-item selected" onclick="selectRadio(this)">男</div><div class="radio-item" onclick="selectRadio(this)">女</div></div></div>
+                    <div class="input-group"><label class="input-label">年龄</label><input type="number" class="input-field" placeholder="请输入年龄" value="32"></div>
+                    <div class="input-group"><label class="input-label">职业</label><div class="radio-group"><div class="radio-item selected" onclick="selectRadio(this)">办公室职员</div><div class="radio-item" onclick="selectRadio(this)">IT从业者</div><div class="radio-item" onclick="selectRadio(this)">教师</div><div class="radio-item" onclick="selectRadio(this)">其他</div></div></div>
+                </div>
+                <div class="form-section">
+                    <div class="form-section-title">健康状况</div>
+                    <div class="input-group"><label class="input-label">既往病史（可多选）</label><div class="checkbox-group"><div class="checkbox-item selected" onclick="toggleCheckbox(this)"><div class="icon"><svg fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg></div>无</div><div class="checkbox-item" onclick="toggleCheckbox(this)"><div class="icon"><svg fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg></div>心脏病</div><div class="checkbox-item" onclick="toggleCheckbox(this)"><div class="icon"><svg fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg></div>高血压</div><div class="checkbox-item" onclick="toggleCheckbox(this)"><div class="icon"><svg fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg></div>糖尿病</div></div></div>
+                    <div class="input-group"><label class="input-label">过敏史（选填）</label><input type="text" class="input-field" placeholder="如有请填写，如无请留空"></div>
+                </div>
+                <div class="form-section">
+                    <div class="form-section-title">康复诉求</div>
+                    <div class="input-group"><label class="input-label">需要康复的部位（可多选）</label><div class="checkbox-group"><div class="checkbox-item" onclick="toggleCheckbox(this)"><div class="icon"><svg fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg></div>颈椎</div><div class="checkbox-item selected" onclick="toggleCheckbox(this)"><div class="icon"><svg fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg></div>肩部</div><div class="checkbox-item" onclick="toggleCheckbox(this)"><div class="icon"><svg fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg></div>腰部</div><div class="checkbox-item" onclick="toggleCheckbox(this)"><div class="icon"><svg fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg></div>膝关节</div></div></div>
+                    <div class="input-group"><label class="input-label">疼痛程度：<span id="painValue">5</span>/10</label><div class="range-track"><div class="range-fill" style="width: 50%;"></div><div class="range-thumb"></div></div><div class="range-labels"><span>轻微</span><span>剧烈</span></div></div>
+                    <div class="input-group"><label class="input-label">症状描述</label><textarea class="input-field textarea-field" placeholder="请描述您的症状，如：右肩疼痛3个月，抬手臂时加重...">右肩疼痛3个月，抬手臂时加重，影响日常工作</textarea></div>
+                </div>
+                <button class="btn btn-primary" onclick="showToast('档案已保存'); setTimeout(() => navigateTo('homePage'), 500);">保存并继续</button>
+            </div>
+        </div>
+
+        <div id="homePage" class="page">
+            <div class="status-bar"><span class="time">9:41</span><div class="status-icons"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg><svg fill="currentColor" viewBox="0 0 24 24"><path d="M15.5 1h-8C6.12 1 5 2.12 5 3.5v17C5 21.88 6.12 23 7.5 23h8c1.38 0 2.5-1.12 2.5-2.5v-17C18 2.12 16.88 1 15.5 1zm-4 21c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm4.5-4H7V4h9v14z"/></svg><svg fill="currentColor" viewBox="0 0 24 24"><path d="M17 4h-3V2h-4v2H7v18h10V4z"/></svg></div></div>
+            <div class="header"><div class="header-title">首页</div></div>
+            <div class="content">
+                <div class="card" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white; margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <div><div style="font-size: 13px; opacity: 0.9;">今日训练计划</div><div style="font-size: 22px; font-weight: 700;">肩部康复训练</div></div>
+                        <div style="text-align: right;"><div style="font-size: 13px; opacity: 0.9;">完成进度</div><div style="font-size: 22px; font-weight: 700;">2/5</div></div>
+                    </div>
+                    <div style="height: 6px; background: rgba(255,255,255,0.3); border-radius: 3px; overflow: hidden;"><div style="width: 40%; height: 100%; background: white; border-radius: 3px;"></div></div>
+                </div>
+                <div class="section-header"><h3 class="section-title">今日训练</h3><span class="section-more" onclick="navigateTo('planPage')">查看全部</span></div>
+                <div class="exercise-list" style="margin-bottom: 24px;">
+                    <div class="exercise-item" onclick="navigateTo('trainingPage')"><div class="exercise-item-thumb"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z"/></svg></div><div class="exercise-item-info"><div class="exercise-item-title">颈部放松运动</div><div class="exercise-item-meta">热身 · 3分钟 · 已完成</div></div><div class="exercise-item-status done"><svg fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg></div></div>
+                    <div class="exercise-item" onclick="navigateTo('trainingPage')"><div class="exercise-item-thumb"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z"/></svg></div><div class="exercise-item-info"><div class="exercise-item-title">肩部环绕练习</div><div class="exercise-item-meta">主训练 · 5分钟 · 进行中</div></div><div class="exercise-item-status"></div></div>
+                    <div class="exercise-item"><div class="exercise-item-thumb"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z"/></svg></div><div class="exercise-item-info"><div class="exercise-item-title">肩部拉伸训练</div><div class="exercise-item-meta">主训练 · 5分钟 · 未开始</div></div><div class="exercise-item-status"></div></div>
+                </div>
+                <div class="section-header"><h3 class="section-title">快捷入口</h3></div>
+                <div class="quick-actions">
+                    <div class="quick-action" onclick="navigateTo('progressPage')"><div class="quick-action-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/></svg></div><div class="quick-action-title">康复进度</div></div>
+                    <div class="quick-action" onclick="navigateTo('knowledgePage')"><div class="quick-action-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/></svg></div><div class="quick-action-title">知识中心</div></div>
+                    <div class="quick-action" onclick="navigateTo('resultPage')"><div class="quick-action-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z"/></svg></div><div class="quick-action-title">评估报告</div></div>
+                </div>
+                <div class="section-header"><h3 class="section-title">康复知识</h3><span class="section-more" onclick="navigateTo('knowledgePage')">更多</span></div>
+                <div class="article-card"><div class="article-thumb"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"/></svg></div><div class="article-info"><div class="article-title">肩周炎的自我康复训练方法</div><div class="article-meta">阅读 2,356 · 5分钟前</div></div></div>
+                <div class="article-card"><div class="article-thumb"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.19 3.75a.75.75 0 010 1.5H7.5l3.75 6.75h4.94a.75.75 0 010 1.5h-7.5l-3.75-6.75H2.25a.75.75 0 010-1.5h13.44l3.75-6.75H15.19z"/></svg></div><div class="article-info"><div class="article-title">办公室久坐人群如何预防颈椎病</div><div class="article-meta">阅读 1,892 · 1小时前</div></div></div>
+            </div>
+            <div class="nav-bar">
+                <div class="nav-item active" onclick="navigateTo('homePage')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"/></svg><span>首页</span></div>
+                <div class="nav-item" onclick="navigateTo('planPage')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/></svg><span>方案</span></div>
+                <div class="nav-item" onclick="navigateTo('progressPage')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/></svg><span>进度</span></div>
+                <div class="nav-item" onclick="navigateTo('knowledgePage')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/></svg><span>知识</span></div>
+                <div class="nav-item" onclick="navigateTo('profileCenterPage')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg><span>我的</span></div>
+            </div>
+        </div>
+
+        <div id="trainingPage" class="page">
+            <div class="status-bar"><span class="time">9:41</span><div class="status-icons"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg><svg fill="currentColor" viewBox="0 0 24 24"><path d="M15.5 1h-8C6.12 1 5 2.12 5 3.5v17C5 21.88 6.12 23 7.5 23h8c1.38 0 2.5-1.12 2.5-2.5v-17C18 2.12 16.88 1 15.5 1zm-4 21c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm4.5-4H7V4h9v14z"/></svg><svg fill="currentColor" viewBox="0 0 24 24"><path d="M17 4h-3V2h-4v2H7v18h10V4z"/></svg></div></div>
+            <div class="header"><div class="header-back" onclick="navigateTo('homePage')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/></svg></div><div class="header-title">肩部环绕练习</div></div>
+            <div class="content">
+                <div class="video-container"><div class="video-placeholder"><svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z"/></svg><span>标准动作演示</span></div></div>
+                <div class="card"><h4 style="font-size: 16px; font-weight: 600; margin-bottom: 12px;">动作要领</h4><ul style="font-size: 14px; color: var(--text-secondary); padding-left: 20px; line-height: 1.8;"><li>站立或坐姿，保持背部挺直</li><li>双臂自然下垂，肩胛骨放松</li><li>以肩关节为轴，向前做环绕动作</li><li>画圈幅度由小到大，逐渐增加</li><li>每组10圈，完成后反向环绕</li></ul></div>
+                <div class="card" style="margin-top: 16px;"><h4 style="font-size: 16px; font-weight: 600; margin-bottom: 12px;">注意事项</h4><div style="display: flex; gap: 8px; flex-wrap: wrap;"><span class="tag">动作缓慢</span><span class="tag">避免疼痛</span><span class="tag">循序渐进</span></div></div>
+                <div class="alert-box" style="margin-top: 16px;"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg><div class="alert-box-content"><div class="alert-box-title">温馨提示</div><div class="alert-box-text">如果训练过程中出现剧烈疼痛或不适，请立即停止并咨询专业医生。</div></div></div>
+                <div class="action-btns"><button class="btn btn-outline" onclick="navigateTo('resultPage')">查看对比</button><button class="btn btn-primary" onclick="showLoading(); setTimeout(() => { hideLoading(); navigateTo('resultPage'); }, 2000);">开始录制</button></div>
+            </div>
+        </div>
+
+        <div id="resultPage" class="page">
+            <div class="status-bar"><span class="time">9:41</span><div class="status-icons"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg><svg fill="currentColor" viewBox="0 0 24 24"><path d="M15.5 1h-8C6.12 1 5 2.12 5 3.5v17C5 21.88 6.12 23 7.5 23h8c1.38 0 2.5-1.12 2.5-2.5v-17C18 2.12 16.88 1 15.5 1zm-4 21c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm4.5-4H7V4h9v14z"/></svg><svg fill="currentColor" viewBox="0 0 24 24"><path d="M17 4h-3V2h-4v2H7v18h10V4z"/></svg></div></div>
+            <div class="header"><div class="header-back" onclick="navigateTo('homePage')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/></svg></div><div class="header-title">训练报告</div></div>
+            <div class="content">
+                <div class="card" style="text-align: center; padding: 30px 20px;"><div style="width: 80px; height: 80px; background: var(--primary-light); border-radius: 50%; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center;"><svg fill="none" stroke="var(--primary)" stroke-width="2" viewBox="0 0 24 24" style="width: 40px; height: 40px;"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div><h3 style="font-size: 20px; font-weight: 600; margin-bottom: 8px;">训练完成</h3><p style="font-size: 14px; color: var(--text-secondary);">动作完成度 85%</p></div>
+                <h3 class="section-title" style="margin-top: 24px;">问题分析</h3>
+                <div class="result-card"><div class="result-header"><div class="result-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/></svg></div><div><div class="result-title">右肩活动受限</div><div class="result-subtitle">严重程度：轻度</div></div></div><div class="result-bar"><div class="result-bar-fill" style="width: 35%; background: var(--success);"></div></div><div class="result-bar-labels"><span>轻微</span><span>严重</span></div><p style="font-size: 13px; color: var(--text-secondary); margin-top: 12px;">您的右肩在外展动作时存在约15度的活动受限，建议加强肩袖肌群的训练。</p></div>
+                <div class="result-card"><div class="result-header"><div class="result-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23-.693L5 14.5m14.8.8l1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0112 21c-2.773 0-5.491-.235-8.135-.687-1.718-.293-2.3-2.379-1.067-3.61L5 14.5"/></svg></div><div><div class="result-title">肩胛骨稳定性不足</div><div class="result-subtitle">严重程度：轻度</div></div></div><div class="result-bar"><div class="result-bar-fill" style="width: 28%; background: var(--success);"></div></div><div class="result-bar-labels"><span>轻微</span><span>严重</span></div><p style="font-size: 13px; color: var(--text-secondary); margin-top: 12px;">训练过程中肩胛骨出现轻微前倾，建议加强中下斜方肌的力量训练。</p></div>
+                <div class="alert-box"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z"/></svg><div class="alert-box-content"><div class="alert-box-title">康复方案已更新</div><div class="alert-box-text">根据本次训练结果，系统已为您优化康复方案，增加了肩袖肌群训练内容。</div></div></div>
+                <button class="btn btn-primary" onclick="navigateTo('homePage')">返回首页</button>
+            </div>
+        </div>
+
+        <div id="planPage" class="page">
+            <div class="status-bar"><span class="time">9:41</span><div class="status-icons"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg><svg fill="currentColor" viewBox="0 0 24 24"><path d="M15.5 1h-8C6.12 1 5 2.12 5 3.5v17C5 21.88 6.12 23 7.5 23h8c1.38 0 2.5-1.12 2.5-2.5v-17C18 2.12 16.88 1 15.5 1zm-4 21c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm4.5-4H7V4h9v14z"/></svg><svg fill="currentColor" viewBox="0 0 24 24"><path d="M17 4h-3V2h-4v2H7v18h10V4z"/></svg></div></div>
+            <div class="header"><div class="header-title">康复方案</div></div>
+            <div class="content">
+                <div class="plan-card"><div class="plan-header"><div class="plan-title">肩部综合康复方案</div><div class="plan-badge">进行中</div></div><div class="plan-desc">针对肩周炎及肩袖肌群损伤的综合康复训练方案，通过循序渐进的动作练习，恢复肩关节活动度，增强肌力。</div><div class="plan-stats"><div class="plan-stat"><div class="plan-stat-value">21</div><div class="plan-stat-label">总天数</div></div><div class="plan-stat"><div class="plan-stat-value">7</div><div class="plan-stat-label">已完成</div></div><div class="plan-stat"><div class="plan-stat-value">14</div><div class="plan-stat-label">剩余</div></div></div></div>
+                <h3 class="section-title" style="margin-top: 24px;">训练日历</h3>
+                <div style="display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 8px;">
+                    <div style="flex-shrink: 0; width: 48px; text-align: center; padding: 10px 0; background: var(--primary); color: white; border-radius: 12px;"><div style="font-size: 11px;">一</div><div style="font-size: 16px; font-weight: 600;">1</div></div>
+                    <div style="flex-shrink: 0; width: 48px; text-align: center; padding: 10px 0; background: var(--primary-light); color: var(--primary); border-radius: 12px;"><div style="font-size: 11px;">二</div><div style="font-size: 16px; font-weight: 600;">2</div></div>
+                    <div style="flex-shrink: 0; width: 48px; text-align: center; padding: 10px 0; background: var(--primary-light); color: var(--primary); border-radius: 12px;"><div style="font-size: 11px;">三</div><div style="font-size: 16px; font-weight: 600;">3</div></div>
+                    <div style="flex-shrink: 0; width: 48px; text-align: center; padding: 10px 0; background: var(--primary-light); color: var(--primary); border-radius: 12px;"><div style="font-size: 11px;">四</div><div style="font-size: 16px; font-weight: 600;">4</div></div>
+                    <div style="flex-shrink: 0; width: 48px; text-align: center; padding: 10px 0; background: var(--primary-light); color: var(--primary); border-radius: 12px;"><div style="font-size: 11px;">五</div><div style="font-size: 16px; font-weight: 600;">5</div></div>
+                    <div style="flex-shrink: 0; width: 48px; text-align: center; padding: 10px 0; background: var(--primary-light); color: var(--primary); border-radius: 12px;"><div style="font-size: 11px;">六</div><div style="font-size: 16px; font-weight: 600;">6</div></div>
+                    <div style="flex-shrink: 0; width: 48px; text-align: center; padding: 10px 0; background: var(--primary-light); color: var(--primary); border-radius: 12px;"><div style="font-size: 11px;">日</div><div style="font-size: 16px; font-weight: 600;">7</div></div>
+                </div>
+                <h3 class="section-title" style="margin-top: 24px;">训练内容</h3>
+                <div class="exercise-list">
+                    <div class="exercise-item"><div class="exercise-item-thumb"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z"/></svg></div><div class="exercise-item-info"><div class="exercise-item-title">颈部放松运动</div><div class="exercise-item-meta">热身 · 3分钟 · 每日</div></div><div class="exercise-item-status done"><svg fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg></div></div>
+                    <div class="exercise-item"><div class="exercise-item-thumb"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z"/></svg></div><div class="exercise-item-info"><div class="exercise-item-title">肩部环绕练习</div><div class="exercise-item-meta">主训练 · 5分钟 · 每日</div></div><div class="exercise-item-status done"><svg fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg></div></div>
+                    <div class="exercise-item"><div class="exercise-item-thumb"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z"/></svg></div><div class="exercise-item-info"><div class="exercise-item-title">肩部拉伸训练</div><div class="exercise-item-meta">主训练 · 8分钟 · 每日</div></div><div class="exercise-item-status"></div></div>
+                    <div class="exercise-item"><div class="exercise-item-thumb"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z"/></svg></div><div class="exercise-item-info"><div class="exercise-item-title">弹力带外旋训练</div><div class="exercise-item-meta">强化 · 5分钟 · 每日</div></div><div class="exercise-item-status"></div></div>
+                </div>
+            </div>
+            <div class="nav-bar">
+                <div class="nav-item" onclick="navigateTo('homePage')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"/></svg><span>首页</span></div>
+                <div class="nav-item active" onclick="navigateTo('planPage')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/></svg><span>方案</span></div>
+                <div class="nav-item" onclick="navigateTo('progressPage')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/></svg><span>进度</span></div>
+                <div class="nav-item" onclick="navigateTo('knowledgePage')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/></svg><span>知识</span></div>
+                <div class="nav-item" onclick="navigateTo('profileCenterPage')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg><span>我的</span></div>
+            </div>
+        </div>
+
+        <div id="progressPage" class="page">
+            <div class="status-bar"><span class="time">9:41</span><div class="status-icons"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg><svg fill="currentColor" viewBox="0 0 24 24"><path d="M15.5 1h-8C6.12 1 5 2.12 5 3.5v17C5 21.88 6.12 23 7.5 23h8c1.38 0 2.5-1.12 2.5-2.5v-17C18 2.12 16.88 1 15.5 1zm-4 21c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm4.5-4H7V4h9v14z"/></svg><svg fill="currentColor" viewBox="0 0 24 24"><path d="M17 4h-3V2h-4v2H7v18h10V4z"/></svg></div></div>
+            <div class="header"><div class="header-title">康复进度</div></div>
+            <div class="content">
+                <div class="card" style="text-align: center; padding: 30px 20px;">
+                    <div class="progress-ring"><svg width="180" height="180" viewBox="0 0 180 180"><circle class="progress-ring-bg" cx="90" cy="90" r="70"/><circle class="progress-ring-fill" cx="90" cy="90" r="70"/></svg><div class="progress-ring-text"><div class="progress-ring-value">75%</div><div class="progress-ring-label">本周完成</div></div></div>
+                    <p style="font-size: 14px; color: var(--text-secondary);">已连续训练 <strong style="color: var(--primary);">7</strong> 天</p>
+                </div>
+                <div class="stat-grid"><div class="stat-card"><div class="stat-value">21</div><div class="stat-label">训练天数</div></div><div class="stat-card"><div class="stat-value">105</div><div class="stat-label">累计动作</div></div><div class="stat-card"><div class="stat-value">87</div><div class="stat-label">平均得分</div></div><div class="stat-card"><div class="stat-value">-2</div><div class="stat-label">活动度改善</div></div></div>
+                <h3 class="section-title">本周趋势</h3>
+                <div class="chart-container"><div class="chart-placeholder"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/></svg><span>进度趋势图表</span></div></div>
+                <h3 class="section-title">训练记录</h3>
+                <div class="timeline">
+                    <div class="timeline-item"><div class="timeline-dot"></div><div class="timeline-date">今天 14:30</div><div class="timeline-content"><div class="timeline-title">完成肩部环绕练习</div><div class="timeline-desc">完成度 85% · 得分 88</div></div></div>
+                    <div class="timeline-item"><div class="timeline-dot"></div><div class="timeline-date">今天 10:15</div><div class="timeline-content"><div class="timeline-title">完成颈部放松运动</div><div class="timeline-desc">完成度 92% · 得分 95</div></div></div>
+                    <div class="timeline-item"><div class="timeline-dot"></div><div class="timeline-date">昨天 19:45</div><div class="timeline-content"><div class="timeline-title">完成肩部拉伸训练</div><div class="timeline-desc">完成度 78% · 得分 82</div></div></div>
+                </div>
+            </div>
+            <div class="nav-bar">
+                <div class="nav-item" onclick="navigateTo('homePage')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"/></svg><span>首页</span></div>
+                <div class="nav-item" onclick="navigateTo('planPage')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/></svg><span>方案</span></div>
+                <div class="nav-item active" onclick="navigateTo('progressPage')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/></svg><span>进度</span></div>
+                <div class="nav-item" onclick="navigateTo('knowledgePage')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/></svg><span>知识</span></div>
+                <div class="nav-item" onclick="navigateTo('profileCenterPage')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg><span>我的</span></div>
+            </div>
+        </div>
+
+        <div id="knowledgePage" class="page">
+            <div class="status-bar"><span class="time">9:41</span><div class="status-icons"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg><svg fill="currentColor" viewBox="0 0 24 24"><path d="M15.5 1h-8C6.12 1 5 2.12 5 3.5v17C5 21.88 6.12 23 7.5 23h8c1.38 0 2.5-1.12 2.5-2.5v-17C18 2.12 16.88 1 15.5 1zm-4 21c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm4.5-4H7V4h9v14z"/></svg><svg fill="currentColor" viewBox="0 0 24 24"><path d="M17 4h-3V2h-4v2H7v18h10V4z"/></svg></div></div>
+            <div class="header"><div class="header-title">知识中心</div></div>
+            <div class="content">
+                <div style="display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 4px;"><div class="tag" style="background: var(--primary); color: white;">推荐</div><div class="tag">颈椎健康</div><div class="tag">肩部康复</div><div class="tag">腰部保健</div><div class="tag">运动损伤</div></div>
+                <h3 class="section-title">热门文章</h3>
+                <div class="article-card"><div class="article-thumb"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"/></svg></div><div class="article-info"><div class="article-title">肩周炎的自我康复训练方法</div><div class="article-meta">阅读 2,356 · 康复指南</div></div></div>
+                <div class="article-card"><div class="article-thumb"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.19 3.75a.75.75 0 010 1.5H7.5l3.75 6.75h4.94a.75.75 0 010 1.5h-7.5l-3.75-6.75H2.25a.75.75 0 010-1.5h13.44l3.75-6.75H15.19z"/></svg></div><div class="article-info"><div class="article-title">办公室久坐人群如何预防颈椎病</div><div class="article-meta">阅读 1,892 · 预防保健</div></div></div>
+                <div class="article-card"><div class="article-thumb"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div><div class="article-info"><div class="article-title">每天5分钟，缓解腰背疼痛的简单动作</div><div class="article-meta">阅读 1,543 · 视频教程</div></div></div>
+                <h3 class="section-title" style="margin-top: 24px;">康复视频</h3>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+                    <div class="exercise-card"><div class="exercise-thumb"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z"/></svg></div><div class="exercise-info"><div class="exercise-title">颈部米字操</div><div class="exercise-meta"><span>3分钟</span></div></div></div>
+                    <div class="exercise-card"><div class="exercise-thumb"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z"/></svg></div><div class="exercise-info"><div class="exercise-title">肩部外旋训练</div><div class="exercise-meta"><span>5分钟</span></div></div></div>
+                </div>
+            </div>
+            <div class="nav-bar">
+                <div class="nav-item" onclick="navigateTo('homePage')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"/></svg><span>首页</span></div>
+                <div class="nav-item" onclick="navigateTo('planPage')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/></svg><span>方案</span></div>
+                <div class="nav-item" onclick="navigateTo('progressPage')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/></svg><span>进度</span></div>
+                <div class="nav-item active" onclick="navigateTo('knowledgePage')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/></svg><span>知识</span></div>
+                <div class="nav-item" onclick="navigateTo('profileCenterPage')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg><span>我的</span></div>
+            </div>
+        </div>
+
+        <div id="profileCenterPage" class="page">
+            <div class="profile-header"><div class="profile-avatar">李</div><div class="profile-name">李明</div><div class="profile-meta">32岁 · 办公室职员</div></div>
+            <div class="content">
+                <div class="card"><div style="display: flex; justify-content: space-around; text-align: center;"><div><div style="font-size: 20px; font-weight: 700; color: var(--primary);">21</div><div style="font-size: 12px; color: var(--text-secondary);">训练天数</div></div><div><div style="font-size: 20px; font-weight: 700; color: var(--primary);">87</div><div style="font-size: 12px; color: var(--text-secondary);">平均得分</div></div><div><div style="font-size: 20px; font-weight: 700; color: var(--primary);">7</div><div style="font-size: 12px; color: var(--text-secondary);">连续天数</div></div></div></div>
+                <div class="menu-list">
+                    <div class="menu-item" onclick="navigateTo('profilePage')"><div class="menu-item-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg></div><div class="menu-item-info"><div class="menu-item-title">健康档案</div><div class="menu-item-desc">管理个人信息和健康状况</div></div><div class="menu-item-arrow"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg></div></div>
+                    <div class="menu-item"><div class="menu-item-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.25 9.75L16.5 12l-2.25 2.25m-4.5 0L7.5 12l2.25-2.25M6 20.25h12A2.25 2.25 0 0020.25 18V6A2.25 2.25 0 0018 3.75H6A2.25 2.25 0 003.75 6v12A2.25 2.25 0 006 20.25z"/></svg></div><div class="menu-item-info"><div class="menu-item-title">我的收藏</div><div class="menu-item-desc">查看收藏的文章和视频</div></div><div class="menu-item-arrow"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg></div></div>
+                    <div class="menu-item"><div class="menu-item-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23-.693L5 14.5m14.8.8l1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0112 21c-2.773 0-5.491-.235-8.135-.687-1.718-.293-2.3-2.379-1.067-3.61L5 14.5"/></svg></div><div class="menu-item-info"><div class="menu-item-title">康复记录</div><div class="menu-item-desc">查看历史训练和评估报告</div></div><div class="menu-item-arrow"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg></div></div>
+                </div>
+                <div class="divider"></div>
+                <div class="menu-list">
+                    <div class="menu-item"><div class="menu-item-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75"/></svg></div><div class="menu-item-info"><div class="menu-item-title">训练提醒</div><div class="menu-item-desc">设置每日训练提醒时间</div></div><div class="switch active"></div></div>
+                    <div class="menu-item"><div class="menu-item-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.25 9.75L16.5 12l-2.25 2.25m-4.5 0L7.5 12l2.25-2.25M6 20.25h12A2.25 2.25 0 0020.25 18V6A2.25 2.25 0 0018 3.75H6A2.25 2.25 0 003.75 6v12A2.25 2.25 0 006 20.25z"/></svg></div><div class="menu-item-info"><div class="menu-item-title">消息通知</div><div class="menu-item-desc">接收系统通知和康复提醒</div></div><div class="switch active"></div></div>
+                </div>
+                <div class="divider"></div>
+                <div class="menu-list">
+                    <div class="menu-item"><div class="menu-item-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"/></svg></div><div class="menu-item-info"><div class="menu-item-title">帮助与反馈</div><div class="menu-item-desc">遇到问题或提供建议</div></div><div class="menu-item-arrow"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg></div></div>
+                    <div class="menu-item" onclick="showToast('已是最新版本')"><div class="menu-item-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg></div><div class="menu-item-info"><div class="menu-item-title">关于我们</div><div class="menu-item-desc">版本 1.0.0</div></div><div class="menu-item-arrow"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg></div></div>
+                </div>
+            </div>
+            <div class="nav-bar">
+                <div class="nav-item" onclick="navigateTo('homePage')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"/></svg><span>首页</span></div>
+                <div class="nav-item" onclick="navigateTo('planPage')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/></svg><span>方案</span></div>
+                <div class="nav-item" onclick="navigateTo('progressPage')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/></svg><span>进度</span></div>
+                <div class="nav-item" onclick="navigateTo('knowledgePage')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/></svg><span>知识</span></div>
+                <div class="nav-item active" onclick="navigateTo('profileCenterPage')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg><span>我的</span></div>
+            </div>
+        </div>
+
+        <div class="toast" id="toast"></div>
+        <div class="loading-overlay" id="loadingOverlay"><div class="loading-spinner"></div><div class="loading-text">正在分析视频...</div></div>
+    </div>
+
+    <script>
+        function navigateTo(pageId) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+            window.scrollTo(0, 0);
+        }
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('active');
+            setTimeout(() => toast.classList.remove('active'), 2000);
+        }
+        function showLoading() { document.getElementById('loadingOverlay').classList.add('active'); }
+        function hideLoading() { document.getElementById('loadingOverlay').classList.remove('active'); }
+        function selectRadio(el) {
+            el.parentElement.querySelectorAll('.radio-item').forEach(r => r.classList.remove('selected'));
+            el.classList.add('selected');
+        }
+        function toggleCheckbox(el) { el.classList.toggle('selected'); }
+    </script>
+
+<style>
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.inland-security-footer {
+  position: fixed;
+  z-index: 10;
+  bottom: 0;
+  right: 0;
+  width: fit-content;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.tooltip-container {
+  position: relative;
+}
+
+.trigger-content {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  background-color: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.minimax-link {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 300;
+  color: #adadad;
+  text-decoration: none;
+}
+
+.minimax-link:visited {
+  color: #adadad;
+}
+
+.minimax-link:hover {
+  color: #666666;
+}
+
+.tooltip-content {
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  padding-bottom: 16px; /* 8px 内容间距 + 8px 用于鼠标移动的透明区域 */
+  font-size: 12px;
+  line-height: 17px;
+  background-color: #fafafa;
+  border-radius: 12px;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  color: #171717;
+}
+
+/* 创建透明的连接区域，让鼠标可以平滑移动到 tooltip */
+.tooltip-content::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 0;
+  right: 0;
+  height: 16px;
+}
+
+.tooltip-container:hover .tooltip-content {
+  display: flex;
+}
+
+.info-section {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+.beian-link {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: #171717;
+}
+
+.beian-icon {
+  width: 14px;
+  height: 14px;
+  margin-right: 2px;
+}
+
+.underline-text {
+  color: #171717;
+  text-decoration: underline;
+}
+
+.underline-text:hover {
+  color: #000000;
+}
+
+/* 深色模式支持 */
+@media (prefers-color-scheme: dark) {
+  .trigger-content {
+    background-color: transparent;
+  }
+
+  .minimax-link,
+  .minimax-link:visited {
+    color: #666666;
+  }
+
+  .minimax-link:hover {
+    color: #adadad;
+  }
+
+  .tooltip-content {
+    background-color: #262626;
+    color: #ededed;
+  }
+
+  .beian-link,
+  .underline-text {
+    color: #ededed;
+  }
+
+  .underline-text:hover {
+    color: #ffffff;
+  }
+}
+
+</style>
+<div class="inland-security-footer">
+  <div class="tooltip-container">
+    <div class="trigger-content">
+      <a href="https://www.minimaxi.com/" target="_blank" rel="noreferrer" class="minimax-link">
+        <span>© 2026 MiniMax</span>
+      </a>
+    </div>
+    <div class="tooltip-content">
+      <section class="info-section">
+        <span>上海稀宇科技有限公司</span>
+      </section>
+
+      <section class="info-section">
+        <a class="beian-link" href="https://www.beian.gov.cn/portal/registerSystemInfo?recordcode=31010402010179" target="_blank" rel="noreferrer">
+          <img alt="hailuo-beian-icon" src="https://cdn.hailuoai.com/hailuo-video-web/public_assets/223037d3-79fd-4db0-a456-749f38a6a14b.png" class="beian-icon">
+          <span class="underline-text">沪公网安备31010402010179号</span>
+        </a>
+        <a href="https://beian.miit.gov.cn/" target="_blank" rel="noreferrer" class="underline-text">
+          沪ICP备2023003282号-38
+        </a>
+      </section>
+
+      <section class="info-section">
+        <span>模型名称：MiniMax</span>
+        <span>备案号：Shanghai-MiniMax-202505230046</span>
+      </section>
+
+      <section class="info-section">
+        <a href="https://agent.minimaxi.com/doc/zh/terms-of-service.html" target="_blank" rel="noreferrer" class="underline-text">
+          用户协议
+        </a>
+        <a href="https://agent.minimaxi.com/doc/zh/privacy-policy.html" target="_blank" rel="noreferrer" class="underline-text">
+          隐私政策
+        </a>
+      </section>
+    </div>
+  </div>
+</div>
+
+
+<script>
+/**
+ * Iframe 元素高亮注入脚本
+ * 需要在目标网站中引入此脚本来支持跨域 iframe 高亮功能
+ *
+ * 使用方法：
+ * 1. 将此脚本添加到目标网站的 HTML 中
+ * 2. 或通过浏览器扩展、用户脚本等方式注入
+ */
+
+(function () {
+  "use strict";
+
+  // 检查是否在 iframe 中
+  if (window.self === window.top) {
+    return; // 不在 iframe 中，不执行
+  }
+
+  // 检查是否已经初始化过
+  if (window.__iframeHighlightInitialized) {
+    return;
+  }
+  window.__iframeHighlightInitialized = true;
+  console.log("Iframe 高亮脚本已加载");
+
+  // 创建高亮覆盖层
+  var overlay = document.createElement("div");
+  overlay.id = "iframe-highlight-overlay";
+  overlay.style.cssText = "\n    position: fixed;\n    top: 0;\n    left: 0;\n    width: 100vw;\n    height: 100vh;\n    pointer-events: none;\n    z-index: 999999;\n    overflow: hidden;\n  ";
+
+  // 创建悬停高亮框（虚线边框）
+  var highlightBox = document.createElement("div");
+  highlightBox.id = "iframe-highlight-box";
+  highlightBox.style.cssText = "\n    position: absolute;\n    border: 2px dashed #007AFF;\n    background: rgba(0, 122, 255, 0.08);\n    pointer-events: none;\n    display: none;\n    transition: all 0.1s ease;\n    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.8);\n    border-radius: 2px;\n  ";
+
+  // 创建选中节点的常驻高亮框（实线边框）
+  var selectedBox = document.createElement("div");
+  selectedBox.id = "iframe-selected-box";
+  selectedBox.style.cssText = "\n    position: absolute;\n    border: 2px solid #007AFF;\n    pointer-events: none;\n    display: none;\n    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.9), 0 0 8px rgba(255, 107, 53, 0.4);\n    border-radius: 2px;\n    z-index: 1000000;\n  ";
+
+  // 创建悬停标签显示
+  var tagLabel = document.createElement("div");
+  tagLabel.id = "iframe-tag-label";
+  tagLabel.style.cssText = "\n    position: absolute;\n    background: #007AFF;\n    color: white;\n    padding: 2px 6px;\n    font-size: 11px;\n    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;\n    border-radius: 2px;\n    pointer-events: none;\n    display: none;\n    white-space: nowrap;\n    z-index: 1000001;\n    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);\n    font-weight: 500;\n  ";
+
+  // 创建选中节点标签
+  var selectedLabel = document.createElement("div");
+  selectedLabel.id = "iframe-selected-label";
+  selectedLabel.style.cssText = "\n    position: absolute;\n    background: #007AFF;\n    color: white;\n    padding: 3px 8px;\n    font-size: 11px;\n    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;\n    border-radius: 3px;\n    pointer-events: none;\n    display: none;\n    white-space: nowrap;\n    z-index: 1000002;\n    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);\n    font-weight: 600;\n  ";
+  overlay.appendChild(highlightBox);
+  overlay.appendChild(selectedBox);
+  overlay.appendChild(tagLabel);
+  overlay.appendChild(selectedLabel);
+  document.body.appendChild(overlay);
+
+  // 存储当前选中的元素
+  var selectedElement = null;
+  var highlightEnabled = false;
+
+  // 更新选中元素的高亮显示
+  function updateSelectedHighlight(element) {
+    console.log("updateSelectedHighlight called with:", element);
+    if (!element) {
+      selectedBox.style.display = "none";
+      selectedLabel.style.display = "none";
+      selectedElement = null;
+      console.log("Cleared selected highlight");
+      return;
+    }
+    selectedElement = element;
+    var rect = element.getBoundingClientRect();
+    console.log("Selected element rect:", rect);
+
+    // 更新选中高亮框位置
+    selectedBox.style.display = "block";
+    selectedBox.style.left = "".concat(rect.left - 2, "px");
+    selectedBox.style.top = "".concat(rect.top - 2, "px");
+    selectedBox.style.width = "".concat(rect.width + 4, "px");
+    selectedBox.style.height = "".concat(rect.height + 4, "px");
+
+    // 更新选中标签位置和内容
+    selectedLabel.style.display = "block";
+    selectedLabel.textContent = "\u2713 <".concat(element.tagName.toLowerCase(), ">");
+
+    // 计算标签位置，确保不超出视窗
+    var labelTop = rect.top - 28;
+    var labelLeft = rect.left;
+
+    // 如果标签会超出顶部，显示在元素下方
+    if (labelTop < 5) {
+      labelTop = rect.bottom + 5;
+    }
+
+    // 如果标签会超出右侧，向左调整
+    var labelWidth = selectedLabel.offsetWidth || 100; // 预估宽度
+    if (labelLeft + labelWidth > window.innerWidth - 10) {
+      labelLeft = window.innerWidth - labelWidth - 10;
+    }
+    selectedLabel.style.left = "".concat(Math.max(5, labelLeft), "px");
+    selectedLabel.style.top = "".concat(labelTop, "px");
+    console.log("Selected highlight positioned at:", {
+      left: selectedBox.style.left,
+      top: selectedBox.style.top,
+      width: selectedBox.style.width,
+      height: selectedBox.style.height
+    });
+  }
+  function getElementSelector(element) {
+    if (!(element instanceof Element)) throw new Error('Argument must be a DOM element');
+    var segments = [];
+    var current = element;
+    while (current !== document.documentElement) {
+      var selector = '';
+      // 优先检查唯一ID
+      if (current.id && document.querySelectorAll("#".concat(current.id)).length === 1) {
+        segments.unshift("#".concat(current.id));
+        break; // ID唯一，无需继续向上
+      }
+
+      // 生成类名选择器（取第一个有效类名）
+      var classes = Array.from(current.classList).filter(function (c) {
+        return !c.startsWith('js-');
+      });
+      var className = classes.length > 0 ? ".".concat(classes[0]) : '';
+
+      // 生成位置索引（nth-child）
+      var tag = current.tagName.toLowerCase();
+      if (!className) {
+        var siblings = Array.from(current.parentNode.children);
+        var index = siblings.findIndex(function (el) {
+          return el === current;
+        }) + 1;
+        selector = "".concat(tag, ":nth-child(").concat(index, ")");
+      } else {
+        selector = className;
+      }
+      segments.unshift(selector);
+      current = current.parentElement;
+    }
+
+    // 处理根元素
+    if (current === document.documentElement) {
+      segments.unshift('html');
+    }
+    return segments.join(' > ');
+  }
+
+  // 获取元素文本内容
+  function getElementText(element) {
+    var _element$textContent;
+    if (element.tagName === "INPUT") {
+      return element.value || element.placeholder || "";
+    }
+    if (element.tagName === "TEXTAREA") {
+      return element.value || element.placeholder || "";
+    }
+    var text = ((_element$textContent = element.textContent) === null || _element$textContent === void 0 ? void 0 : _element$textContent.trim()) || "";
+    return text.length > 50 ? text.substring(0, 50) + "..." : text;
+  }
+
+  // 获取元素属性信息
+  function getElementAttributes(element) {
+    var attrs = {};
+    for (var i = 0; i < element.attributes.length; i++) {
+      var attr = element.attributes[i];
+      attrs[attr.name] = attr.value;
+    }
+    return attrs;
+  }
+
+  // 鼠标悬停事件处理
+  function handleMouseOver(e) {
+    if (!highlightEnabled) return;
+    var target = e.target;
+    if (!target || target === overlay || target === highlightBox || target === tagLabel || target === selectedBox || target === selectedLabel) {
+      return;
+    }
+
+    // 避免高亮 html 和 body 元素
+    if (target === document.documentElement || target === document.body) {
+      return;
+    }
+
+    // 如果是已选中的元素，不显示悬停高亮
+    if (target === selectedElement) {
+      highlightBox.style.display = "none";
+      tagLabel.style.display = "none";
+      return;
+    }
+    var rect = target.getBoundingClientRect();
+    var selector = getElementSelector(target);
+    var text = getElementText(target);
+    var attributes = getElementAttributes(target);
+
+    // 更新悬停高亮框位置
+    highlightBox.style.display = "block";
+    highlightBox.style.left = "".concat(rect.left - 2, "px");
+    highlightBox.style.top = "".concat(rect.top - 2, "px");
+    highlightBox.style.width = "".concat(rect.width + 4, "px");
+    highlightBox.style.height = "".concat(rect.height + 4, "px");
+
+    // 更新标签位置和内容
+    tagLabel.style.display = "block";
+    tagLabel.textContent = "<".concat(target.tagName.toLowerCase(), ">");
+
+    // 计算标签位置，确保不超出视窗
+    var labelTop = rect.top - 22;
+    var labelLeft = rect.left;
+
+    // 如果标签会超出顶部，显示在元素下方
+    if (labelTop < 0) {
+      labelTop = rect.bottom + 5;
+    }
+
+    // 如果标签会超出右侧，向左调整
+    if (labelLeft + tagLabel.offsetWidth > window.innerWidth) {
+      labelLeft = window.innerWidth - tagLabel.offsetWidth - 5;
+    }
+    tagLabel.style.left = "".concat(Math.max(0, labelLeft), "px");
+    tagLabel.style.top = "".concat(labelTop, "px");
+
+    // 发送消息到父窗口
+    var elementInfo = {
+      tagName: target.tagName.toLowerCase(),
+      rect: {
+        left: rect.left,
+        top: rect.top,
+        right: rect.right,
+        bottom: rect.bottom,
+        width: rect.width,
+        height: rect.height,
+        x: rect.x,
+        y: rect.y
+      },
+      selector: selector,
+      text: text,
+      attributes: attributes,
+      url: window.location.href,
+      path: window.location.pathname,
+      timestamp: Date.now()
+    };
+    try {
+      window.parent.postMessage({
+        type: "iframe-element-hover",
+        data: elementInfo,
+        source: "iframe-highlight-injector"
+      }, "*");
+    } catch (error) {
+      console.warn("无法发送消息到父窗口:", error);
+    }
+  }
+
+  // 鼠标离开事件处理
+  function handleMouseOut(e) {
+    if (!highlightEnabled) return;
+    var relatedTarget = e.relatedTarget;
+
+    // 如果鼠标移动到高亮相关元素上，不隐藏高亮
+    if (relatedTarget && (relatedTarget === highlightBox || relatedTarget === tagLabel || relatedTarget === overlay || relatedTarget === selectedBox || relatedTarget === selectedLabel)) {
+      return;
+    }
+    highlightBox.style.display = "none";
+    tagLabel.style.display = "none";
+    try {
+      window.parent.postMessage({
+        type: "iframe-element-hover",
+        data: null,
+        source: "iframe-highlight-injector"
+      }, "*");
+    } catch (error) {
+      console.warn("无法发送消息到父窗口:", error);
+    }
+  }
+
+  // 点击事件处理
+  function handleClick(e) {
+    var target = e.target;
+    if (!target || target === overlay || target === highlightBox || target === tagLabel || target === selectedBox || target === selectedLabel) {
+      return;
+    }
+
+    // 避免处理 html 和 body 元素
+    if (target === document.documentElement || target === document.body) {
+      return;
+    }
+
+    // 检查是否是交互元素，这些元素需要保留默认行为
+    var isInteractiveElement = ['input', 'textarea', 'select', 'button', 'a'].includes(target.tagName.toLowerCase());
+
+    // 如果高亮功能启用，对于非交互元素阻止默认行为和事件传播
+    if (highlightEnabled) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    var rect = target.getBoundingClientRect();
+    var selector = getElementSelector(target);
+    var text = getElementText(target);
+    var attributes = getElementAttributes(target);
+    console.log("Element clicked:", {
+      tagName: target.tagName,
+      selector: selector,
+      rect: rect
+    });
+
+    // 立即更新选中高亮
+    updateSelectedHighlight(target);
+
+    // 隐藏悬停高亮，因为现在是选中状态
+    highlightBox.style.display = "none";
+    tagLabel.style.display = "none";
+    var elementInfo = {
+      tagName: target.tagName.toLowerCase(),
+      rect: {
+        left: rect.left,
+        top: rect.top,
+        right: rect.right,
+        bottom: rect.bottom,
+        width: rect.width,
+        height: rect.height,
+        x: rect.x,
+        y: rect.y
+      },
+      selector: selector,
+      text: text,
+      attributes: attributes,
+      url: window.location.href,
+      path: window.location.pathname,
+      timestamp: Date.now()
+    };
+    try {
+      window.parent.postMessage({
+        type: "iframe-element-click",
+        data: elementInfo,
+        source: "iframe-highlight-injector"
+      }, "*");
+    } catch (error) {
+      console.warn("无法发送消息到父窗口:", error);
+    }
+  }
+
+  // 监听来自父窗口的消息
+  function handleParentMessage(event) {
+    console.log("Received message from parent:", event.data);
+    if (event.data.type === "iframe-highlight-toggle") {
+      var enabled = event.data.enabled;
+      console.log("Highlight toggle:", enabled);
+      if (enabled) {
+        enableHighlight();
+      } else {
+        disableHighlight();
+      }
+    } else if (event.data.type === "enable-iframe-highlight") {
+      console.log("Enable iframe highlight");
+      enableHighlight();
+    } else if (event.data.type === "disable-iframe-highlight") {
+      console.log("Disable iframe highlight");
+      disableHighlight();
+    } else if (event.data.type === "toggle-iframe-highlight") {
+      var _enabled = event.data.enabled !== undefined ? event.data.enabled : !highlightEnabled;
+      console.log("Toggle iframe highlight to:", _enabled);
+      if (_enabled) {
+        enableHighlight();
+      } else {
+        disableHighlight();
+      }
+    } else if (event.data.type === "update-selected-element") {
+      var selector = event.data.selector;
+      console.log("Update selected element with selector:", selector);
+      if (selector) {
+        try {
+          var element = document.querySelector(selector);
+          console.log("Found element by selector:", element);
+          updateSelectedHighlight(element);
+        } catch (error) {
+          console.warn("Failed to select element:", error);
+          updateSelectedHighlight(null);
+        }
+      } else {
+        updateSelectedHighlight(null);
+      }
+    } else if (event.data.type === "clear-selected-element") {
+      console.log("Clear selected element");
+      updateSelectedHighlight(null);
+    }
+  }
+
+  // 启用高亮功能
+  function enableHighlight() {
+    console.log("Enabling highlight");
+    document.addEventListener("mouseover", handleMouseOver, true);
+    document.addEventListener("mouseout", handleMouseOut, true);
+    document.addEventListener("click", handleClick, true);
+    highlightEnabled = true;
+    overlay.style.display = "block";
+  }
+
+  // 禁用高亮功能
+  function disableHighlight() {
+    console.log("Disabling highlight");
+    highlightEnabled = false;
+    // 保持事件监听器，但通过 highlightEnabled 变量控制行为
+    // 这样可以保留选中状态的显示
+    highlightBox.style.display = "none";
+    tagLabel.style.display = "none";
+    // 不隐藏 selectedBox 和 selectedLabel，保留选中状态
+  }
+
+  // 完全禁用高亮功能（移除所有监听器）
+  function fullyDisableHighlight() {
+    console.log("Fully disabling highlight");
+    highlightEnabled = false;
+    document.removeEventListener("mouseover", handleMouseOver, true);
+    document.removeEventListener("mouseout", handleMouseOut, true);
+    document.removeEventListener("click", handleClick, true);
+    overlay.style.display = "none";
+    highlightBox.style.display = "none";
+    tagLabel.style.display = "none";
+    selectedBox.style.display = "none";
+    selectedLabel.style.display = "none";
+  }
+
+  // 添加事件监听
+  enableHighlight();
+  window.addEventListener("message", handleParentMessage);
+
+  // 暴露全局函数供外部调用
+  window.__iframeHighlightControl = {
+    enable: enableHighlight,
+    disable: disableHighlight,
+    fullyDisable: fullyDisableHighlight,
+    isEnabled: function isEnabled() {
+      return highlightEnabled;
+    },
+    getSelectedElement: function getSelectedElement() {
+      return selectedElement;
+    },
+    updateSelected: updateSelectedHighlight,
+    // 通过消息发送开关控制
+    sendToggleMessage: function sendToggleMessage(enabled) {
+      window.parent.postMessage({
+        type: 'iframe-highlight-status',
+        enabled: enabled || highlightEnabled,
+        source: 'iframe-highlight-injector'
+      }, '*');
+    }
+  };
+
+  // 通知父窗口脚本已加载
+  try {
+    window.parent.postMessage({
+      type: "iframe-highlight-ready",
+      data: {
+        url: window.location.href,
+        userAgent: navigator.userAgent,
+        timestamp: Date.now()
+      },
+      source: "iframe-highlight-injector"
+    }, "*");
+  } catch (error) {
+    console.warn("无法发送就绪消息到父窗口:", error);
+  }
+
+  // 清理函数
+  window.__iframeHighlightCleanup = function () {
+    fullyDisableHighlight();
+    window.removeEventListener("message", handleParentMessage);
+    if (overlay.parentElement) {
+      overlay.parentElement.removeChild(overlay);
+    }
+    delete window.__iframeHighlightInitialized;
+    delete window.__iframeHighlightCleanup;
+  };
+})();
+
+</script>
+</body>
+</html>
