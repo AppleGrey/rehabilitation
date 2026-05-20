@@ -86,3 +86,6 @@ frontend/web/.dart_tool/
 *.iml
 .DS_Store
 Thumbs.db
+
+*.MOV
+*.mp4
