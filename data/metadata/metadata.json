@@ -1,36 +1,34 @@
 [
   {
+    "video_id": "IMG_4175",
     "target_joint": "髋部",
     "target_body_parts": [
-      "大腿",
       "髋部",
-      "膝关节",
-      "核心"
+      "大腿",
+      "膝关节"
     ],
     "severity": "轻度",
     "rehab_stage": "sub_acute",
     "action_keywords": [
-      "交替抬腿",
+      "交替抬膝",
       "原地踏步",
-      "屈髋屈膝"
+      "髋屈练习"
     ],
     "symptom_tags": [
       "髋关节僵硬",
       "下肢无力",
-      "步态异常",
-      "膝关节活动受限",
-      "术后早期恢复"
+      "平衡能力差",
+      "膝关节活动受限"
     ],
-    "description_cn": "站立位缓慢交替抬高双腿，屈髋屈膝，保持身体平衡与直立，促进下肢血液循环。",
+    "description_cn": "站立位交替抬高膝盖至水平位置，保持躯干稳定，锻炼髋屈肌群及单腿平衡能力。",
     "duration_seconds": 15,
-    "difficulty": 1,
+    "difficulty": 2,
     "equipment": "none",
     "space_required": "small",
     "body_parts_involved": [
-      "大腿",
       "髋部",
-      "膝关节",
-      "核心"
+      "大腿",
+      "膝关节"
     ],
     "pose_landmarks_required": [
       "hip",
@@ -42,31 +40,34 @@
       "下肢骨折未愈合",
       "严重平衡障碍"
     ],
-    "video_id": "IMG_4175",
     "file_name": "IMG_4175.MOV",
     "url": "/assets/videos/IMG_4175.MOV"
   },
   {
+    "video_id": "IMG_4176",
     "target_joint": "髋部",
     "target_body_parts": [
       "臀部",
-      "大腿",
+      "大腿后侧",
+      "下背部",
       "核心"
     ],
-    "severity": "中度",
+    "severity": "轻度",
     "rehab_stage": "sub_acute",
     "action_keywords": [
-      "单腿站立",
-      "后腿伸展",
-      "平衡训练"
+      "站立后抬腿",
+      "髋伸展",
+      "单腿平衡",
+      "臀部激活"
     ],
     "symptom_tags": [
-      "下肢无力",
-      "平衡障碍",
-      "髋部不稳",
-      "膝部不稳"
+      "臀肌无力",
+      "髋关节僵硬",
+      "平衡感差",
+      "下腰痛预防",
+      "步态异常"
     ],
-    "description_cn": "站立位单腿支撑，另一腿向后伸展，保持身体平衡，锻炼下肢稳定性和核心控制。",
+    "description_cn": "双手叉腰站立，单腿向后上方抬起，锻炼臀大肌力量与髋关节稳定性。",
     "duration_seconds": 10,
     "difficulty": 2,
     "equipment": "none",
@@ -74,7 +75,93 @@
     "body_parts_involved": [
       "臀部",
       "大腿",
-      "小腿",
+      "腰部",
+      "脚踝"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle",
+      "shoulder"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性髋关节扭伤",
+      "严重平衡障碍",
+      "髋关节术后早期"
+    ],
+    "file_name": "IMG_4176.MOV",
+    "url": "/assets/videos/IMG_4176.MOV"
+  },
+  {
+    "video_id": "IMG_4177",
+    "target_joint": "髋部",
+    "target_body_parts": [
+      "臀部",
+      "大腿",
+      "小腿"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "站立",
+      "后伸腿",
+      "髋部伸展"
+    ],
+    "symptom_tags": [
+      "髋部僵硬",
+      "臀肌无力",
+      "平衡能力差"
+    ],
+    "description_cn": "站立位单腿后伸动作，锻炼臀部及髋部稳定性。",
+    "duration_seconds": 10,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "臀部",
+      "大腿",
+      "核心"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [],
+    "file_name": "IMG_4177.MOV",
+    "url": "/assets/videos/IMG_4177.MOV"
+  },
+  {
+    "video_id": "IMG_4178",
+    "target_joint": "髋部",
+    "target_body_parts": [
+      "臀部",
+      "大腿外侧",
+      "核心"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "侧抬腿",
+      "髋外展",
+      "站立抬腿"
+    ],
+    "symptom_tags": [
+      "髋部疼痛",
+      "臀肌无力",
+      "步态异常",
+      "髋关节不稳定"
+    ],
+    "description_cn": "站立位侧抬腿训练，双手叉腰保持平衡，单腿向外侧抬起后缓慢收回。",
+    "duration_seconds": 8,
+    "difficulty": 2,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "臀部",
+      "大腿",
       "核心"
     ],
     "pose_landmarks_required": [
@@ -84,87 +171,42 @@
     ],
     "safety_level": "safe",
     "contraindications": [
-      "严重平衡障碍",
-      "下肢骨折未愈合",
-      "急性扭伤"
+      "急性髋关节损伤",
+      "严重髋关节疼痛"
     ],
-    "video_id": "IMG_4176",
-    "file_name": "IMG_4176.MOV",
-    "url": "/assets/videos/IMG_4176.MOV"
+    "file_name": "IMG_4178.MOV",
+    "url": "/assets/videos/IMG_4178.MOV"
   },
   {
-    "target_joint": "膝关节",
-    "target_body_parts": [
-      "腿部",
-      "核心",
-      "臀部"
-    ],
-    "severity": "轻度",
-    "rehab_stage": "chronic",
-    "action_keywords": [
-      "单腿站立",
-      "后抬腿",
-      "平衡训练"
-    ],
-    "symptom_tags": [
-      "膝关节不稳定",
-      "平衡能力差",
-      "下肢无力"
-    ],
-    "description_cn": "单腿站立平衡训练，提升下肢稳定性和本体感觉",
-    "duration_seconds": 10,
-    "difficulty": 2,
-    "equipment": "none",
-    "space_required": "small",
-    "body_parts_involved": [
-      "腿部",
-      "核心",
-      "臀部",
-      "踝关节"
-    ],
-    "pose_landmarks_required": [
-      "knee",
-      "ankle",
-      "hip"
-    ],
-    "safety_level": "safe",
-    "contraindications": [],
-    "video_id": "IMG_4177",
-    "file_name": "IMG_4177.MOV",
-    "url": "/assets/videos/IMG_4177.MOV"
-  },
-  {
+    "video_id": "IMG_4179",
     "target_joint": "髋部",
     "target_body_parts": [
-      "髋部",
-      "腿部",
-      "核心",
-      "腰部"
+      "臀部",
+      "大腿",
+      "髋部"
     ],
     "severity": "轻度",
-    "rehab_stage": "acute",
+    "rehab_stage": "sub_acute",
     "action_keywords": [
-      "侧抬腿",
-      "髋部外展",
-      "站立位",
-      "交替抬腿"
+      "站立侧抬腿",
+      "髋外展",
+      "单腿平衡"
     ],
     "symptom_tags": [
       "髋部疼痛",
-      "臀部无力",
-      "平衡能力差",
-      "髋关节活动受限",
-      "下肢稳定性差"
+      "臀中肌无力",
+      "骨盆不稳",
+      "膝关节内扣"
     ],
-    "description_cn": "站立位双手叉腰，交替进行侧向抬腿动作，锻炼髋部外展肌群。",
-    "duration_seconds": 8,
+    "description_cn": "双手叉腰站立，保持躯干稳定，单腿向侧方抬起后缓慢放下，锻炼髋外展肌群。",
+    "duration_seconds": 7,
     "difficulty": 2,
     "equipment": "none",
     "space_required": "small",
     "body_parts_involved": [
+      "臀部",
+      "大腿",
       "髋部",
-      "腿部",
-      "核心",
       "腰部"
     ],
     "pose_landmarks_required": [
@@ -175,65 +217,18 @@
     ],
     "safety_level": "safe",
     "contraindications": [
-      "髋关节严重损伤",
-      "急性髋部疼痛",
-      "平衡障碍"
+      "急性髋部损伤",
+      "严重平衡障碍"
     ],
-    "video_id": "IMG_4178",
-    "file_name": "IMG_4178.MOV",
-    "url": "/assets/videos/IMG_4178.MOV"
-  },
-  {
-    "target_joint": "髋部",
-    "target_body_parts": [
-      "髋部",
-      "大腿",
-      "臀部",
-      "核心"
-    ],
-    "severity": "轻度",
-    "rehab_stage": "sub_acute",
-    "action_keywords": [
-      "站立侧抬腿",
-      "髋外展",
-      "交替抬腿",
-      "平衡训练"
-    ],
-    "symptom_tags": [
-      "髋关节疼痛",
-      "臀部无力",
-      "步态异常",
-      "平衡障碍",
-      "髋部僵硬"
-    ],
-    "description_cn": "站立姿势下双手叉腰，交替将左右腿向侧方抬起，训练髋部外展肌群及核心稳定性。",
-    "duration_seconds": 30,
-    "difficulty": 2,
-    "equipment": "none",
-    "space_required": "small",
-    "body_parts_involved": [
-      "髋部",
-      "大腿",
-      "臀部",
-      "核心"
-    ],
-    "pose_landmarks_required": [
-      "hip",
-      "knee",
-      "ankle"
-    ],
-    "safety_level": "safe",
-    "contraindications": [],
-    "video_id": "IMG_4179",
     "file_name": "IMG_4179.MOV",
     "url": "/assets/videos/IMG_4179.MOV"
   },
   {
+    "video_id": "IMG_4181",
     "target_joint": "腰部",
     "target_body_parts": [
       "腰部",
       "髋部",
-      "腹部",
       "背部"
     ],
     "severity": "轻度",
@@ -241,74 +236,70 @@
     "action_keywords": [
       "站立后伸",
       "双手扶腰",
-      "躯干后仰",
-      "腰椎伸展"
+      "脊柱伸展"
     ],
     "symptom_tags": [
-      "腰部僵硬",
+      "腰痛",
       "腰肌劳损",
-      "久坐不适",
-      "腹部肌肉紧张",
+      "久坐僵硬",
       "腰椎活动受限"
     ],
-    "description_cn": "站立位双手扶住后腰，缓慢向后伸展躯干，感受腹部拉伸与腰部活动，随后还原。",
+    "description_cn": "站立双手扶住后腰，身体缓慢向后伸展，重复多次以缓解腰部僵硬。",
     "duration_seconds": 16,
-    "difficulty": 2,
+    "difficulty": 1,
     "equipment": "none",
     "space_required": "small",
     "body_parts_involved": [
       "腰部",
       "髋部",
-      "腹部",
-      "颈部"
+      "背部"
     ],
     "pose_landmarks_required": [
-      "hip",
+      "neck",
       "shoulder",
-      "neck"
+      "hip",
+      "knee"
     ],
     "safety_level": "caution",
     "contraindications": [
-      "腰椎管狭窄",
-      "急性腰椎间盘突出",
-      "脊柱滑脱",
-      "严重骨质疏松"
+      "椎管狭窄",
+      "腰椎滑脱",
+      "急性剧烈疼痛"
     ],
-    "video_id": "IMG_4181",
     "file_name": "IMG_4181.MOV",
     "url": "/assets/videos/IMG_4181.MOV"
   },
   {
+    "video_id": "IMG_4182",
     "target_joint": "髋部",
     "target_body_parts": [
       "髋部",
       "臀部",
-      "腰部",
-      "腿部"
+      "大腿"
     ],
     "severity": "轻度",
     "rehab_stage": "sub_acute",
     "action_keywords": [
-      "站立髋外展",
-      "侧抬腿",
+      "站立侧抬腿",
+      "髋外展",
       "臀中肌训练"
     ],
     "symptom_tags": [
       "髋部疼痛",
-      "臀肌无力",
+      "膝关节内扣",
       "骨盆不稳",
-      "膝盖内扣"
+      "臀部无力"
     ],
-    "description_cn": "站立双手叉腰，单腿向侧方抬起再放下，主要锻炼臀中肌及髋外展功能。",
-    "duration_seconds": 14,
+    "description_cn": "站立位双手叉腰，单腿向侧方抬起再缓慢放下，重复进行。",
+    "duration_seconds": 15,
     "difficulty": 2,
     "equipment": "none",
     "space_required": "small",
     "body_parts_involved": [
       "髋部",
       "臀部",
-      "腰腹",
-      "大腿"
+      "大腿",
+      "腰部"
     ],
     "pose_landmarks_required": [
       "hip",
@@ -317,41 +308,44 @@
     ],
     "safety_level": "safe",
     "contraindications": [
-      "急性髋部骨折",
-      "严重髋关节不稳"
+      "急性髋关节损伤",
+      "严重平衡障碍"
     ],
-    "video_id": "IMG_4182",
     "file_name": "IMG_4182.MOV",
     "url": "/assets/videos/IMG_4182.MOV"
   },
   {
+    "video_id": "IMG_4183",
     "target_joint": "髋部",
     "target_body_parts": [
+      "臀部",
+      "大腿",
       "髋部",
-      "腿部",
       "核心"
     ],
     "severity": "轻度",
     "rehab_stage": "sub_acute",
     "action_keywords": [
-      "侧向抬腿",
+      "站立侧抬腿",
       "髋外展",
-      "站立训练"
+      "交替抬腿"
     ],
     "symptom_tags": [
-      "髋部疼痛",
-      "下肢无力",
-      "步态异常",
-      "核心不稳"
+      "髋关节疼痛",
+      "臀中肌无力",
+      "髋关节不稳",
+      "骨盆倾斜",
+      "跑步膝"
     ],
-    "description_cn": "站立位双手叉腰，交替向侧方抬起腿部，锻炼髋关节外展肌群。",
+    "description_cn": "站立双手叉腰，交替向侧方抬腿，锻炼髋外展肌群，增强髋关节稳定性。",
     "duration_seconds": 13,
     "difficulty": 2,
     "equipment": "none",
     "space_required": "small",
     "body_parts_involved": [
+      "臀部",
+      "大腿",
       "髋部",
-      "腿部",
       "核心"
     ],
     "pose_landmarks_required": [
@@ -361,14 +355,14 @@
     ],
     "safety_level": "safe",
     "contraindications": [
-      "髋关节急性损伤",
-      "严重关节炎"
+      "急性髋关节损伤",
+      "严重髋关节置换术后"
     ],
-    "video_id": "IMG_4183",
     "file_name": "IMG_4183.MOV",
     "url": "/assets/videos/IMG_4183.MOV"
   },
   {
+    "video_id": "IMG_4184",
     "target_joint": "膝关节",
     "target_body_parts": [
       "大腿",
@@ -376,23 +370,25 @@
       "腰部"
     ],
     "severity": "轻度",
-    "rehab_stage": "chronic",
+    "rehab_stage": "sub_acute",
     "action_keywords": [
       "自重深蹲",
-      "屈膝下蹲",
-      "下肢力量"
+      "下蹲",
+      "起立",
+      "双臂前平举"
     ],
     "symptom_tags": [
       "膝关节无力",
-      "下肢肌肉萎缩",
-      "运动功能恢复",
-      "髋部僵硬"
+      "大腿肌肉萎缩",
+      "髋关节僵硬",
+      "下肢稳定性差",
+      "运动功能恢复"
     ],
-    "description_cn": "双脚分开与肩同宽，双手前伸保持平衡，缓慢屈髋屈膝下蹲，再发力站起。",
+    "description_cn": "标准自重深蹲，双臂前伸保持平衡，锻炼下肢力量与核心稳定性。",
     "duration_seconds": 17,
     "difficulty": 3,
     "equipment": "none",
-    "space_required": "medium",
+    "space_required": "small",
     "body_parts_involved": [
       "大腿",
       "臀部",
@@ -408,56 +404,58 @@
     "safety_level": "safe",
     "contraindications": [
       "急性膝关节损伤",
-      "严重髋关节炎",
+      "严重髋关节疼痛",
       "平衡障碍"
     ],
-    "video_id": "IMG_4184",
     "file_name": "IMG_4184.MOV",
     "url": "/assets/videos/IMG_4184.MOV"
   },
   {
+    "video_id": "IMG_4187",
     "target_joint": "膝关节",
     "target_body_parts": [
       "大腿",
       "臀部",
-      "核心"
+      "核心",
+      "小腿"
     ],
-    "severity": "中度",
+    "severity": "轻度",
     "rehab_stage": "sub_acute",
     "action_keywords": [
-      "单腿下蹲",
-      "腿部前伸",
-      "站立平衡"
+      "单腿站立",
+      "向前伸腿",
+      "屈膝下蹲",
+      "缓慢还原"
     ],
     "symptom_tags": [
-      "膝关节不稳",
-      "下肢肌力减弱",
-      "平衡能力差",
-      "髋部控制不足"
+      "膝关节无力",
+      "髌骨疼痛",
+      "下肢稳定性差",
+      "股四头肌萎缩",
+      "髋关节不稳"
     ],
-    "description_cn": "双手叉腰站立，单腿前伸脚跟着地，支撑腿缓慢下蹲至屈膝约90度后还原。",
+    "description_cn": "单腿支撑，另一腿前伸，支撑腿缓慢屈膝下蹲，锻炼下肢力量与平衡。",
     "duration_seconds": 14,
-    "difficulty": 4,
+    "difficulty": 3,
     "equipment": "none",
-    "space_required": "small",
+    "space_required": "medium",
     "body_parts_involved": [
+      "膝关节",
+      "髋部",
       "大腿",
-      "臀部",
-      "核心",
-      "脚踝"
+      "核心"
     ],
     "pose_landmarks_required": [
       "hip",
       "knee",
       "ankle"
     ],
-    "safety_level": "caution",
+    "safety_level": "safe",
     "contraindications": [
       "急性膝关节损伤",
       "严重平衡障碍",
-      "近期下肢骨折"
+      "近期下肢手术"
     ],
-    "video_id": "IMG_4187",
     "file_name": "IMG_4187.MOV",
     "url": "/assets/videos/IMG_4187.MOV"
   }

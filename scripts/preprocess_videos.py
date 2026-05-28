@@ -45,13 +45,15 @@ HEADERS = {
     "Content-Type": "application/json",
 }
 
-SYSTEM_PROMPT = """你是一位专业的运动康复动作分析师，精通人体解剖学、康复医学和运动生物力学。
+VL_SYSTEM_PROMPT = """\
+你是一位专业的运动康复动作分析师，精通人体解剖学、康复医学和运动生物力学。
 你将收到一段完整的康复训练视频文件。请观看视频的全部内容，然后根据画面中的动作特征，
 严格按照以下 JSON Schema 输出结构化数据。
 
 不要输出任何解释、分析过程或多余文字，仅输出合法的 JSON。
 
 字段说明：
+- video_id: 字符串，视频文件名（不含扩展名）
 - target_joint: 字符串，主要训练关节，严格从以下列表选择：
   ["颈部", "肩部", "肘部", "腰部", "髋部", "膝关节", "踝关节"]
 - target_body_parts: 字符串数组，动作涉及的身体部位（2-5 个）
@@ -70,7 +72,8 @@ SYSTEM_PROMPT = """你是一位专业的运动康复动作分析师，精通人�
 - pose_landmarks_required: 字符串数组，从
   ["neck", "shoulder", "elbow", "hip", "knee", "ankle"] 中选择
 - safety_level: 字符串，从 ["safe", "caution", "contraindicated"] 中选择
-- contraindications: 字符串数组，禁忌症列表（无则空数组）"""
+- contraindications: 字符串数组，禁忌症列表（无则空数组）
+"""
 
 
 def compress_video(input_path: Path, output_path: Path, max_size_mb: int) -> bool:
@@ -139,7 +142,7 @@ def call_qwen(video_path: Path) -> dict:
     data_url = video_to_data_url(video_path)
 
     messages = [
-        {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "system", "content": VL_SYSTEM_PROMPT},
         {
             "role": "user",
             "content": [
@@ -159,7 +162,22 @@ def call_qwen(video_path: Path) -> dict:
         f"{BASE_URL}/chat/completions",
         json={
             "model": MODEL,
-            "messages": messages,
+            "messages": [
+                {"role": "system", "content": VL_SYSTEM_PROMPT},
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": f"以下是康复训练视频 {video_path.name}，请观看完整内容后输出 JSON 格式的结构化数据。",
+                        },
+                        {
+                            "type": "video_url",
+                            "video_url": {"url": data_url},
+                        },
+                    ],
+                },
+            ],
             "max_tokens": 2048,
         },
         headers=HEADERS,

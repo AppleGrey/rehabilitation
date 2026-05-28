@@ -119,7 +119,7 @@ class _ChatPageState extends State<ChatPage> {
 
     _scrollToBottom();
 
-    final aiMsg = _Message(role: _Role.assistant, isStreaming: true);
+    var aiMsg = _Message(role: _Role.assistant, isStreaming: true);
     setState(() => _messages.add(aiMsg));
 
     try {
@@ -169,6 +169,14 @@ class _ChatPageState extends State<ChatPage> {
             if (type == 'text') {
               aiMsg.text += (event['content'] as String? ?? '');
               if (mounted) setState(() {});
+              _scrollToBottom();
+            } else if (type == 'new_bubble') {
+              // 当前气泡结束，新开一个气泡
+              aiMsg.isStreaming = false;
+              final nextMsg = _Message(
+                  role: _Role.assistant, isStreaming: true);
+              if (mounted) setState(() => _messages.add(nextMsg));
+              aiMsg = nextMsg;
               _scrollToBottom();
             } else if (type == 'done') {
               aiMsg.isStreaming = false;

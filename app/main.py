@@ -1,17 +1,28 @@
 """
-FastAPI 入口。
+FastAPI 入口（对话驱动完整版 v3.0）。
+
 提供：
-  POST /api/chat        - 对话接口（SSE 流式，每次仅执行一个节点）
-  GET  /api/session/new - 新建对话会话
-  GET  /api/test/ping   - 前后端联调测试（不调用 LLM）
-  静态文件 /assets/*    - 视频文件服务
+  POST /api/chat          - SSE 流式对话（链式执行 8 节点）
+  GET  /api/session/new   - 新建对话会话
+  POST /api/assess/motion - 视觉大模型动作评估
+  GET  /api/videos        - 获取匹配视频列表
+  GET  /api/health        - 健康检查
+  GET  /api/test/ping     - 连通性测试
+  静态文件 /assets/*      - 视频文件服务
 """
 from __future__ import annotations
 
 import json
+import logging
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s - %(message)s",
+    datefmt="%H:%M:%S",
+)
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -21,17 +32,31 @@ from langchain_core.messages import AIMessage, HumanMessage
 from pydantic import BaseModel
 
 # 直接导入节点函数，不使用完整图（避免图在等待用户输入时无限循环）
-from .graph import general_node, mapping_node, severity_node, specific_node
+from .graph import (
+    gap_fill_node,
+    greeting_node,
+    pain_focus_node,
+    preferences_node,
+    recommend_node,
+    safety_node,
+    specific_node,
+    stage_node as stage_node_func,
+)
 from .state import (
     STEP_DONE,
-    STEP_GENERAL,
-    STEP_MAPPING,
-    STEP_SEVERITY,
+    STEP_GAP_FILL,
+    STEP_GREETING,
+    STEP_PAIN_FOCUS,
+    STEP_PREFERENCES,
+    STEP_RECOMMEND,
+    STEP_SAFETY,
     STEP_SPECIFIC,
+    STEP_STAGE,
     ConsultState,
 )
+from .matching import get_video_list
 
-app = FastAPI(title="康复AI后端", version="0.1.0")
+app = FastAPI(title="康复AI后端", version="3.0.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -49,10 +74,14 @@ _sessions: dict[str, ConsultState] = {}
 
 # 步骤 → 节点函数映射
 _NODE_MAP = {
-    STEP_GENERAL:  general_node,
-    STEP_SEVERITY: severity_node,
-    STEP_SPECIFIC: specific_node,
-    STEP_MAPPING:  mapping_node,
+    STEP_GREETING:      greeting_node,
+    STEP_PAIN_FOCUS:    pain_focus_node,
+    STEP_STAGE:         stage_node_func,
+    STEP_SPECIFIC:      specific_node,
+    STEP_SAFETY:        safety_node,
+    STEP_PREFERENCES:   preferences_node,
+    STEP_GAP_FILL:      gap_fill_node,
+    STEP_RECOMMEND:     recommend_node,
 }
 
 
@@ -60,9 +89,26 @@ def _new_state() -> ConsultState:
     return ConsultState(
         messages=[],
         target_joint=None,
+        pain_score=None,
         severity=None,
+        can_walk=None,
+        joint_mobility={},
+        rehab_stage=None,
+        has_diagnosis=None,
         specific_symptoms=[],
-        current_step=STEP_GENERAL,
+        chronic_diseases=[],
+        neuro_issues=None,
+        has_sensory_issue=None,
+        max_duration_minutes=None,
+        space_limited=None,
+        available_equipment=[],
+        rehab_goals=[],
+        confidence_level=None,
+        needs_encouragement=None,
+        daily_checkin=None,
+        current_step=STEP_GREETING,
+        total_turns=0,
+        missing_fields=[],
         recommended_video_id=None,
         recommended_video_url=None,
         summary=None,
@@ -78,6 +124,10 @@ class ChatRequest(BaseModel):
 
 class NewSessionResponse(BaseModel):
     session_id: str
+
+
+class VideoListResponse(BaseModel):
+    videos: list[dict]
 
 
 # ── 路由 ──────────────────────────────────────────────────────────────────────
@@ -130,7 +180,7 @@ async def chat(req: ChatRequest):
             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
         )
 
-    current_step = state.get("current_step", STEP_GENERAL)
+    current_step = state.get("current_step", STEP_GREETING)
     if _NODE_MAP.get(current_step) is None and current_step != STEP_DONE:
         raise HTTPException(status_code=500, detail=f"未知步骤：{current_step}")
 
@@ -146,12 +196,12 @@ async def chat(req: ChatRequest):
         import asyncio
 
         loop = asyncio.get_running_loop()
-        max_chain = 5  # general→severity→specific→mapping 足够
+        max_chain = 12  # 允许同一轮内多节点链式执行（含追问与推荐）
         text_chunk_index = 0
 
         try:
             for _ in range(max_chain):
-                step_before = state.get("current_step", STEP_GENERAL)
+                step_before = state.get("current_step", STEP_GREETING)
                 if step_before == STEP_DONE:
                     break
 
@@ -180,7 +230,15 @@ async def chat(req: ChatRequest):
                 if step_after == STEP_DONE:
                     break
                 if step_after == step_before:
+                    # 步骤未变：还在等用户补充，停止链式执行
                     break
+
+                # 问候节点执行后只发问候，不立即接着跑 pain_focus
+                if step_before == STEP_GREETING and step_after == STEP_PAIN_FOCUS:
+                    break
+
+                # 步骤推进：通知前端新开一个气泡，再继续链式执行下一节点
+                yield f"data: {json.dumps({'type': 'new_bubble'}, ensure_ascii=False)}\n\n"
 
             is_done = state.get("current_step") == STEP_DONE
             done_payload = json.dumps(
@@ -222,3 +280,9 @@ def test_ping():
         "service": "rehabilitation-ai",
         "time_utc": datetime.now(timezone.utc).isoformat(),
     }
+
+
+@app.get("/api/videos")
+def list_videos(target_joint: str | None = None, severity: str | None = None, limit: int = 20):
+    """获取视频列表（可选按关节和严重程度过滤）。"""
+    return {"videos": get_video_list(target_joint, severity, limit)}
