@@ -1,29 +1,88 @@
-import 'dart:math' as math;
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io' show File, Platform;
 import 'dart:typed_data';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:video_player/video_player.dart';
 
 import '../theme/app_theme.dart';
+import '../config/api_config.dart';
 import 'pose_detection_page.dart' show PosePainter;
 
-// ── 评估阶段 ─────────────────────────────────────────────────────────────────
+// ── 阶段 ─────────────────────────────────────────────────────────────────────
+//  loading  →  watching  →  preview  →  countdown  →  recording
+//                                                          ↓
+//                                                       uploading
+//                                                          ↓
+//                                                       polling
+//                                                          ↓
+//                                                        result
 
-enum _Phase { loading, watching, assessing, result }
+enum _Phase { loading, watching, preview, countdown, recording, uploading, polling, result }
+
+// ── 评估结果 ──────────────────────────────────────────────────────────────────
+
+class _AssessResult {
+  final int overallScore;
+  final int postureScore;
+  final int rangeScore;
+  final int rhythmScore;
+  final List<String> keyFindings;
+  final List<String> corrections;
+  final List<String> safetyNotes;
+  final String encouragement;
+  final String summary;
+
+  const _AssessResult({
+    required this.overallScore,
+    required this.postureScore,
+    required this.rangeScore,
+    required this.rhythmScore,
+    required this.keyFindings,
+    required this.corrections,
+    required this.safetyNotes,
+    required this.encouragement,
+    required this.summary,
+  });
+
+  factory _AssessResult.fromJson(Map<String, dynamic> a, String summary) =>
+      _AssessResult(
+        overallScore: (a['overall_score'] as num?)?.toInt() ?? 0,
+        postureScore: (a['posture_score'] as num?)?.toInt() ?? 0,
+        rangeScore: (a['range_of_motion'] as num?)?.toInt() ?? 0,
+        rhythmScore: (a['rhythm_score'] as num?)?.toInt() ?? 0,
+        keyFindings: _strList(a['key_findings']),
+        corrections: _strList(a['corrections']),
+        safetyNotes: _strList(a['safety_notes']),
+        encouragement: a['encouragement'] as String? ?? '',
+        summary: summary,
+      );
+
+  static List<String> _strList(dynamic v) =>
+      (v as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
+}
 
 // ── 页面 ─────────────────────────────────────────────────────────────────────
 
 class RehabVideoPage extends StatefulWidget {
   final VoidCallback onBack;
   final String? videoUrl;
+  final String? videoId;
+  final String? sessionId;
   final String? videoTitle;
 
   const RehabVideoPage({
     super.key,
     required this.onBack,
     this.videoUrl,
+    this.videoId,
+    this.sessionId,
     this.videoTitle,
   });
 
@@ -32,9 +91,10 @@ class RehabVideoPage extends StatefulWidget {
 }
 
 class _RehabVideoPageState extends State<RehabVideoPage> {
-  // ── 视频 ────────────────────────────────────────────────────────────────
+  // ── 演示视频 ─────────────────────────────────────────────────────────────
   VideoPlayerController? _videoCtrl;
   bool _videoReady = false;
+  String? _videoLoadError;
 
   // ── 摄像头 & 姿态 ────────────────────────────────────────────────────────
   CameraController? _camCtrl;
@@ -42,6 +102,16 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
   bool _processingFrame = false;
   int _frameIdx = 0;
   bool _pageDisposed = false;
+  bool _isPoseStreaming = false;
+  bool _isPosePolling = false;
+  Timer? _posePollTimer;
+
+  static const Map<DeviceOrientation, int> _orientations = {
+    DeviceOrientation.portraitUp: 0,
+    DeviceOrientation.landscapeLeft: 90,
+    DeviceOrientation.portraitDown: 180,
+    DeviceOrientation.landscapeRight: 270,
+  };
 
   final ValueNotifier<({
     List<Pose> poses,
@@ -50,48 +120,103 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
     CameraLensDirection lensDir,
   })?> _poseVisual = ValueNotifier(null);
 
-  // ── 评估 ─────────────────────────────────────────────────────────────────
+  // ── 倒计时 ───────────────────────────────────────────────────────────────
+  int _countdownValue = 3;
+  Timer? _countdownTimer;
+
+  // ── 阶段 & 结果 ──────────────────────────────────────────────────────────
   _Phase _phase = _Phase.loading;
-  final List<double> _matchScores = [];
-  double _finalScore = 0;
+  _AssessResult? _result;
+  String? _uploadError;
+
+  // ── 异步任务轮询 ─────────────────────────────────────────────────────────
+  Timer? _pollTimer;
+  String _pollingMessage = '视觉 AI 正在对比标准动作与您的训练视频…';
+
+  // SharedPreferences key
+  String get _taskPrefKey =>
+      'assess_task_${widget.sessionId ?? ''}_${widget.videoId ?? ''}';
 
   @override
   void initState() {
     super.initState();
+    _checkExistingTask();
+  }
+
+  // ── 检查是否有未完成 / 已完成的历史任务 ──────────────────────────────────
+
+  Future<void> _checkExistingTask() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedTaskId = prefs.getString(_taskPrefKey);
+
+    if (savedTaskId != null) {
+      final task = await _fetchTaskStatus(savedTaskId);
+      if (task != null) {
+        final status = task['status'] as String? ?? '';
+        if (status == 'done') {
+          // 历史结果直接展示
+          _applyTaskResult(task);
+          return;
+        } else if (status == 'processing' || status == 'pending') {
+          // 仍在处理中，恢复轮询
+          setState(() => _phase = _Phase.polling);
+          _startPolling(savedTaskId);
+          return;
+        }
+        // error 或不存在：清掉缓存，正常初始化
+        await prefs.remove(_taskPrefKey);
+      }
+    }
+
+    // 正常流程：初始化演示视频
     _initVideo();
   }
 
-  // ── 初始化 ────────────────────────────────────────────────────────────────
+  // ── 初始化演示视频 ────────────────────────────────────────────────────────
 
   Future<void> _initVideo() async {
-    final url = widget.videoUrl;
+    var url = widget.videoUrl;
+    if (url == null && widget.videoId != null) {
+      url = '$kBackendBase/api/videos/${widget.videoId}/play';
+    }
     if (url == null) {
-      setState(() => _phase = _Phase.watching);
+      setState(() {
+        _phase = _Phase.watching;
+        _videoLoadError = '未获取到演示视频地址';
+      });
       return;
     }
-
     try {
+      _videoCtrl?.dispose();
       _videoCtrl = VideoPlayerController.networkUrl(Uri.parse(url));
       await _videoCtrl!.initialize();
-      _videoCtrl!.addListener(_onVideoProgress);
+      if (!mounted) return;
       setState(() {
         _videoReady = true;
+        _videoLoadError = null;
         _phase = _Phase.watching;
       });
-      _videoCtrl!.play();
+      await _videoCtrl!.play();
     } catch (e) {
-      setState(() => _phase = _Phase.watching);
+      if (!mounted) return;
+      setState(() {
+        _videoReady = false;
+        _videoLoadError = '视频加载失败：$e\n地址：$url';
+        _phase = _Phase.watching;
+      });
     }
   }
 
-  void _onVideoProgress() {
-    if (_videoCtrl == null) return;
-    if (_videoCtrl!.value.position >= _videoCtrl!.value.duration &&
-        _videoCtrl!.value.duration > Duration.zero &&
-        _phase == _Phase.watching) {
-      _startAssessment();
-    }
+  // ── 进入摄像头预览（点击"准备好了"后） ──────────────────────────────────
+
+  Future<void> _enterPreview() async {
+    _videoCtrl?.pause();
+    await _initCamera();
+    if (!mounted) return;
+    setState(() => _phase = _Phase.preview);
   }
+
+  // ── 初始化摄像头 ─────────────────────────────────────────────────────────
 
   Future<void> _initCamera() async {
     final cameras = await availableCameras();
@@ -105,8 +230,10 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
     _camCtrl = CameraController(
       front,
       ResolutionPreset.medium,
-      imageFormatGroup: ImageFormatGroup.nv21,
-      enableAudio: false,
+      imageFormatGroup: Platform.isAndroid
+          ? ImageFormatGroup.nv21
+          : ImageFormatGroup.bgra8888,
+      enableAudio: true,
     );
     await _camCtrl!.initialize();
 
@@ -117,16 +244,34 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
       ),
     );
 
-    _camCtrl!.startImageStream(_onCameraImage);
+    await _startPoseStreamIfNeeded();
+  }
+
+  Future<void> _startPoseStreamIfNeeded() async {
+    if (_camCtrl == null || _isPoseStreaming) return;
+    try {
+      await _camCtrl!.startImageStream(_onCameraImage);
+      _isPoseStreaming = true;
+    } catch (_) {}
+  }
+
+  Future<void> _stopPoseStreamIfNeeded() async {
+    if (_camCtrl == null || !_isPoseStreaming) return;
+    try {
+      await _camCtrl!.stopImageStream();
+    } catch (_) {
+      // ignore
+    } finally {
+      _isPoseStreaming = false;
+    }
   }
 
   void _onCameraImage(CameraImage image) {
     if (_pageDisposed || _processingFrame) return;
     _frameIdx++;
-    if (_frameIdx % 2 != 0) return;
+    if (_frameIdx % 3 != 0) return;
 
     _processingFrame = true;
-
     final inputData = _buildInput(image);
     if (inputData == null) {
       _processingFrame = false;
@@ -134,104 +279,259 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
     }
 
     _detector!.processImage(inputData.$1).then((poses) {
-      if (_pageDisposed) return;
-
-      if (poses.isNotEmpty && _phase == _Phase.assessing) {
-        final score = _calcMatchScore(poses.first);
-        _matchScores.add(score);
-      }
-
+      if (_pageDisposed || _camCtrl == null) return;
+      final rotation = _rotationForController(_camCtrl!);
       _poseVisual.value = (
         poses: poses,
         imageSize: inputData.$2,
-        rotation: inputData.$3,
+        rotation: rotation,
         lensDir: _camCtrl!.description.lensDirection,
       );
       _processingFrame = false;
-    }).catchError((_) {
+    }).catchError((Object _) {
       _processingFrame = false;
     });
   }
 
-  /// 计算单帧匹配得分（0~100）
-  /// 核心思路：检测人体关键关节角度是否在合理范围内
-  double _calcMatchScore(Pose pose) {
-    double score = 0;
-    int checks = 0;
+  // ── 开始倒计时（点击"开始录制"后，摄像头已就绪） ────────────────────────
 
-    // 检查 1：躯干是否直立（左右肩与左右髋高度差对比）
-    final lShoulder = pose.landmarks[PoseLandmarkType.leftShoulder];
-    final rShoulder = pose.landmarks[PoseLandmarkType.rightShoulder];
-    final lHip = pose.landmarks[PoseLandmarkType.leftHip];
-    final rHip = pose.landmarks[PoseLandmarkType.rightHip];
+  void _startCountdown() {
+    setState(() {
+      _countdownValue = 3;
+      _phase = _Phase.countdown;
+    });
 
-    if (lShoulder != null && rShoulder != null &&
-        lHip != null && rHip != null) {
-      final shoulderMidY = (lShoulder.y + rShoulder.y) / 2;
-      final hipMidY = (lHip.y + rHip.y) / 2;
-      final trunkHeight = (hipMidY - shoulderMidY).abs();
-
-      // 肩部水平度（左右高度差占躯干高度的比例）
-      final shoulderTilt = (lShoulder.y - rShoulder.y).abs() / trunkHeight;
-      score += shoulderTilt < 0.1 ? 25 : shoulderTilt < 0.2 ? 15 : 5;
-      checks++;
-    }
-
-    // 检查 2：膝关节角度（下蹲类动作）
-    final lKnee = pose.landmarks[PoseLandmarkType.leftKnee];
-    final lAnkle = pose.landmarks[PoseLandmarkType.leftAnkle];
-    if (lHip != null && lKnee != null && lAnkle != null) {
-      final angle = _angleDeg(
-        lHip.x, lHip.y,
-        lKnee.x, lKnee.y,
-        lAnkle.x, lAnkle.y,
-      );
-      // 膝关节 150°~180° 视为站立正常
-      score += angle >= 150 ? 25 : angle >= 120 ? 15 : 8;
-      checks++;
-    }
-
-    // 检查 3：肘关节（上肢类动作）
-    final lElbow = pose.landmarks[PoseLandmarkType.leftElbow];
-    final lWrist = pose.landmarks[PoseLandmarkType.leftWrist];
-    if (lShoulder != null && lElbow != null && lWrist != null) {
-      final angle = _angleDeg(
-        lShoulder.x, lShoulder.y,
-        lElbow.x, lElbow.y,
-        lWrist.x, lWrist.y,
-      );
-      score += angle >= 160 ? 25 : angle >= 130 ? 15 : 8;
-      checks++;
-    }
-
-    // 检查 4：人体是否在画面中（置信度）
-    final nose = pose.landmarks[PoseLandmarkType.nose];
-    if (nose != null && nose.likelihood > 0.6) {
-      score += 25;
-      checks++;
-    }
-
-    return checks > 0 ? (score / (checks * 25)) * 100 : 50;
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (t) async {
+      if (_countdownValue > 1) {
+        setState(() => _countdownValue--);
+      } else {
+        t.cancel();
+        await _startRecording();
+      }
+    });
   }
 
-  double _angleDeg(
-    double ax, double ay,
-    double bx, double by,
-    double cx, double cy,
-  ) {
-    final abx = ax - bx, aby = ay - by;
-    final cbx = cx - bx, cby = cy - by;
-    final dot = abx * cbx + aby * cby;
-    final cross = abx * cby - aby * cbx;
-    return math.atan2(cross.abs(), dot) * 180 / math.pi;
+  // ── 开始录制 ─────────────────────────────────────────────────────────────
+
+  Future<void> _startRecording() async {
+    if (_camCtrl == null || !_camCtrl!.value.isInitialized) return;
+    try {
+      await _camCtrl!.startVideoRecording();
+      // Android 录制时通常停掉 imageStream，用定时拍照维持实时骨架
+      if (!_camCtrl!.value.isStreamingImages) {
+        _isPoseStreaming = false;
+        _posePollTimer?.cancel();
+        _posePollTimer = Timer.periodic(
+          const Duration(milliseconds: 450),
+          (_) => unawaited(_pollPoseWhileRecording()),
+        );
+      }
+      setState(() => _phase = _Phase.recording);
+    } catch (e) {
+      setState(() {
+        _uploadError = '录制启动失败：$e';
+        _phase = _Phase.result;
+      });
+    }
   }
+
+  Future<void> _pollPoseWhileRecording() async {
+    if (_pageDisposed || _camCtrl == null || _detector == null) return;
+    if (_phase != _Phase.recording || _isPosePolling) return;
+    _isPosePolling = true;
+    try {
+      final snap = await _camCtrl!.takePicture();
+      final input = InputImage.fromFilePath(snap.path);
+      final poses = await _detector!.processImage(input);
+      if (_pageDisposed || _camCtrl == null) return;
+
+      final rotation = _rotationForController(_camCtrl!);
+      final preview = _camCtrl!.value.previewSize;
+      final imageSize = preview != null
+          ? Size(preview.height, preview.width)
+          : const Size(480, 640);
+
+      _poseVisual.value = (
+        poses: poses,
+        imageSize: imageSize,
+        rotation: rotation,
+        lensDir: _camCtrl!.description.lensDirection,
+      );
+      try {
+        await File(snap.path).delete();
+      } catch (_) {}
+    } catch (_) {
+      // 部分机型录制中不支持 takePicture，忽略
+    } finally {
+      _isPosePolling = false;
+    }
+  }
+
+  InputImageRotation _rotationForController(CameraController controller) {
+    final camera = controller.description;
+    if (Platform.isIOS) {
+      return InputImageRotationValue.fromRawValue(camera.sensorOrientation) ??
+          InputImageRotation.rotation0deg;
+    }
+    var compensation =
+        _orientations[controller.value.deviceOrientation] ?? 0;
+    if (camera.lensDirection == CameraLensDirection.front) {
+      compensation = (camera.sensorOrientation + compensation) % 360;
+    } else {
+      compensation = (camera.sensorOrientation - compensation + 360) % 360;
+    }
+    return InputImageRotationValue.fromRawValue(compensation) ??
+        InputImageRotation.rotation0deg;
+  }
+
+  // ── 停止录制并上传 ────────────────────────────────────────────────────────
+
+  Future<void> _stopAndUpload() async {
+    if (_camCtrl == null) return;
+    _posePollTimer?.cancel();
+    _posePollTimer = null;
+    setState(() => _phase = _Phase.uploading);
+
+    try {
+      await _stopPoseStreamIfNeeded();
+      final xfile = await _camCtrl!.stopVideoRecording();
+      _pageDisposed = true;
+      await _camCtrl!.dispose();
+      _camCtrl = null;
+      _detector?.close();
+
+      await _uploadVideo(xfile.path);
+    } catch (e) {
+      setState(() {
+        _uploadError = '停止录制失败：$e';
+        _phase = _Phase.result;
+      });
+    }
+  }
+
+  // ── 上传视频，拿到 task_id 后立刻进入轮询 ─────────────────────────────────
+
+  Future<void> _uploadVideo(String videoPath) async {
+    final sid = widget.sessionId;
+    final vid = widget.videoId;
+    if (sid == null || vid == null) {
+      setState(() {
+        _uploadError = '缺少会话或视频ID，无法评估';
+        _phase = _Phase.result;
+      });
+      return;
+    }
+
+    try {
+      final request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$kBackendBase/api/assess/motion'),
+      )
+        ..fields['session_id'] = sid
+        ..fields['standard_video_id'] = vid
+        ..files.add(await http.MultipartFile.fromPath(
+          'user_video',
+          videoPath,
+          filename: 'user_training.mp4',
+        ));
+
+      final streamed = await request.send().timeout(const Duration(minutes: 2));
+      final body = await streamed.stream.bytesToString();
+
+      if (streamed.statusCode == 200) {
+        final data = jsonDecode(body) as Map<String, dynamic>;
+        final taskId = data['task_id'] as String;
+
+        // 持久化 task_id 到本地，退出重进可继续查看结果
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(_taskPrefKey, taskId);
+
+        setState(() => _phase = _Phase.polling);
+        _startPolling(taskId);
+      } else {
+        setState(() {
+          _uploadError = '上传失败（${streamed.statusCode}）：$body';
+          _phase = _Phase.result;
+        });
+      }
+    } on TimeoutException catch (_) {
+      setState(() {
+        _uploadError = '上传超时，请检查网络连接后重试';
+        _phase = _Phase.result;
+      });
+    } catch (e) {
+      setState(() {
+        _uploadError = '上传失败：$e';
+        _phase = _Phase.result;
+      });
+    }
+  }
+
+  // ── 轮询任务状态 ─────────────────────────────────────────────────────────
+
+  void _startPolling(String taskId) {
+    _pollTimer?.cancel();
+    _pollTimer = Timer.periodic(const Duration(seconds: 3), (_) async {
+      final task = await _fetchTaskStatus(taskId);
+      if (task == null || _pageDisposed) return;
+
+      final status = task['status'] as String? ?? '';
+      if (status == 'done') {
+        _pollTimer?.cancel();
+        _applyTaskResult(task);
+      } else if (status == 'error') {
+        _pollTimer?.cancel();
+        if (!mounted) return;
+        setState(() {
+          _uploadError = '评估失败：${task['error'] ?? '未知错误'}';
+          _phase = _Phase.result;
+        });
+      } else if (status == 'processing') {
+        if (mounted) {
+          setState(() => _pollingMessage = '视觉 AI 正在对比标准动作与您的训练视频…');
+        }
+      }
+    });
+  }
+
+  Future<Map<String, dynamic>?> _fetchTaskStatus(String taskId) async {
+    try {
+      final resp = await http
+          .get(Uri.parse('$kBackendBase/api/assess/status/$taskId'))
+          .timeout(const Duration(seconds: 10));
+      if (resp.statusCode == 200) {
+        return jsonDecode(resp.body) as Map<String, dynamic>;
+      }
+    } catch (_) {
+      // 网络临时失败，下次轮询重试
+    }
+    return null;
+  }
+
+  void _applyTaskResult(Map<String, dynamic> task) {
+    if (!mounted) return;
+    final assessment = task['assessment'];
+    final summary = task['summary'] as String? ?? '';
+
+    if (assessment is Map<String, dynamic>) {
+      setState(() {
+        _result = _AssessResult.fromJson(assessment, summary);
+        _phase = _Phase.result;
+      });
+    } else {
+      setState(() {
+        _uploadError = '评估结果格式异常';
+        _phase = _Phase.result;
+      });
+    }
+  }
+
+  // ── 摄像头输入构建 ────────────────────────────────────────────────────────
 
   (InputImage, Size, InputImageRotation)? _buildInput(CameraImage image) {
     if (_camCtrl == null) return null;
-
     final rotation = InputImageRotationValue.fromRawValue(
-          _camCtrl!.description.sensorOrientation,
-        ) ??
+          _camCtrl!.description.sensorOrientation) ??
         InputImageRotation.rotation0deg;
 
     Uint8List? bytes;
@@ -245,7 +545,6 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
       bytes = nv21;
       bytesPerRow = image.width;
     }
-
     if (bytes == null) return null;
 
     final inputImage = InputImage.fromBytes(
@@ -257,18 +556,13 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
         bytesPerRow: bytesPerRow,
       ),
     );
-
-    final imageSize = Size(image.width.toDouble(), image.height.toDouble());
-    return (inputImage, imageSize, rotation);
+    return (inputImage, Size(image.width.toDouble(), image.height.toDouble()), rotation);
   }
 
   Uint8List? _toNv21(CameraImage image) {
     final w = image.width, h = image.height;
-    final y = image.planes[0];
-    final u = image.planes[1];
-    final v = image.planes[2];
-    final ySize = w * h;
-    final out = Uint8List(ySize + (w * h ~/ 2));
+    final y = image.planes[0], u = image.planes[1], v = image.planes[2];
+    final out = Uint8List(w * h + (w * h ~/ 2));
     var idx = 0;
     for (var row = 0; row < h; row++) {
       for (var col = 0; col < w; col++) {
@@ -277,47 +571,23 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
     }
     for (var row = 0; row < h ~/ 2; row++) {
       for (var col = 0; col < w ~/ 2; col++) {
-        out[idx++] =
-            v.bytes[row * v.bytesPerRow + col * (v.bytesPerPixel ?? 1)];
-        out[idx++] =
-            u.bytes[row * u.bytesPerRow + col * (u.bytesPerPixel ?? 1)];
+        out[idx++] = v.bytes[row * v.bytesPerRow + col * (v.bytesPerPixel ?? 1)];
+        out[idx++] = u.bytes[row * u.bytesPerRow + col * (u.bytesPerPixel ?? 1)];
       }
     }
     return out;
   }
 
-  // ── 阶段控制 ──────────────────────────────────────────────────────────────
-
-  Future<void> _startAssessment() async {
-    _videoCtrl?.pause();
-    _matchScores.clear();
-    setState(() => _phase = _Phase.assessing);
-    await _initCamera();
-  }
-
-  Future<void> _finishAssessment() async {
-    _pageDisposed = true;
-    await _camCtrl?.stopImageStream();
-    await _camCtrl?.dispose();
-    _camCtrl = null;
-    _detector?.close();
-
-    final avg = _matchScores.isEmpty
-        ? 0.0
-        : _matchScores.reduce((a, b) => a + b) / _matchScores.length;
-
-    setState(() {
-      _finalScore = avg;
-      _phase = _Phase.result;
-    });
-  }
-
   @override
   void dispose() {
     _pageDisposed = true;
-    _videoCtrl?.removeListener(_onVideoProgress);
+    _countdownTimer?.cancel();
+    _posePollTimer?.cancel();
+    _pollTimer?.cancel();
     _videoCtrl?.dispose();
-    _camCtrl?.stopImageStream();
+    if (_isPoseStreaming) {
+      _camCtrl?.stopImageStream();
+    }
     _camCtrl?.dispose();
     _detector?.close();
     _poseVisual.dispose();
@@ -342,16 +612,19 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
         ),
       ),
       body: switch (_phase) {
-        _Phase.loading => const Center(
-            child: CircularProgressIndicator(color: AppTheme.primary)),
-        _Phase.watching => _buildWatching(),
-        _Phase.assessing => _buildAssessing(),
-        _Phase.result => _buildResult(),
+        _Phase.loading   => const Center(child: CircularProgressIndicator(color: AppTheme.primary)),
+        _Phase.watching  => _buildWatching(),
+        _Phase.preview   => _buildCameraPreview(showStartRecordButton: true),
+        _Phase.countdown => _buildCountdown(),
+        _Phase.recording => _buildRecording(),
+        _Phase.uploading => _buildUploading(),
+        _Phase.polling   => _buildPolling(),
+        _Phase.result    => _buildResult(),
       },
     );
   }
 
-  // ── 观看视频阶段 ──────────────────────────────────────────────────────────
+  // ── 观看演示视频 ──────────────────────────────────────────────────────────
 
   Widget _buildWatching() {
     return Column(
@@ -362,291 +635,522 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
                   aspectRatio: _videoCtrl!.value.aspectRatio,
                   child: VideoPlayer(_videoCtrl!),
                 )
-              : const Center(
-                  child: Text(
-                    '视频加载中...\n（请确认视频文件已放入 backend/assets/）',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.white70),
+              : Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Text(
+                      _videoLoadError ?? '视频加载中…',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.white70),
+                    ),
                   ),
                 ),
         ),
-        _buildVideoControls(),
+        Container(
+          padding: const EdgeInsets.all(16),
+          color: Colors.black,
+          child: Column(
+            children: [
+              if (_videoReady && _videoCtrl != null)
+                ValueListenableBuilder<VideoPlayerValue>(
+                  valueListenable: _videoCtrl!,
+                  builder: (context2, val, child2) {
+                    final pos = val.position.inSeconds.toDouble();
+                    final dur = val.duration.inSeconds.toDouble();
+                    return Column(
+                      children: [
+                        Slider(
+                          value: pos.clamp(0, dur > 0 ? dur : 1),
+                          min: 0,
+                          max: dur > 0 ? dur : 1,
+                          activeColor: AppTheme.primary,
+                          onChanged: (v) =>
+                              _videoCtrl!.seekTo(Duration(seconds: v.toInt())),
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(_fmt(val.position),
+                                style: const TextStyle(
+                                    color: Colors.white70, fontSize: 12)),
+                            Text(_fmt(val.duration),
+                                style: const TextStyle(
+                                    color: Colors.white70, fontSize: 12)),
+                          ],
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            IconButton(
+                              icon: Icon(
+                                val.isPlaying ? Icons.pause : Icons.play_arrow,
+                                color: Colors.white,
+                                size: 32,
+                              ),
+                              onPressed: () => val.isPlaying
+                                  ? _videoCtrl!.pause()
+                                  : _videoCtrl!.play(),
+                            ),
+                          ],
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              const SizedBox(height: 8),
+              const Text(
+                '请先完整观看标准动作演示，了解动作要领后再开始训练',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white54, fontSize: 12),
+              ),
+              if (_videoLoadError != null) ...[
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: () {
+                      setState(() {
+                        _phase = _Phase.loading;
+                        _videoLoadError = null;
+                      });
+                      _initVideo();
+                    },
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      side: const BorderSide(color: Colors.white38),
+                    ),
+                    child: const Text('重新加载视频'),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: _enterPreview,
+                  icon: const Icon(Icons.fitness_center, size: 20),
+                  label: const Text(
+                    '准备好了，开始训练',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
 
-  Widget _buildVideoControls() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      color: Colors.black,
-      child: Column(
-        children: [
-          if (_videoReady && _videoCtrl != null)
-            ValueListenableBuilder<VideoPlayerValue>(
-              valueListenable: _videoCtrl!,
-              builder: (_, val, __) {
-                final pos = val.position.inSeconds.toDouble();
-                final dur = val.duration.inSeconds.toDouble();
-                return Column(
-                  children: [
-                    Slider(
-                      value: pos.clamp(0, dur > 0 ? dur : 1),
-                      min: 0,
-                      max: dur > 0 ? dur : 1,
-                      activeColor: AppTheme.primary,
-                      onChanged: (v) {
-                        _videoCtrl!.seekTo(Duration(seconds: v.toInt()));
-                      },
+  // ── 摄像头预览（preview 阶段）────────────────────────────────────────────
+
+  Widget _buildCameraPreview({required bool showStartRecordButton}) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        if (_camCtrl != null && _camCtrl!.value.isInitialized)
+          CameraPreview(_camCtrl!),
+        _buildPoseOverlay(),
+        Positioned(
+          left: 16,
+          right: 16,
+          bottom: 20,
+          child: SafeArea(
+            top: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  '摄像头已就绪，调整好姿势后点击"开始录制"',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 13,
+                    shadows: [Shadow(blurRadius: 4, color: Colors.black)],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                     ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          _fmtDuration(val.position),
-                          style: const TextStyle(
-                              color: Colors.white70, fontSize: 12),
-                        ),
-                        Text(
-                          _fmtDuration(val.duration),
-                          style: const TextStyle(
-                              color: Colors.white70, fontSize: 12),
-                        ),
-                      ],
+                    onPressed: _startCountdown,
+                    icon: const Icon(Icons.videocam, size: 20),
+                    label: const Text(
+                      '开始录制',
+                      style:
+                          TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                     ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        IconButton(
-                          icon: Icon(
-                            val.isPlaying ? Icons.pause : Icons.play_arrow,
-                            color: Colors.white,
-                            size: 32,
-                          ),
-                          onPressed: () {
-                            val.isPlaying
-                                ? _videoCtrl!.pause()
-                                : _videoCtrl!.play();
-                          },
-                        ),
-                      ],
-                    ),
-                  ],
-                );
-              },
+                  ),
+                ),
+              ],
             ),
-          const SizedBox(height: 8),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── 倒计时 ────────────────────────────────────────────────────────────────
+
+  Widget _buildCountdown() {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        if (_camCtrl != null && _camCtrl!.value.isInitialized)
+          CameraPreview(_camCtrl!),
+        _buildPoseOverlay(),
+        Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '$_countdownValue',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 120,
+                  fontWeight: FontWeight.bold,
+                  shadows: [Shadow(blurRadius: 8, color: Colors.black)],
                 ),
               ),
-              onPressed: _startAssessment,
-              icon: const Icon(Icons.fitness_center, size: 20),
-              label: const Text(
-                '我已看完，开始跟做评估',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+              const Text(
+                '准备开始录制…',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 18,
+                  shadows: [Shadow(blurRadius: 4, color: Colors.black)],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── 录制中 ────────────────────────────────────────────────────────────────
+
+  Widget _buildRecording() {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        if (_camCtrl != null && _camCtrl!.value.isInitialized)
+          CameraPreview(_camCtrl!),
+        _buildPoseOverlay(),
+        Positioned(
+          top: 16,
+          left: 0,
+          right: 0,
+          child: Center(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.red.withValues(alpha: 0.85),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.fiber_manual_record, color: Colors.white, size: 14),
+                  SizedBox(width: 6),
+                  Text(
+                    '录制中',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
             ),
+          ),
+        ),
+        Positioned(
+          left: 16,
+          right: 16,
+          bottom: 20,
+          child: SafeArea(
+            top: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  '正在录制，请参照演示视频做动作\n完成后点击下方按钮',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 13,
+                    shadows: [Shadow(blurRadius: 4, color: Colors.black)],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF4CAF50),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: _stopAndUpload,
+                    icon: const Icon(Icons.check_circle, size: 20),
+                    label: const Text(
+                      '训练完成',
+                      style:
+                          TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPoseOverlay() {
+    return ValueListenableBuilder(
+      valueListenable: _poseVisual,
+      builder: (context2, val, child2) {
+        if (val == null) return const SizedBox();
+        return RepaintBoundary(
+          child: CustomPaint(
+            painter: PosePainter(
+              poses: val.poses,
+              imageSize: val.imageSize,
+              rotation: val.rotation,
+              cameraLensDirection: val.lensDir,
+              drawSkeleton: true,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // ── 上传中 ────────────────────────────────────────────────────────────────
+
+  Widget _buildUploading() {
+    return const Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          CircularProgressIndicator(color: AppTheme.primary),
+          SizedBox(height: 20),
+          Text(
+            '正在上传训练视频…',
+            style: TextStyle(color: Colors.white70, fontSize: 16),
+          ),
+          SizedBox(height: 8),
+          Text(
+            '上传完成后将在后台分析，无需等待',
+            style: TextStyle(color: Colors.white38, fontSize: 12),
           ),
         ],
       ),
     );
   }
 
-  // ── 动作评估阶段 ──────────────────────────────────────────────────────────
+  // ── 轮询中（后台处理） ────────────────────────────────────────────────────
 
-  Widget _buildAssessing() {
-    return Column(
-      children: [
-        Expanded(
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              if (_camCtrl != null && _camCtrl!.value.isInitialized)
-                CameraPreview(_camCtrl!),
-              ValueListenableBuilder(
-                valueListenable: _poseVisual,
-                builder: (_, val, __) {
-                  if (val == null) return const SizedBox();
-                  return RepaintBoundary(
-                  child: CustomPaint(
-                    painter: PosePainter(
-                      poses: val.poses,
-                      imageSize: val.imageSize,
-                      rotation: val.rotation,
-                      cameraLensDirection: val.lensDir,
-                      drawSkeleton: true,
-                    ),
-                  ),
-                  );
-                },
+  Widget _buildPolling() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(
+              width: 64,
+              height: 64,
+              child: CircularProgressIndicator(
+                color: AppTheme.primary,
+                strokeWidth: 5,
               ),
-              // 实时得分
-              Positioned(
-                top: 16,
-                left: 0,
-                right: 0,
-                child: ValueListenableBuilder(
-                  valueListenable: _poseVisual,
-                  builder: (_, val, __) {
-                    final score = _matchScores.isEmpty
-                        ? 0
-                        : (_matchScores.last).round();
-                    return Center(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.black54,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          '实时匹配度：$score%',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
+            ),
+            const SizedBox(height: 28),
+            const Text(
+              '处理中',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              _pollingMessage,
+              style: const TextStyle(color: Colors.white60, fontSize: 13),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              '可以先退出此页面，结果完成后重新进入即可查看',
+              style: TextStyle(color: Colors.white38, fontSize: 12),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.white54,
+                side: const BorderSide(color: Colors.white24),
+              ),
+              onPressed: widget.onBack,
+              icon: const Icon(Icons.home, size: 18),
+              label: const Text('返回首页（结果将保留）'),
+            ),
+          ],
         ),
-        Container(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-          color: Colors.black,
-          child: Column(
-            children: [
-              const Text(
-                '请跟随视频中的动作进行练习\n保持匀速，如有不适请立即停止',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white70, fontSize: 13),
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF4CAF50),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  onPressed: _finishAssessment,
-                  icon: const Icon(Icons.check_circle, size: 20),
-                  label: const Text(
-                    '完成练习，查看评估结果',
-                    style: TextStyle(
-                        fontSize: 15, fontWeight: FontWeight.w600),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
+      ),
     );
   }
 
-  // ── 结果阶段 ─────────────────────────────────────────────────────────────
+  // ── 结果展示 ──────────────────────────────────────────────────────────────
 
   Widget _buildResult() {
-    final score = _finalScore.round();
-    final (grade, color, tip) = switch (score) {
-      >= 85 => ('优秀', const Color(0xFF4CAF50), '动作标准，继续保持！'),
-      >= 70 => ('良好', const Color(0xFF8BC34A), '整体不错，细节还可提升'),
-      >= 55 => ('一般', const Color(0xFFFF9800), '建议加强练习，注意动作要领'),
-      _ => ('需改进', const Color(0xFFF44336), '请仔细参照视频，循序渐进'),
+    if (_uploadError != null) {
+      return _buildErrorResult();
+    }
+    final r = _result;
+    if (r == null) return _buildErrorResult();
+
+    final score = r.overallScore;
+    final (grade, color) = switch (score) {
+      >= 85 => ('优秀', const Color(0xFF4CAF50)),
+      >= 70 => ('良好', const Color(0xFF8BC34A)),
+      >= 55 => ('一般', const Color(0xFFFF9800)),
+      _ => ('需改进', const Color(0xFFF44336)),
     };
 
     return SafeArea(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(20),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 24),
-            // 得分环
-            SizedBox(
-              width: 160,
-              height: 160,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  SizedBox.expand(
-                    child: CircularProgressIndicator(
-                      value: _finalScore / 100,
-                      strokeWidth: 10,
-                      backgroundColor: Colors.white12,
-                      valueColor: AlwaysStoppedAnimation(color),
+            Center(
+              child: SizedBox(
+                width: 150,
+                height: 150,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    SizedBox.expand(
+                      child: CircularProgressIndicator(
+                        value: score / 100,
+                        strokeWidth: 10,
+                        backgroundColor: Colors.white12,
+                        valueColor: AlwaysStoppedAnimation(color),
+                      ),
                     ),
-                  ),
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        '$score',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 48,
-                          fontWeight: FontWeight.bold,
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '$score',
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 44,
+                              fontWeight: FontWeight.bold),
                         ),
-                      ),
-                      const Text(
-                        '综合得分',
-                        style: TextStyle(color: Colors.white60, fontSize: 13),
-                      ),
-                    ],
-                  ),
-                ],
+                        const Text('综合评分',
+                            style: TextStyle(color: Colors.white60, fontSize: 12)),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
-            const SizedBox(height: 24),
-            Text(
-              grade,
-              style: TextStyle(
-                color: color,
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-              ),
+            const SizedBox(height: 12),
+            Center(
+              child: Text(grade,
+                  style: TextStyle(
+                      color: color,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold)),
             ),
+            const SizedBox(height: 20),
+            _ScoreRow(label: '姿势准确度', score: r.postureScore),
             const SizedBox(height: 8),
-            Text(
-              tip,
-              style: const TextStyle(color: Colors.white70, fontSize: 15),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 32),
-            // 分项说明
-            _ResultCard(
-              icon: Icons.bar_chart,
-              title: '评估帧数',
-              value: '${_matchScores.length} 帧',
-            ),
-            const SizedBox(height: 12),
-            _ResultCard(
-              icon: Icons.accessibility_new,
-              title: '平均匹配度',
-              value: '$score%',
-            ),
-            const SizedBox(height: 12),
-            _ResultCard(
-              icon: Icons.tips_and_updates,
-              title: '建议',
-              value: tip,
-            ),
-            const SizedBox(height: 32),
+            _ScoreRow(label: '关节活动范围', score: r.rangeScore),
+            const SizedBox(height: 8),
+            _ScoreRow(label: '动作节奏', score: r.rhythmScore),
+            const SizedBox(height: 20),
+            if (r.keyFindings.isNotEmpty) ...[
+              _SectionTitle(title: '关键发现', icon: Icons.search),
+              const SizedBox(height: 8),
+              ...r.keyFindings.map((s) => _BulletItem(text: s)),
+              const SizedBox(height: 16),
+            ],
+            if (r.corrections.isNotEmpty) ...[
+              _SectionTitle(title: '纠正建议', icon: Icons.tips_and_updates),
+              const SizedBox(height: 8),
+              ...r.corrections.map(
+                  (s) => _BulletItem(text: s, color: const Color(0xFFFF9800))),
+              const SizedBox(height: 16),
+            ],
+            if (r.safetyNotes.isNotEmpty) ...[
+              _SectionTitle(title: '安全提醒', icon: Icons.warning_amber_rounded),
+              const SizedBox(height: 8),
+              ...r.safetyNotes.map(
+                  (s) => _BulletItem(text: s, color: const Color(0xFFF44336))),
+              const SizedBox(height: 16),
+            ],
+            if (r.encouragement.isNotEmpty)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppTheme.primary.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppTheme.primary.withValues(alpha: 0.4)),
+                ),
+                child: Text(
+                  r.encouragement,
+                  style: const TextStyle(
+                      color: Colors.white, fontSize: 14, fontStyle: FontStyle.italic),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            if (r.summary.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              _SectionTitle(title: '康复总结', icon: Icons.summarize),
+              const SizedBox(height: 8),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  r.summary,
+                  style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.87),
+                      fontSize: 14,
+                      height: 1.6),
+                ),
+              ),
+            ],
+            const SizedBox(height: 28),
             Row(
               children: [
                 Expanded(
@@ -656,18 +1160,22 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
                       side: const BorderSide(color: Colors.white38),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                          borderRadius: BorderRadius.circular(12)),
                     ),
-                    onPressed: () {
+                    onPressed: () async {
+                      // 清除本次任务缓存，允许重新训练
+                      final prefs = await SharedPreferences.getInstance();
+                      await prefs.remove(_taskPrefKey);
+                      if (!mounted) return;
                       _pageDisposed = false;
-                      _matchScores.clear();
                       _poseVisual.value = null;
-                      _initVideo();
+                      _result = null;
+                      _uploadError = null;
                       setState(() => _phase = _Phase.loading);
+                      _initVideo();
                     },
                     icon: const Icon(Icons.replay, size: 18),
-                    label: const Text('重新练习'),
+                    label: const Text('重新训练'),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -678,8 +1186,7 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                          borderRadius: BorderRadius.circular(12)),
                     ),
                     onPressed: widget.onBack,
                     icon: const Icon(Icons.home, size: 18),
@@ -694,56 +1201,149 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
     );
   }
 
-  String _fmtDuration(Duration d) {
+  Widget _buildErrorResult() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline, color: Colors.red, size: 56),
+            const SizedBox(height: 16),
+            Text(
+              _uploadError ?? '评估失败，请重试',
+              style: const TextStyle(color: Colors.white70, fontSize: 14),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white54,
+                    side: const BorderSide(color: Colors.white24),
+                  ),
+                  onPressed: () async {
+                    final prefs = await SharedPreferences.getInstance();
+                    await prefs.remove(_taskPrefKey);
+                    if (!mounted) return;
+                    _uploadError = null;
+                    setState(() => _phase = _Phase.loading);
+                    _initVideo();
+                  },
+                  icon: const Icon(Icons.replay, size: 18),
+                  label: const Text('重新训练'),
+                ),
+                const SizedBox(width: 12),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primary,
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: widget.onBack,
+                  icon: const Icon(Icons.home),
+                  label: const Text('返回首页'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _fmt(Duration d) {
     final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
     final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
     return '$m:$s';
   }
 }
 
-// ── 结果卡片 ──────────────────────────────────────────────────────────────────
+// ── 辅助组件 ──────────────────────────────────────────────────────────────────
 
-class _ResultCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String value;
-
-  const _ResultCard({
-    required this.icon,
-    required this.title,
-    required this.value,
-  });
+class _ScoreRow extends StatelessWidget {
+  final String label;
+  final int score;
+  const _ScoreRow({required this.label, required this.score});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: AppTheme.primary, size: 22),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(color: Colors.white54, fontSize: 12),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  value,
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600),
-                ),
-              ],
+    final color = score >= 80
+        ? const Color(0xFF4CAF50)
+        : score >= 60
+            ? const Color(0xFFFF9800)
+            : const Color(0xFFF44336);
+    return Row(
+      children: [
+        SizedBox(
+          width: 100,
+          child: Text(label,
+              style: const TextStyle(color: Colors.white60, fontSize: 13)),
+        ),
+        Expanded(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: score / 100,
+              backgroundColor: Colors.white12,
+              valueColor: AlwaysStoppedAnimation(color),
+              minHeight: 8,
             ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        SizedBox(
+          width: 36,
+          child: Text(
+            '$score',
+            style: TextStyle(
+                color: color, fontSize: 14, fontWeight: FontWeight.bold),
+            textAlign: TextAlign.right,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  const _SectionTitle({required this.title, required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, color: AppTheme.primary, size: 18),
+        const SizedBox(width: 6),
+        Text(title,
+            style: const TextStyle(
+                color: Colors.white,
+                fontSize: 15,
+                fontWeight: FontWeight.w600)),
+      ],
+    );
+  }
+}
+
+class _BulletItem extends StatelessWidget {
+  final String text;
+  final Color color;
+  const _BulletItem({required this.text, this.color = Colors.white70});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('• ', style: TextStyle(color: color, fontSize: 14, height: 1.5)),
+          Expanded(
+            child: Text(text,
+                style: TextStyle(color: color, fontSize: 13, height: 1.5)),
           ),
         ],
       ),

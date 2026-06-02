@@ -23,17 +23,45 @@ import json
 from pathlib import Path
 
 METADATA_PATH = Path(__file__).parent.parent / "data" / "metadata" / "metadata.json"
+VIDEOS_DIR = Path(__file__).parent.parent / "assets" / "videos"
+_VIDEO_EXTS = (".mp4", ".MP4", ".mov", ".MOV", ".m4v", ".M4V")
 
 # 根据疼痛程度限制最大难度
 DIFFICULTY_LIMIT = {"轻度": 5, "中度": 3, "重度": 2}
 
 
+def ensure_playable_mp4_path(video_id: str) -> Path | None:
+    """返回 assets/videos/ 下可播放的视频文件路径（优先 mp4）。"""
+    for ext in (".mp4", ".MP4"):
+        p = VIDEOS_DIR / f"{video_id}{ext}"
+        if p.exists() and p.stat().st_size > 1024:
+            return p
+    # 兜底返回其他格式（MOV 等）
+    for ext in (".mov", ".MOV", ".m4v", ".M4V"):
+        p = VIDEOS_DIR / f"{video_id}{ext}"
+        if p.exists() and p.stat().st_size > 1024:
+            return p
+    return None
+
+
+def _find_video_url(video_id: str) -> str:
+    """返回前端可直接请求的播放 URL。"""
+    if ensure_playable_mp4_path(video_id):
+        return f"/api/videos/{video_id}/play"
+    return ""
+
+
 def _load_index() -> list[dict]:
-    """加载 metadata.json 视频索引。"""
+    """加载 metadata.json 视频索引，自动补全 url 字段。"""
     if not METADATA_PATH.exists():
         return []
     with open(METADATA_PATH, "r", encoding="utf-8") as f:
-        return json.load(f)
+        data = json.load(f)
+    # 补全每个条目的 url 字段
+    for item in data:
+        if not item.get("url"):
+            item["url"] = _find_video_url(item.get("video_id", ""))
+    return data
 
 
 def match_videos(

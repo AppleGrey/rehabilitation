@@ -21,8 +21,8 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 TMP_DIR.mkdir(parents=True, exist_ok=True)
 
 # qwen3.6-plus API 配置
-BASE_URL = "https://coding.dashscope.aliyuncs.com/v1"
-API_KEY = "sk-sp-3ef7f194e7234df9ac429974e55b6ab8"
+BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+API_KEY = "sk-7362a73ae0cc4c4eb67dfc444095b51e"
 MODEL = "qwen3.6-plus"
 
 MAX_VIDEOS = 10  # 本次测试处理的视频数量

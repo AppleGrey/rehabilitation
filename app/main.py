@@ -1,19 +1,22 @@
 """
-FastAPI 入口（对话驱动完整版 v3.0）。
+FastAPI 入口（对话驱动完整版 v4.0）。
 
 提供：
-  POST /api/chat          - SSE 流式对话（链式执行 8 节点）
-  GET  /api/session/new   - 新建对话会话
-  POST /api/assess/motion - 视觉大模型动作评估
-  GET  /api/videos        - 获取匹配视频列表
-  GET  /api/health        - 健康检查
-  GET  /api/test/ping     - 连通性测试
-  静态文件 /assets/*      - 视频文件服务
+  POST /api/chat                      - SSE 流式对话（链式执行 8 节点）
+  GET  /api/session/new               - 新建对话会话
+  GET  /api/videos                    - 获取匹配视频列表
+  GET  /api/videos/{video_id}/play    - 播放视频（FileResponse）
+  POST /api/assess/motion             - 提交动作评估任务（异步，立即返回 task_id）
+  GET  /api/assess/status/{task_id}   - 查询评估任务状态 / 结果
+  GET  /api/health                    - 健康检查
+  GET  /api/test/ping                 - 连通性测试
+  静态文件 /assets/*                  - 视频文件服务
 """
 from __future__ import annotations
 
 import json
 import logging
+import shutil
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -24,14 +27,14 @@ logging.basicConfig(
     datefmt="%H:%M:%S",
 )
 
-from fastapi import FastAPI, HTTPException
+from fastapi import BackgroundTasks, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
-from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langchain_openai import ChatOpenAI
 from pydantic import BaseModel
 
-# 直接导入节点函数，不使用完整图（避免图在等待用户输入时无限循环）
 from .graph import (
     gap_fill_node,
     greeting_node,
@@ -54,9 +57,15 @@ from .state import (
     STEP_STAGE,
     ConsultState,
 )
-from .matching import get_video_list
+from .matching import ensure_playable_mp4_path, get_video_list
+from .assessment import evaluate_motion
+from .config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, DEEPSEEK_MODEL
+from .sessions import load_session, save_session
+from .tasks import UPLOADS_DIR, create_task, load_task, update_task
 
-app = FastAPI(title="康复AI后端", version="3.0.0")
+logger = logging.getLogger(__name__)
+
+app = FastAPI(title="康复AI后端", version="4.0.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -69,19 +78,18 @@ ASSETS_DIR = Path(__file__).parent.parent / "assets"
 ASSETS_DIR.mkdir(exist_ok=True)
 app.mount("/assets", StaticFiles(directory=str(ASSETS_DIR)), name="assets")
 
-# ── 内存会话存储 ──────────────────────────────────────────────────────────────
+# ── 内存会话缓存（同时持久化到磁盘） ──────────────────────────────────────────
 _sessions: dict[str, ConsultState] = {}
 
-# 步骤 → 节点函数映射
 _NODE_MAP = {
-    STEP_GREETING:      greeting_node,
-    STEP_PAIN_FOCUS:    pain_focus_node,
-    STEP_STAGE:         stage_node_func,
-    STEP_SPECIFIC:      specific_node,
-    STEP_SAFETY:        safety_node,
-    STEP_PREFERENCES:   preferences_node,
-    STEP_GAP_FILL:      gap_fill_node,
-    STEP_RECOMMEND:     recommend_node,
+    STEP_GREETING:    greeting_node,
+    STEP_PAIN_FOCUS:  pain_focus_node,
+    STEP_STAGE:       stage_node_func,
+    STEP_SPECIFIC:    specific_node,
+    STEP_SAFETY:      safety_node,
+    STEP_PREFERENCES: preferences_node,
+    STEP_GAP_FILL:    gap_fill_node,
+    STEP_RECOMMEND:   recommend_node,
 }
 
 
@@ -115,6 +123,17 @@ def _new_state() -> ConsultState:
     )
 
 
+def _get_session(sid: str) -> ConsultState | None:
+    """优先从内存取，内存缺失则从磁盘加载（服务重启恢复场景）。"""
+    if sid in _sessions:
+        return _sessions[sid]
+    loaded = load_session(sid)
+    if loaded:
+        _sessions[sid] = loaded  # type: ignore[assignment]
+        return _sessions[sid]
+    return None
+
+
 # ── 请求/响应模型 ─────────────────────────────────────────────────────────────
 
 class ChatRequest(BaseModel):
@@ -122,51 +141,29 @@ class ChatRequest(BaseModel):
     user_message: str
 
 
-class NewSessionResponse(BaseModel):
-    session_id: str
-
-
-class VideoListResponse(BaseModel):
-    videos: list[dict]
-
-
 # ── 路由 ──────────────────────────────────────────────────────────────────────
 
-@app.get("/api/session/new", response_model=NewSessionResponse)
+@app.get("/api/session/new")
 def new_session():
     sid = str(uuid.uuid4())
-    _sessions[sid] = _new_state()
+    state = _new_state()
+    _sessions[sid] = state
+    save_session(sid, state)
     return {"session_id": sid}
 
 
 @app.post("/api/chat")
 async def chat(req: ChatRequest):
-    """
-    对话接口（SSE 流式）。
-    从当前步骤执行节点；若节点将流程推进到下一阶段（例如已确认关节→程度问诊），
-    则在同一轮请求内自动继续执行下一阶段节点并推送回复，无需用户再发「然后呢」。
-    若当前阶段仍需用户补充信息（步骤未变），则停止链式调用，等待下一条用户消息。
-
-    SSE 事件格式：
-      {"type": "text",  "content": "..."}
-      {"type": "done",  "is_consultation_done": bool,
-       "video_url": ..., "video_id": ..., "summary": ...}
-      {"type": "error", "content": "..."}
-    """
+    """SSE 流式对话。"""
     sid = req.session_id
-    if sid not in _sessions:
-        raise HTTPException(
-            status_code=404, detail="会话不存在，请先调用 /api/session/new"
-        )
+    state = _get_session(sid)
+    if state is None:
+        raise HTTPException(status_code=404, detail="会话不存在，请先调用 /api/session/new")
 
-    state = _sessions[sid]
-
-    # 追加用户消息（add_messages 语义：列表追加）
     state["messages"] = list(state["messages"]) + [
         HumanMessage(content=req.user_message)
     ]
 
-    # 如果会话已结束，告知用户
     if state.get("current_step") == STEP_DONE:
         async def already_done():
             payload = json.dumps(
@@ -194,9 +191,8 @@ async def chat(req: ChatRequest):
 
     async def event_stream():
         import asyncio
-
         loop = asyncio.get_running_loop()
-        max_chain = 12  # 允许同一轮内多节点链式执行（含追问与推荐）
+        max_chain = 12
         text_chunk_index = 0
 
         try:
@@ -218,26 +214,22 @@ async def chat(req: ChatRequest):
                             piece = "\n\n" + piece
                         text_chunk_index += 1
                         payload = json.dumps(
-                            {"type": "text", "content": piece},
-                            ensure_ascii=False,
+                            {"type": "text", "content": piece}, ensure_ascii=False
                         )
                         yield f"data: {payload}\n\n"
 
                 _apply_node_update(state, update)
                 _sessions[sid] = state
+                save_session(sid, state)
 
                 step_after = state.get("current_step", step_before)
                 if step_after == STEP_DONE:
                     break
                 if step_after == step_before:
-                    # 步骤未变：还在等用户补充，停止链式执行
                     break
-
-                # 问候节点执行后只发问候，不立即接着跑 pain_focus
                 if step_before == STEP_GREETING and step_after == STEP_PAIN_FOCUS:
                     break
 
-                # 步骤推进：通知前端新开一个气泡，再继续链式执行下一节点
                 yield f"data: {json.dumps({'type': 'new_bubble'}, ensure_ascii=False)}\n\n"
 
             is_done = state.get("current_step") == STEP_DONE
@@ -255,9 +247,7 @@ async def chat(req: ChatRequest):
             yield f"data: {done_payload}\n\n"
 
         except Exception as exc:  # noqa: BLE001
-            err = json.dumps(
-                {"type": "error", "content": str(exc)}, ensure_ascii=False
-            )
+            err = json.dumps({"type": "error", "content": str(exc)}, ensure_ascii=False)
             yield f"data: {err}\n\n"
 
     return StreamingResponse(
@@ -283,6 +273,170 @@ def test_ping():
 
 
 @app.get("/api/videos")
-def list_videos(target_joint: str | None = None, severity: str | None = None, limit: int = 20):
-    """获取视频列表（可选按关节和严重程度过滤）。"""
+def list_videos(
+    target_joint: str | None = None,
+    severity: str | None = None,
+    limit: int = 20,
+):
     return {"videos": get_video_list(target_joint, severity, limit)}
+
+
+@app.get("/api/videos/{video_id}/play")
+def play_video(video_id: str):
+    """返回视频文件供 Flutter video_player 播放。"""
+    path = ensure_playable_mp4_path(video_id)
+    if path is None or not path.exists():
+        raise HTTPException(
+            status_code=404,
+            detail=f"视频 {video_id} 不存在，请将视频文件放入 assets/videos/",
+        )
+    mime = "video/mp4" if path.suffix.lower() in (".mp4",) else "video/quicktime"
+    return FileResponse(path, media_type=mime, filename=f"{video_id}.mp4")
+
+
+# ── 评估任务（异步） ──────────────────────────────────────────────────────────
+
+def _run_assessment(task_id: str) -> None:
+    """后台线程执行：VLM评估 + LLM总结，结果写入任务文件。"""
+    task = load_task(task_id)
+    if task is None:
+        return
+
+    update_task(task_id, status="processing")
+    logger.info("[TASK] 开始处理 task_id=%s", task_id)
+
+    session_id = task["session_id"]
+    standard_video_id = task["standard_video_id"]
+    user_video_path = Path(task["user_video_path"])
+
+    try:
+        # 找标准视频
+        standard_path = ensure_playable_mp4_path(standard_video_id)
+        if standard_path is None:
+            raise FileNotFoundError(f"标准视频 {standard_video_id} 不存在")
+
+        # VLM 评估
+        assessment = evaluate_motion(standard_path, user_video_path)
+        logger.info("[TASK] VLM完成: task_id=%s overall=%s", task_id, assessment.get("overall_score"))
+
+        # 获取对话历史（允许失败）
+        state = _get_session(session_id) or {}
+        history_text = "\n".join(
+            f"{'用户' if isinstance(m, HumanMessage) else 'AI'}：{m.content}"
+            for m in state.get("messages", [])
+            if isinstance(m, (HumanMessage, AIMessage))
+        )
+
+        # LLM 总结
+        assessment_text = json.dumps(assessment, ensure_ascii=False, indent=2)
+        summary_prompt = (
+            "你是专业的运动康复 AI，请根据以下问诊对话历史和动作评估报告，"
+            "为用户生成一段简洁的康复总结（200字以内），"
+            "包含：症状情况、训练表现亮点与不足、下一步康复建议。"
+            "语气温暖专业，鼓励用户坚持。\n\n"
+            f"【问诊对话历史】\n{history_text}\n\n"
+            f"【本次训练动作评估报告】\n{assessment_text}\n\n"
+            "请直接输出总结内容，不要标题或分点格式。"
+        )
+        llm = ChatOpenAI(
+            model=DEEPSEEK_MODEL,
+            api_key=DEEPSEEK_API_KEY,  # type: ignore[arg-type]
+            base_url=DEEPSEEK_BASE_URL,
+            temperature=0.4,
+        )
+        resp = llm.invoke(
+            [SystemMessage(content="你是专业的运动康复 AI。"),
+             HumanMessage(content=summary_prompt)]
+        )
+        summary_text = str(getattr(resp, "content", "") or "").strip()
+        logger.info("[TASK] LLM总结完成: task_id=%s 字数=%d", task_id, len(summary_text))
+
+        update_task(task_id, status="done", assessment=assessment, summary=summary_text)
+
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("[TASK] 处理失败: task_id=%s", task_id)
+        update_task(task_id, status="error", error=str(exc))
+    finally:
+        # 清理上传文件
+        try:
+            if user_video_path.exists():
+                user_video_path.unlink()
+        except Exception:
+            pass
+
+
+@app.post("/api/assess/motion")
+async def assess_motion(
+    background_tasks: BackgroundTasks,
+    session_id: str = Form(...),
+    standard_video_id: str = Form(...),
+    user_video: UploadFile = File(...),
+):
+    """
+    提交动作评估任务（异步）。
+    立即返回 {task_id}，前端通过 /api/assess/status/{task_id} 轮询结果。
+    """
+    # 确认标准视频存在（快速校验，避免任务创建后才发现找不到）
+    if ensure_playable_mp4_path(standard_video_id) is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"标准视频 {standard_video_id} 不存在",
+        )
+
+    # 保存上传的用户视频到持久目录（后台任务需要读取）
+    UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+    suffix = Path(user_video.filename or "video.mp4").suffix or ".mp4"
+    upload_id = str(uuid.uuid4())
+    save_path = UPLOADS_DIR / f"{upload_id}{suffix}"
+
+    content = await user_video.read()
+    with open(save_path, "wb") as f:
+        f.write(content)
+
+    logger.info(
+        "[ASSESS] 收到上传 session=%s standard=%s size=%dKB",
+        session_id, standard_video_id, len(content) // 1024,
+    )
+
+    # 兜底：如果会话不在内存，尝试从磁盘恢复
+    if session_id not in _sessions:
+        loaded = load_session(session_id)
+        if loaded:
+            _sessions[session_id] = loaded  # type: ignore[assignment]
+        else:
+            logger.warning("[ASSESS] session_id=%s 不存在，使用空会话兜底", session_id)
+            _sessions[session_id] = _new_state()
+
+    task_id = create_task(session_id, standard_video_id, str(save_path))
+    background_tasks.add_task(_run_assessment, task_id)
+
+    logger.info("[ASSESS] 任务已创建 task_id=%s", task_id)
+    return {"task_id": task_id}
+
+
+@app.get("/api/assess/status/{task_id}")
+def assess_status(task_id: str):
+    """
+    查询评估任务状态。
+
+    返回：
+      {
+        "task_id": str,
+        "status": "pending" | "processing" | "done" | "error",
+        "assessment": dict | null,   # 仅 done 时有值
+        "summary": str | null,       # 仅 done 时有值
+        "error": str | null,         # 仅 error 时有值
+        "updated_at": str
+      }
+    """
+    task = load_task(task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail=f"任务 {task_id} 不存在")
+    return {
+        "task_id": task["task_id"],
+        "status": task["status"],
+        "assessment": task.get("assessment"),
+        "summary": task.get("summary"),
+        "error": task.get("error"),
+        "updated_at": task.get("updated_at"),
+    }

@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 
 import '../theme/app_theme.dart';
 import '../config/api_config.dart';
+import 'chat_list_page.dart';
 
 enum _Role { user, assistant }
 
@@ -31,12 +32,15 @@ class _VideoRecommendation {
 
 class ChatPage extends StatefulWidget {
   final VoidCallback onBack;
-  final void Function(String url, String title) onVideoSelected;
+  final void Function(String url, String videoId, String sessionId) onVideoSelected;
+  /// 传入历史记录则恢复；传入 null 则新建会话
+  final ConversationRecord? existingRecord;
 
   const ChatPage({
     super.key,
     required this.onBack,
     required this.onVideoSelected,
+    this.existingRecord,
   });
 
   @override
@@ -60,15 +64,35 @@ class _ChatPageState extends State<ChatPage> {
     _init();
   }
 
-  /// 先建会话并结束全屏加载，再异步拉首句问候，避免长时间卡在转圈。
   Future<void> _init() async {
-    try {
-      await _startSession();
-    } finally {
+    final existing = widget.existingRecord;
+    if (existing != null) {
+      // 恢复历史对话
+      _sessionId = existing.sessionId;
+      for (final m in existing.messages) {
+        _messages.add(_Message(
+          role: m['role'] == 'user' ? _Role.user : _Role.assistant,
+          text: m['text'] ?? '',
+        ));
+      }
+      if (existing.recommendedVideoId != null && existing.recommendedVideoUrl != null) {
+        _recommendation = _VideoRecommendation(
+          url: existing.recommendedVideoUrl!,
+          videoId: existing.recommendedVideoId!,
+          summary: '',
+        );
+      }
       if (mounted) setState(() => _isInitializing = false);
-    }
-    if (_sessionId != null && mounted) {
-      unawaited(_sendMessage('你好'));
+    } else {
+      // 新建会话
+      try {
+        await _startSession();
+      } finally {
+        if (mounted) setState(() => _isInitializing = false);
+      }
+      if (_sessionId != null && mounted) {
+        unawaited(_sendMessage('你好'));
+      }
     }
   }
 
@@ -84,8 +108,7 @@ class _ChatPageState extends State<ChatPage> {
         setState(() {
           _messages.add(_Message(
             role: _Role.assistant,
-            text:
-                '⚠️ 创建会话失败（HTTP ${resp.statusCode}），请检查后端日志。',
+            text: '⚠️ 创建会话失败（HTTP ${resp.statusCode}），请检查后端日志。',
           ));
         });
       }
@@ -99,6 +122,48 @@ class _ChatPageState extends State<ChatPage> {
         });
       }
     }
+  }
+
+  /// 保存当前对话到本地存储
+  Future<void> _saveHistory() async {
+    final sid = _sessionId;
+    if (sid == null) return;
+
+    final msgList = _messages
+        .where((m) => m.text.isNotEmpty)
+        .map((m) => {'role': m.role == _Role.user ? 'user' : 'assistant', 'text': m.text})
+        .toList();
+
+    // 用第一条用户消息作为标题，若无则用 AI 第一句
+    String title = '问诊记录';
+    for (final m in msgList) {
+      if (m['role'] == 'user' && (m['text']?.isNotEmpty ?? false)) {
+        final t = m['text']!;
+        title = t.length > 20 ? '${t.substring(0, 20)}…' : t;
+        break;
+      }
+    }
+
+    // 最后一条 AI 消息作为预览
+    String preview = '';
+    for (final m in msgList.reversed) {
+      if (m['role'] == 'assistant' && (m['text']?.isNotEmpty ?? false)) {
+        final t = m['text']!;
+        preview = t.length > 50 ? '${t.substring(0, 50)}…' : t;
+        break;
+      }
+    }
+
+    final rec = ConversationRecord(
+      sessionId: sid,
+      title: title,
+      previewText: preview,
+      createdAt: DateTime.now(),
+      messages: msgList,
+      recommendedVideoId: _recommendation?.videoId,
+      recommendedVideoUrl: _recommendation?.url,
+    );
+    await ConversationStorage.save(rec);
   }
 
   Future<void> _sendMessage(String text) async {
@@ -133,9 +198,8 @@ class _ChatPageState extends State<ChatPage> {
           'user_message': userText,
         });
 
-      final streamedResp = await request
-          .send()
-          .timeout(const Duration(seconds: 30));
+      final streamedResp =
+          await request.send().timeout(const Duration(seconds: 30));
 
       if (streamedResp.statusCode != 200) {
         aiMsg.text = '请求失败（${streamedResp.statusCode}）';
@@ -171,10 +235,9 @@ class _ChatPageState extends State<ChatPage> {
               if (mounted) setState(() {});
               _scrollToBottom();
             } else if (type == 'new_bubble') {
-              // 当前气泡结束，新开一个气泡
               aiMsg.isStreaming = false;
-              final nextMsg = _Message(
-                  role: _Role.assistant, isStreaming: true);
+              final nextMsg =
+                  _Message(role: _Role.assistant, isStreaming: true);
               if (mounted) setState(() => _messages.add(nextMsg));
               aiMsg = nextMsg;
               _scrollToBottom();
@@ -199,7 +262,7 @@ class _ChatPageState extends State<ChatPage> {
         }
       });
 
-      // 流结束后处理缓冲区中可能未以换行结尾的最后一行
+      // 处理末尾可能未换行的最后一行
       final tail = buffer.toString().trim();
       if (tail.startsWith('data: ')) {
         final jsonStr = tail.substring(6).trim();
@@ -229,6 +292,9 @@ class _ChatPageState extends State<ChatPage> {
           } catch (_) {}
         }
       }
+
+      // 每次发完消息就保存历史
+      await _saveHistory();
     } on TimeoutException catch (_) {
       aiMsg.text = '${aiMsg.text}\n（等待回复超时，请检查网络或 LLM 配置后重试）';
       aiMsg.isStreaming = false;
@@ -276,7 +342,10 @@ class _ChatPageState extends State<ChatPage> {
         elevation: 0.5,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: AppTheme.textPrimary),
-          onPressed: widget.onBack,
+          onPressed: () async {
+            await _saveHistory();
+            widget.onBack();
+          },
         ),
         title: Row(
           children: [
@@ -289,7 +358,8 @@ class _ChatPageState extends State<ChatPage> {
                 ),
                 borderRadius: BorderRadius.circular(18),
               ),
-              child: const Icon(Icons.smart_toy, color: Colors.white, size: 20),
+              child:
+                  const Icon(Icons.smart_toy, color: Colors.white, size: 20),
             ),
             const SizedBox(width: 10),
             const Column(
@@ -305,10 +375,7 @@ class _ChatPageState extends State<ChatPage> {
                 ),
                 Text(
                   '智能问诊 · 精准推荐',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: AppTheme.textTertiary,
-                  ),
+                  style: TextStyle(fontSize: 11, color: AppTheme.textTertiary),
                 ),
               ],
             ),
@@ -324,8 +391,8 @@ class _ChatPageState extends State<ChatPage> {
                     controller: _scrollController,
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 12),
-                    itemCount:
-                        _messages.length + (_recommendation != null ? 1 : 0),
+                    itemCount: _messages.length +
+                        (_recommendation != null ? 1 : 0),
                     itemBuilder: (ctx, i) {
                       if (i < _messages.length) {
                         return _buildMessage(_messages[i]);
@@ -359,8 +426,7 @@ class _ChatPageState extends State<ChatPage> {
                 ),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child:
-                  const Icon(Icons.smart_toy, color: Colors.white, size: 18),
+              child: const Icon(Icons.smart_toy, color: Colors.white, size: 18),
             ),
             const SizedBox(width: 8),
           ],
@@ -398,7 +464,8 @@ class _ChatPageState extends State<ChatPage> {
                       msg.text,
                       style: TextStyle(
                         fontSize: 15,
-                        color: isUser ? Colors.white : AppTheme.textPrimary,
+                        color:
+                            isUser ? Colors.white : AppTheme.textPrimary,
                         height: 1.5,
                       ),
                     ),
@@ -469,7 +536,12 @@ class _ChatPageState extends State<ChatPage> {
                   ),
                   elevation: 0,
                 ),
-                onPressed: () => widget.onVideoSelected(rec.url, '康复训练演示'),
+                onPressed: () {
+                  final sid = _sessionId;
+                  if (sid != null) {
+                    widget.onVideoSelected(rec.url, rec.videoId, sid);
+                  }
+                },
                 icon: const Icon(Icons.fitness_center, size: 18),
                 label: const Text(
                   '开始康复训练 & 动作评估',
@@ -510,11 +582,11 @@ class _ChatPageState extends State<ChatPage> {
                   onSubmitted: (_) => _sendMessage(_textController.text),
                   decoration: const InputDecoration(
                     hintText: '输入消息…',
-                    hintStyle:
-                        TextStyle(color: AppTheme.textTertiary, fontSize: 14),
+                    hintStyle: TextStyle(
+                        color: AppTheme.textTertiary, fontSize: 14),
                     border: InputBorder.none,
-                    contentPadding:
-                        EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    contentPadding: EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 10),
                   ),
                   style: const TextStyle(
                     fontSize: 15,
@@ -546,7 +618,8 @@ class _ChatPageState extends State<ChatPage> {
                         padding: EdgeInsets.all(12),
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation(Colors.white),
+                          valueColor:
+                              AlwaysStoppedAnimation(Colors.white),
                         ),
                       )
                     : const Icon(Icons.send, color: Colors.white, size: 20),

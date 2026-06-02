@@ -463,7 +463,7 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # qwen3.6-plus API 配置
 # 通过 DashScope 提供的 OpenAI 兼容接口调用
-VL_API_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
+VL_API_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 VL_API_KEY = os.getenv("DASHSCOPE_API_KEY", "")
 HEADERS = {"Authorization": f"Bearer {VL_API_KEY}", "Content-Type": "application/json"}
 
