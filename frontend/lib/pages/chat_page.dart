@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import '../theme/app_theme.dart';
 import '../config/api_config.dart';
 import 'chat_list_page.dart';
+import 'consult_report_page.dart';
 
 enum _Role { user, assistant }
 
@@ -381,6 +382,23 @@ class _ChatPageState extends State<ChatPage> {
             ),
           ],
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.assignment_outlined,
+                color: AppTheme.textPrimary),
+            tooltip: '问诊记录',
+            onPressed: _sessionId == null
+                ? null
+                : () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) =>
+                            ConsultReportPage(sessionId: _sessionId!),
+                      ),
+                    );
+                  },
+          ),
+        ],
       ),
       body: Column(
         children: [

@@ -62,6 +62,7 @@ from .assessment import evaluate_motion
 from .config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, DEEPSEEK_MODEL
 from .sessions import load_session, save_session
 from .tasks import UPLOADS_DIR, create_task, load_task, update_task
+from .questionnaire import build_questionnaire_report
 
 logger = logging.getLogger(__name__)
 
@@ -150,6 +151,20 @@ def new_session():
     _sessions[sid] = state
     save_session(sid, state)
     return {"session_id": sid}
+
+
+@app.get("/api/session/{session_id}/report")
+def session_report(session_id: str):
+    """
+    返回本次问诊的「AI 个性化康复评估问卷」填写快照。
+    随对话推进自动更新，前端可轮询或进入报告页时拉取。
+    """
+    state = _get_session(session_id)
+    if state is None:
+        raise HTTPException(status_code=404, detail="会话不存在")
+    report = build_questionnaire_report(state)
+    report["session_id"] = session_id
+    return report
 
 
 @app.post("/api/chat")
