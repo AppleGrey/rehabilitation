@@ -8,7 +8,9 @@ import json
 import os
 import shutil
 import subprocess
+import threading
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 import requests
@@ -25,8 +27,10 @@ BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 API_KEY = "sk-7362a73ae0cc4c4eb67dfc444095b51e"
 MODEL = "qwen3.6-plus"
 
-MAX_VIDEOS = 10  # 本次测试处理的视频数量
+MAX_VIDEOS = 0  # 0 = 处理目录内全部视频；>0 时仅扫描排序后的前 N 个文件
+MAX_WORKERS = 20  # 并发处理视频数
 RETRY = 2
+OUTPUT_FILE = OUTPUT_DIR / "metadata.json"
 REQUEST_TIMEOUT = 300  # 视频处理请求超时时间（秒）
 # base64 后限制 20MB，对应原始文件约 15MB，留余量设为 12MB
 MAX_FILE_SIZE_MB = 12
@@ -75,8 +79,16 @@ VL_SYSTEM_PROMPT = """\
 - contraindications: 字符串数组，禁忌症列表（无则空数组）
 """
 
+_print_lock = threading.Lock()
+_metadata_lock = threading.Lock()
 
-def compress_video(input_path: Path, output_path: Path, max_size_mb: int) -> bool:
+
+def log(msg: str) -> None:
+    with _print_lock:
+        print(msg, flush=True)
+
+
+def compress_video(input_path: Path, output_path: Path, max_size_mb: int, label: str) -> bool:
     """使用 FFmpeg 压缩视频到指定大小以内。"""
     target_bytes = max_size_mb * 1024 * 1024
     # 尝试不同的压缩参数，从轻度压缩到重度压缩
@@ -100,16 +112,17 @@ def compress_video(input_path: Path, output_path: Path, max_size_mb: int) -> boo
         ]
         result = subprocess.run(cmd, capture_output=True, timeout=120)
         if result.returncode != 0:
-            print(f"  FFmpeg 压缩失败 (尝试 {i+1})：{result.stderr.decode('utf-8', errors='replace')[:200]}")
+            log(f"  [{label}] FFmpeg 压缩失败 (尝试 {i+1})：{result.stderr.decode('utf-8', errors='replace')[:200]}")
             continue
 
         size_mb = output_path.stat().st_size / (1024 * 1024)
-        print(f"  压缩后大小：{size_mb:.1f} MB（原始 {input_path.stat().st_size / (1024*1024):.1f} MB）")
+        orig_mb = input_path.stat().st_size / (1024 * 1024)
+        log(f"  [{label}] 压缩后 {size_mb:.1f} MB（原始 {orig_mb:.1f} MB）")
 
         if size_mb < target_bytes / (1024 * 1024):
             return True
         elif i < len(presets) - 1:
-            print(f"  仍超限，继续尝试更激进压缩...")
+            log(f"  [{label}] 仍超限，继续尝试更激进压缩...")
 
     return False
 
@@ -123,40 +136,32 @@ def video_to_data_url(path: Path) -> str:
     return f"data:{mime};base64,{b64}"
 
 
-def call_qwen(video_path: Path) -> dict:
+def call_qwen(source_video: Path, label: str) -> dict:
     """调用 qwen3.6-plus，通过 OpenAI 兼容接口传入视频。"""
-    # 检查文件大小，超过限制则压缩
+    video_path = source_video
     file_size_mb = video_path.stat().st_size / (1024 * 1024)
     needs_compress = file_size_mb > MAX_FILE_SIZE_MB
 
     if needs_compress:
-        print(f"  原始大小 {file_size_mb:.1f} MB 超过 {MAX_FILE_SIZE_MB} MB，开始压缩...")
-        compressed_path = TMP_DIR / f"compressed_{video_path.stem}.mp4"
-        success = compress_video(video_path, compressed_path, MAX_FILE_SIZE_MB)
-        if success:
+        log(f"  [{label}] 原始 {file_size_mb:.1f} MB 超过 {MAX_FILE_SIZE_MB} MB，开始压缩...")
+        # 每个任务独立临时文件，避免并发写同一路径
+        compressed_path = TMP_DIR / f"compressed_{source_video.stem}_{threading.get_ident()}.mp4"
+        success = compress_video(video_path, compressed_path, MAX_FILE_SIZE_MB, label)
+        if compressed_path.exists():
             video_path = compressed_path
-        else:
-            print(f"  压缩未达目标，尝试使用最后一次压缩结果...")
+        if not success:
+            log(f"  [{label}] 压缩未达目标，尝试使用最后一次压缩结果...")
 
-    print(f"  正在编码为 base64...")
+    log(f"  [{label}] 正在编码为 base64...")
     data_url = video_to_data_url(video_path)
+    try:
+        return _call_qwen_api(source_video.name, data_url, label)
+    finally:
+        if video_path != source_video and video_path.exists():
+            video_path.unlink(missing_ok=True)
 
-    messages = [
-                {"role": "system", "content": VL_SYSTEM_PROMPT},
-        {
-            "role": "user",
-            "content": [
-                {
-                    "type": "text",
-                    "text": f"以下是康复训练视频 {video_path.name}，请观看完整内容后输出 JSON 格式的结构化数据。",
-                },
-                {
-                    "type": "video_url",
-                    "video_url": {"url": data_url},
-                },
-            ],
-        },
-    ]
+
+def _call_qwen_api(display_name: str, data_url: str, label: str) -> dict:
 
     resp = requests.post(
         f"{BASE_URL}/chat/completions",
@@ -169,7 +174,7 @@ def call_qwen(video_path: Path) -> dict:
                     "content": [
                         {
                             "type": "text",
-                            "text": f"以下是康复训练视频 {video_path.name}，请观看完整内容后输出 JSON 格式的结构化数据。",
+                            "text": f"以下是康复训练视频 {display_name}，请观看完整内容后输出 JSON 格式的结构化数据。",
                         },
                         {
                             "type": "video_url",
@@ -184,7 +189,7 @@ def call_qwen(video_path: Path) -> dict:
         timeout=REQUEST_TIMEOUT,
     )
     if resp.status_code != 200:
-        print(f"  API 响应：{resp.text[:500]}")
+        log(f"  [{label}] API 响应：{resp.text[:500]}")
         resp.raise_for_status()
     content = resp.json()["choices"][0]["message"]["content"]
 
@@ -197,21 +202,109 @@ def call_qwen(video_path: Path) -> dict:
 
 
 def process_one(video_file: Path) -> dict | None:
-    """处理单个视频。"""
+    """处理单个视频（无锁；结果写入由 MetadataStore 统一加锁）。"""
+    label = video_file.name
     for attempt in range(RETRY + 1):
         try:
-            print(f"  [{attempt+1}/{RETRY+1}] 调用中...")
-            result = call_qwen(video_file)
+            log(f"  [{label}] [{attempt+1}/{RETRY+1}] 调用中...")
+            result = call_qwen(video_file, label)
             result["video_id"] = video_file.stem
             result["file_name"] = video_file.name
             result["url"] = f"/assets/videos/{video_file.name}"
             return result
         except Exception as e:
-            print(f"  第 {attempt+1} 次失败：{e}")
+            log(f"  [{label}] 第 {attempt+1} 次失败：{e}")
             if attempt < RETRY:
-                print(f"  等待 5 秒后重试...")
                 time.sleep(5)
     return None
+
+
+def load_metadata() -> list:
+    """加载已有元数据；文件不存在或为空时返回空列表。"""
+    if not OUTPUT_FILE.exists():
+        return []
+    with open(OUTPUT_FILE, encoding="utf-8") as f:
+        data = json.load(f)
+    return data if isinstance(data, list) else []
+
+
+def processed_keys(metadata: list) -> set[str]:
+    """已处理视频的 video_id / file_name 集合，用于跳过。"""
+    keys: set[str] = set()
+    for item in metadata:
+        if vid := item.get("video_id"):
+            keys.add(str(vid))
+        if fn := item.get("file_name"):
+            keys.add(str(fn))
+    return keys
+
+
+def is_processed(video_file: Path, done: set[str]) -> bool:
+    return video_file.stem in done or video_file.name in done
+
+
+def upsert_metadata(metadata: list, entry: dict) -> None:
+    """按 video_id 或 file_name 更新已有记录，否则追加。"""
+    vid = entry.get("video_id")
+    fn = entry.get("file_name")
+    for i, item in enumerate(metadata):
+        if item.get("video_id") == vid or item.get("file_name") == fn:
+            metadata[i] = entry
+            return
+    metadata.append(entry)
+
+
+def save_metadata(metadata: list) -> None:
+    """原子写入，避免并发读时读到半截 JSON。"""
+    tmp = OUTPUT_FILE.with_suffix(".json.tmp")
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(metadata, f, ensure_ascii=False, indent=2)
+    os.replace(tmp, OUTPUT_FILE)
+
+
+class MetadataStore:
+    """线程安全的元数据内存副本 + 磁盘持久化。"""
+
+    def __init__(self, metadata: list):
+        self._metadata = metadata
+        self._done = processed_keys(metadata)
+
+    def is_processed(self, video_file: Path) -> bool:
+        with _metadata_lock:
+            return is_processed(video_file, self._done)
+
+    def save_result(self, entry: dict, video_file: Path) -> None:
+        with _metadata_lock:
+            if is_processed(video_file, self._done):
+                return
+            upsert_metadata(self._metadata, entry)
+            self._done.add(video_file.stem)
+            self._done.add(video_file.name)
+            save_metadata(self._metadata)
+
+    def count(self) -> int:
+        with _metadata_lock:
+            return len(self._metadata)
+
+
+def process_video_task(video_file: Path, store: MetadataStore) -> bool:
+    """线程池任务：处理单个视频并落盘。"""
+    if store.is_processed(video_file):
+        log(f"[SKIP] {video_file.name}（其他任务已写入）")
+        return True
+
+    log(f"[开始] {video_file.name}")
+    meta = process_one(video_file)
+    if not meta:
+        log(f"[FAIL] {video_file.name}")
+        return False
+
+    store.save_result(meta, video_file)
+    log(
+        f"[OK] {video_file.name} | {meta.get('target_joint', '?')} | "
+        f"{meta.get('severity', '?')}（已写入）"
+    )
+    return True
 
 
 def main():
@@ -226,38 +319,48 @@ def main():
         return
 
     videos = sorted(VIDEO_DIR.glob("*.MOV")) + sorted(VIDEO_DIR.glob("*.mp4"))
-    videos = videos[:MAX_VIDEOS]
+    if MAX_VIDEOS > 0:
+        videos = videos[:MAX_VIDEOS]
 
     if not videos:
         print(f"在 {VIDEO_DIR} 中未找到视频文件。")
         return
 
-    print(f"发现 {len(videos)} 个视频（本次测试前 {MAX_VIDEOS} 个），开始预处理...")
-    print(f"Base URL：{BASE_URL}")
-    print(f"API Key 前缀：{API_KEY[:10]}...")
-    print(f"视频大小上限：{MAX_FILE_SIZE_MB} MB（超出将使用 FFmpeg 压缩）")
+    store = MetadataStore(load_metadata())
+    pending = [v for v in videos if not store.is_processed(v)]
+    skipped = len(videos) - len(pending)
 
-    all_metadata = []
-    for i, video_file in enumerate(videos, 1):
-        print(f"\n[{i}/{len(videos)}] {video_file.name}")
-        meta = process_one(video_file)
-        if meta:
-            all_metadata.append(meta)
-            joint = meta.get("target_joint", "?")
-            severity = meta.get("severity", "?")
-            print(f"  OK: {joint} | {severity}")
-        else:
-            print(f"  FAIL: {video_file.name}")
-        if i < len(videos):
-            time.sleep(2)
+    log(f"扫描到 {len(videos)} 个视频，已处理 {skipped} 个，待处理 {len(pending)} 个")
+    if MAX_VIDEOS > 0:
+        log(f"（MAX_VIDEOS={MAX_VIDEOS}，仅扫描排序后的前 {MAX_VIDEOS} 个文件）")
+    log(f"Base URL：{BASE_URL}")
+    log(f"并发数：{MAX_WORKERS}")
+    log(f"输出文件：{OUTPUT_FILE}")
+    log(f"视频大小上限：{MAX_FILE_SIZE_MB} MB（超出将使用 FFmpeg 压缩）")
 
-    output_file = OUTPUT_DIR / "metadata.json"
-    with open(output_file, "w", encoding="utf-8") as f:
-        json.dump(all_metadata, f, ensure_ascii=False, indent=2)
+    if not pending:
+        log("没有待处理视频，退出。")
+        return
 
-    print(f"\n{'='*50}")
-    print(f"共 {len(all_metadata)}/{len(videos)} 条元数据已写入 {output_file}")
-    print(f"{'='*50}")
+    ok_count = 0
+    fail_count = 0
+    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as pool:
+        futures = {pool.submit(process_video_task, v, store): v for v in pending}
+        for future in as_completed(futures):
+            video_file = futures[future]
+            try:
+                if future.result():
+                    ok_count += 1
+                else:
+                    fail_count += 1
+            except Exception as e:
+                fail_count += 1
+                log(f"[ERROR] {video_file.name}：{e}")
+
+    log(f"\n{'='*50}")
+    log(f"本次：成功 {ok_count}，失败 {fail_count}，跳过 {skipped}")
+    log(f"索引合计 {store.count()} 条 → {OUTPUT_FILE}")
+    log(f"{'='*50}")
 
 
 if __name__ == "__main__":

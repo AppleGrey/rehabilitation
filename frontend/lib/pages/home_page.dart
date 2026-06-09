@@ -12,14 +12,12 @@ import '../widgets/common_widgets.dart';
 class HomePage extends StatelessWidget {
   final Function(int) onNavigate;
   final Function(int) onPageSelected;
-  final VoidCallback onPoseDetection;
   final VoidCallback onAiConsult;
 
   const HomePage({
     super.key,
     required this.onNavigate,
     required this.onPageSelected,
-    required this.onPoseDetection,
     required this.onAiConsult,
   });
 
@@ -252,11 +250,6 @@ class HomePage extends StatelessWidget {
                 icon: Icons.menu_book,
                 title: '知识中心',
                 onTap: () => onPageSelected(3),
-              ),
-              QuickActionButton(
-                icon: Icons.videocam,
-                title: '测试视频',
-                onTap: onPoseDetection,
               ),
             ],
           ),

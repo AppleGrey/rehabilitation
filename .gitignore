@@ -35,6 +35,8 @@ htmlcov/
 dist/
 build/
 site/
+rehabilitation-backend.tar
+rehabilitation-frontend.tar
 .eggs/
 *.egg
 *.egg-info/

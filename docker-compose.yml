@@ -1,0 +1,26 @@
+services:
+  backend:
+    build: .
+    image: rehabilitation-backend:latest
+    container_name: rehabilitation-backend
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+      - ./assets:/app/assets
+      - ./logs:/app/logs
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: rehabilitation-frontend:latest
+    container_name: rehabilitation-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped

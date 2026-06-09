@@ -1,0 +1,23 @@
+# Server deploy: load pre-built images (no build on server)
+services:
+  backend:
+    image: rehabilitation-backend:latest
+    container_name: rehabilitation-backend
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+      - ./assets:/app/assets
+      - ./logs:/app/logs
+    restart: unless-stopped
+
+  frontend:
+    image: rehabilitation-frontend:latest
+    container_name: rehabilitation-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped

@@ -458,5 +458,9662 @@
     ],
     "file_name": "IMG_4187.mp4",
     "url": "/assets/videos/IMG_4187.mp4"
+  },
+  {
+    "video_id": "IMG_4188",
+    "target_joint": "膝关节",
+    "target_body_parts": [
+      "大腿",
+      "臀部",
+      "腰部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "单腿下蹲",
+      "腿部前伸",
+      "平衡控制"
+    ],
+    "symptom_tags": [
+      "膝部无力",
+      "下肢不稳",
+      "平衡感差",
+      "股四头肌萎缩"
+    ],
+    "description_cn": "双手叉腰站立，单腿支撑缓慢下蹲，另一腿向前伸直，锻炼下肢力量与平衡能力。",
+    "duration_seconds": 11,
+    "difficulty": 3,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "大腿",
+      "臀部",
+      "腰部",
+      "脚踝"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "caution",
+    "contraindications": [
+      "膝关节急性损伤",
+      "严重平衡障碍",
+      "踝关节不稳"
+    ],
+    "file_name": "IMG_4188.mp4",
+    "url": "/assets/videos/IMG_4188.mp4"
+  },
+  {
+    "video_id": "IMG_4189",
+    "target_joint": "膝关节",
+    "target_body_parts": [
+      "大腿",
+      "臀部",
+      "小腿"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "单腿下蹲",
+      "箱式深蹲",
+      "下肢力量",
+      "平衡控制"
+    ],
+    "symptom_tags": [
+      "膝关节无力",
+      "下肢肌肉萎缩",
+      "髌骨轨迹异常",
+      "髋关节不稳",
+      "平衡感差"
+    ],
+    "description_cn": "侧身站立，单腿前伸，另一腿缓慢下蹲至臀部轻触椅面，强化下肢力量与平衡。",
+    "duration_seconds": 17,
+    "difficulty": 3,
+    "equipment": "椅子",
+    "space_required": "small",
+    "body_parts_involved": [
+      "大腿",
+      "臀部",
+      "腰部",
+      "小腿"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "caution",
+    "contraindications": [
+      "严重平衡障碍",
+      "急性膝关节损伤",
+      "无法单腿站立",
+      "严重骨质疏松"
+    ],
+    "file_name": "IMG_4189.mp4",
+    "url": "/assets/videos/IMG_4189.mp4"
+  },
+  {
+    "video_id": "IMG_4190",
+    "target_joint": "膝关节",
+    "target_body_parts": [
+      "大腿",
+      "臀部",
+      "核心"
+    ],
+    "severity": "中度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "单腿下蹲",
+      "重心控制",
+      "下肢力量"
+    ],
+    "symptom_tags": [
+      "膝关节不稳",
+      "股四头肌无力",
+      "髋关节活动度",
+      "平衡能力差"
+    ],
+    "description_cn": "侧身站立，单腿支撑缓慢下蹲，另一腿前伸，锻炼下肢力量与平衡。",
+    "duration_seconds": 12,
+    "difficulty": 4,
+    "equipment": "椅子",
+    "space_required": "small",
+    "body_parts_involved": [
+      "腿部",
+      "臀部",
+      "腰部"
+    ],
+    "pose_landmarks_required": [
+      "knee",
+      "hip",
+      "ankle"
+    ],
+    "safety_level": "caution",
+    "contraindications": [
+      "急性膝关节损伤",
+      "严重平衡障碍",
+      "未愈合的骨折"
+    ],
+    "file_name": "IMG_4190.mp4",
+    "url": "/assets/videos/IMG_4190.mp4"
+  },
+  {
+    "video_id": "IMG_4194",
+    "target_joint": "髋部",
+    "target_body_parts": [
+      "大腿",
+      "臀部",
+      "腰部",
+      "小腿"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "向前跨步",
+      "屈膝下蹲",
+      "弓步蹲",
+      "站立还原"
+    ],
+    "symptom_tags": [
+      "下肢无力",
+      "髋关节活动受限",
+      "膝关节不稳",
+      "步态异常",
+      "核心力量不足"
+    ],
+    "description_cn": "双手叉腰保持躯干直立，单腿向前迈出并屈膝下蹲至弓步姿势，随后发力还原。",
+    "duration_seconds": 17,
+    "difficulty": 3,
+    "equipment": "none",
+    "space_required": "medium",
+    "body_parts_involved": [
+      "大腿",
+      "臀部",
+      "腰部",
+      "小腿"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle",
+      "shoulder"
+    ],
+    "safety_level": "caution",
+    "contraindications": [
+      "急性膝关节损伤",
+      "严重平衡障碍",
+      "髋关节置换术后早期"
+    ],
+    "file_name": "IMG_4194.mp4",
+    "url": "/assets/videos/IMG_4194.mp4"
+  },
+  {
+    "video_id": "IMG_4196",
+    "target_joint": "膝关节",
+    "target_body_parts": [
+      "大腿",
+      "臀部",
+      "小腿"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "后撤步",
+      "弓步下蹲",
+      "单腿支撑",
+      "躯干直立"
+    ],
+    "symptom_tags": [
+      "膝关节无力",
+      "髋部僵硬",
+      "下肢力量不足",
+      "平衡感差",
+      "肌肉萎缩"
+    ],
+    "description_cn": "双手叉腰站立，单腿向后迈出并屈膝下蹲呈弓步，保持躯干直立，随后还原站立。",
+    "duration_seconds": 17,
+    "difficulty": 3,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "大腿",
+      "臀部",
+      "核心",
+      "小腿"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle",
+      "shoulder"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性膝关节损伤",
+      "严重平衡障碍",
+      "髋关节剧烈疼痛"
+    ],
+    "file_name": "IMG_4196.mp4",
+    "url": "/assets/videos/IMG_4196.mp4"
+  },
+  {
+    "video_id": "IMG_4198",
+    "target_joint": "髋部",
+    "target_body_parts": [
+      "髋部",
+      "大腿",
+      "臀部",
+      "膝关节"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "半蹲姿势",
+      "侧向移动",
+      "弹力带阻力",
+      "髋部外展"
+    ],
+    "symptom_tags": [
+      "髋关节疼痛",
+      "膝关节康复",
+      "臀肌无力",
+      "下肢稳定性",
+      "运动损伤预防"
+    ],
+    "description_cn": "弹力带半蹲侧移训练，强化髋部外展肌群，提升下肢稳定性和膝关节控制能力。",
+    "duration_seconds": 25,
+    "difficulty": 3,
+    "equipment": "弹力带",
+    "space_required": "small",
+    "body_parts_involved": [
+      "髋部",
+      "大腿",
+      "臀部",
+      "膝关节"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性髋关节损伤",
+      "急性膝关节损伤",
+      "严重关节炎",
+      "近期下肢手术"
+    ],
+    "file_name": "IMG_4198.mp4",
+    "url": "/assets/videos/IMG_4198.mp4"
+  },
+  {
+    "video_id": "IMG_4210",
+    "target_joint": "髋部",
+    "target_body_parts": [
+      "髋部",
+      "大腿",
+      "臀部",
+      "小腿"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "单腿上椅",
+      "髋部屈伸",
+      "椅子辅助",
+      "动态拉伸"
+    ],
+    "symptom_tags": [
+      "髋部僵硬",
+      "髋屈肌紧张",
+      "下背部不适",
+      "步态异常",
+      "髋部活动受限"
+    ],
+    "description_cn": "利用椅子辅助进行单腿髋关节屈伸训练，改善髋部灵活性及周围肌肉张力。",
+    "duration_seconds": 16,
+    "difficulty": 2,
+    "equipment": "椅子",
+    "space_required": "small",
+    "body_parts_involved": [
+      "髋部",
+      "大腿",
+      "臀部",
+      "小腿"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "髋关节急性损伤",
+      "严重骨质疏松"
+    ],
+    "file_name": "IMG_4210.mp4",
+    "url": "/assets/videos/IMG_4210.mp4"
+  },
+  {
+    "video_id": "IMG_4202",
+    "target_joint": "腰部",
+    "target_body_parts": [
+      "腰部",
+      "脊柱",
+      "核心"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "站立躯干旋转",
+      "腰部扭转",
+      "脊柱活动度"
+    ],
+    "symptom_tags": [
+      "腰部僵硬",
+      "腰背酸痛",
+      "脊柱灵活性差",
+      "久坐疲劳"
+    ],
+    "description_cn": "站立双手叉腰，保持下肢稳定，缓慢左右旋转躯干，活动腰椎。",
+    "duration_seconds": 18,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "腰部",
+      "脊柱",
+      "腹部",
+      "背部"
+    ],
+    "pose_landmarks_required": [
+      "neck",
+      "shoulder",
+      "hip"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性腰椎间盘突出",
+      "脊柱骨折未愈合",
+      "严重骨质疏松"
+    ],
+    "file_name": "IMG_4202.mp4",
+    "url": "/assets/videos/IMG_4202.mp4"
+  },
+  {
+    "video_id": "IMG_4218",
+    "target_joint": "膝关节",
+    "target_body_parts": [
+      "大腿后侧",
+      "膝关节",
+      "小腿"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "站立后勾腿",
+      "绳肌收缩",
+      "膝关节屈曲"
+    ],
+    "symptom_tags": [
+      "腘绳肌无力",
+      "膝关节活动受限",
+      "下肢协调性差",
+      "运动前热身"
+    ],
+    "description_cn": "站立位单腿屈膝后勾，主要锻炼腘绳肌，增强膝关节稳定性。",
+    "duration_seconds": 16,
+    "difficulty": 2,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "大腿",
+      "膝关节",
+      "小腿"
+    ],
+    "pose_landmarks_required": [
+      "knee",
+      "hip",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性膝关节扭伤",
+      "严重平衡障碍"
+    ],
+    "file_name": "IMG_4218.mp4",
+    "url": "/assets/videos/IMG_4218.mp4"
+  },
+  {
+    "video_id": "IMG_4206",
+    "target_joint": "踝关节",
+    "target_body_parts": [
+      "小腿",
+      "脚踝",
+      "足部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "chronic",
+    "action_keywords": [
+      "站立提踵",
+      "踮脚尖",
+      "小腿强化"
+    ],
+    "symptom_tags": [
+      "小腿无力",
+      "踝关节不稳",
+      "跟腱炎恢复",
+      "足底筋膜炎"
+    ],
+    "description_cn": "双手叉腰站立，缓慢踮起脚尖至最高点，锻炼小腿肌肉及踝关节稳定性。",
+    "duration_seconds": 15,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "小腿",
+      "脚踝",
+      "足部"
+    ],
+    "pose_landmarks_required": [
+      "ankle",
+      "knee",
+      "hip"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性踝关节扭伤",
+      "严重跟腱断裂"
+    ],
+    "file_name": "IMG_4206.mp4",
+    "url": "/assets/videos/IMG_4206.mp4"
+  },
+  {
+    "video_id": "IMG_4215",
+    "target_joint": "髋部",
+    "target_body_parts": [
+      "髋部",
+      "腰部",
+      "臀部",
+      "大腿"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "站立顶胯",
+      "髋部外展",
+      "骨盆侧移",
+      "左右交替"
+    ],
+    "symptom_tags": [
+      "髋部僵硬",
+      "腰部酸痛",
+      "久坐不适",
+      "髋关节活动受限",
+      "臀部紧张"
+    ],
+    "description_cn": "站立位双手叉腰，交替向侧方迈步并顶出髋部，活动髋关节及腰部。",
+    "duration_seconds": 15,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "髋部",
+      "腰部",
+      "腿部"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle",
+      "shoulder"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性髋关节扭伤",
+      "严重骨质疏松"
+    ],
+    "file_name": "IMG_4215.mp4",
+    "url": "/assets/videos/IMG_4215.mp4"
+  },
+  {
+    "video_id": "IMG_4214",
+    "target_joint": "髋部",
+    "target_body_parts": [
+      "髋部",
+      "膝关节",
+      "踝关节",
+      "腰部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "单腿站立",
+      "提膝平衡",
+      "双手叉腰"
+    ],
+    "symptom_tags": [
+      "下肢无力",
+      "平衡障碍",
+      "髋关节不稳",
+      "本体感觉减退",
+      "膝关节炎康复"
+    ],
+    "description_cn": "双手叉腰，单腿站立并保持提膝姿势，锻炼下肢稳定性与核心控制能力。",
+    "duration_seconds": 12,
+    "difficulty": 2,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "髋部",
+      "膝关节",
+      "踝关节",
+      "腰部"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "严重平衡障碍",
+      "下肢急性损伤",
+      "眩晕症"
+    ],
+    "file_name": "IMG_4214.mp4",
+    "url": "/assets/videos/IMG_4214.mp4"
+  },
+  {
+    "video_id": "IMG_4216",
+    "target_joint": "髋部",
+    "target_body_parts": [
+      "髋部",
+      "大腿",
+      "臀部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "侧向踏步",
+      "髋部外展",
+      "重心转移",
+      "下肢稳定"
+    ],
+    "symptom_tags": [
+      "髋关节僵硬",
+      "下肢无力",
+      "平衡感差",
+      "髋部疼痛",
+      "术后恢复"
+    ],
+    "description_cn": "双手叉腰站立，双脚交替向侧方迈步点地，活动髋关节并锻炼下肢稳定性。",
+    "duration_seconds": 13,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "髋部",
+      "大腿",
+      "核心"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "严重髋关节不稳",
+      "急性髋部骨折"
+    ],
+    "file_name": "IMG_4216.mp4",
+    "url": "/assets/videos/IMG_4216.mp4"
+  },
+  {
+    "video_id": "IMG_4221",
+    "target_joint": "膝关节",
+    "target_body_parts": [
+      "大腿前侧",
+      "膝关节",
+      "髋部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "chronic",
+    "action_keywords": [
+      "站姿拉伸",
+      "扶椅平衡",
+      "屈膝后拉",
+      "股四头肌伸展"
+    ],
+    "symptom_tags": [
+      "大腿前侧紧绷",
+      "膝盖僵硬",
+      "髋屈肌紧张",
+      "运动后放松",
+      "下肢柔韧性"
+    ],
+    "description_cn": "单手扶椅保持平衡，另一手抓住同侧脚踝向后拉伸，主要拉伸大腿前侧股四头肌。",
+    "duration_seconds": 15,
+    "difficulty": 2,
+    "equipment": "椅子",
+    "space_required": "small",
+    "body_parts_involved": [
+      "大腿",
+      "膝关节",
+      "手部",
+      "核心"
+    ],
+    "pose_landmarks_required": [
+      "knee",
+      "hip",
+      "ankle",
+      "shoulder"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "膝关节急性扭伤",
+      "严重平衡障碍",
+      "髌骨不稳定"
+    ],
+    "file_name": "IMG_4221.mp4",
+    "url": "/assets/videos/IMG_4221.mp4"
+  },
+  {
+    "video_id": "IMG_4203",
+    "target_joint": "腰部",
+    "target_body_parts": [
+      "腰部",
+      "骨盆",
+      "腹部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "骨盆倾斜",
+      "站立位练习",
+      "腰椎活动"
+    ],
+    "symptom_tags": [
+      "下背痛",
+      "骨盆位置异常",
+      "核心稳定性差",
+      "姿势不良",
+      "腰椎僵硬"
+    ],
+    "description_cn": "站立位骨盆前后倾斜练习，帮助恢复腰椎正常曲度和骨盆中立位。",
+    "duration_seconds": 18,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "腰部",
+      "骨盆",
+      "腹部",
+      "臀部"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [],
+    "file_name": "IMG_4203.mp4",
+    "url": "/assets/videos/IMG_4203.mp4"
+  },
+  {
+    "video_id": "IMG_4199",
+    "target_joint": "腰部",
+    "target_body_parts": [
+      "腰部",
+      "臀部",
+      "大腿后侧"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "站立前屈",
+      "髋部铰链",
+      "背部拉伸"
+    ],
+    "symptom_tags": [
+      "腰背僵硬",
+      "腘绳肌紧张",
+      "下背痛",
+      "活动度受限"
+    ],
+    "description_cn": "站立位双臂前伸，以髋为轴向前屈体至双手触脚踝，再缓慢还原，拉伸后侧链。",
+    "duration_seconds": 20,
+    "difficulty": 2,
+    "equipment": "none",
+    "space_required": "medium",
+    "body_parts_involved": [
+      "腰部",
+      "臀部",
+      "大腿",
+      "肩部"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "caution",
+    "contraindications": [
+      "急性腰椎间盘突出",
+      "严重骨质疏松",
+      "急性腰扭伤"
+    ],
+    "file_name": "IMG_4199.mp4",
+    "url": "/assets/videos/IMG_4199.mp4"
+  },
+  {
+    "video_id": "IMG_4201",
+    "target_joint": "腰部",
+    "target_body_parts": [
+      "腰部",
+      "躯干",
+      "颈部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "站立侧屈",
+      "躯干侧弯",
+      "腰部拉伸"
+    ],
+    "symptom_tags": [
+      "腰部僵硬",
+      "侧腰酸痛",
+      "活动度受限",
+      "肌肉紧张",
+      "久坐不适"
+    ],
+    "description_cn": "站立姿势，双臂自然下垂，躯干向左右两侧交替进行侧屈拉伸。",
+    "duration_seconds": 19,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "腰部",
+      "躯干",
+      "颈部"
+    ],
+    "pose_landmarks_required": [
+      "neck",
+      "shoulder",
+      "hip"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性腰扭伤",
+      "严重骨质疏松",
+      "椎体骨折"
+    ],
+    "file_name": "IMG_4201.mp4",
+    "url": "/assets/videos/IMG_4201.mp4"
+  },
+  {
+    "video_id": "IMG_4220",
+    "target_joint": "膝关节",
+    "target_body_parts": [
+      "大腿",
+      "膝盖",
+      "髋部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "站立扶椅",
+      "单腿后屈",
+      "手抓脚踝",
+      "拉伸大腿"
+    ],
+    "symptom_tags": [
+      "大腿肌肉紧张",
+      "膝关节僵硬",
+      "髋部紧张",
+      "运动后放松"
+    ],
+    "description_cn": "站立单手扶椅保持平衡，另一侧手抓住同侧脚踝向后拉，拉伸大腿前侧肌肉。",
+    "duration_seconds": 15,
+    "difficulty": 2,
+    "equipment": "椅子",
+    "space_required": "small",
+    "body_parts_involved": [
+      "大腿",
+      "膝盖",
+      "髋部",
+      "脚踝"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "膝关节急性损伤",
+      "严重平衡障碍"
+    ],
+    "file_name": "IMG_4220.mp4",
+    "url": "/assets/videos/IMG_4220.mp4"
+  },
+  {
+    "video_id": "IMG_4205",
+    "target_joint": "膝关节",
+    "target_body_parts": [
+      "大腿",
+      "臀部",
+      "小腿",
+      "核心"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "chronic",
+    "action_keywords": [
+      "深蹲跳",
+      "下肢爆发力",
+      "垂直跳跃",
+      "屈膝缓冲"
+    ],
+    "symptom_tags": [
+      "下肢无力",
+      "膝关节不稳",
+      "肌肉力量不足",
+      "协调性差",
+      "运动功能恢复"
+    ],
+    "description_cn": "进行深蹲跳训练，通过下蹲蓄力向上跳跃，增强下肢爆发力与膝关节稳定性，注意落地缓冲。",
+    "duration_seconds": 10,
+    "difficulty": 4,
+    "equipment": "none",
+    "space_required": "medium",
+    "body_parts_involved": [
+      "大腿",
+      "臀部",
+      "小腿",
+      "核心"
+    ],
+    "pose_landmarks_required": [
+      "knee",
+      "hip",
+      "ankle"
+    ],
+    "safety_level": "caution",
+    "contraindications": [
+      "膝关节急性损伤",
+      "严重骨质疏松",
+      "平衡功能障碍",
+      "下肢近期手术"
+    ],
+    "file_name": "IMG_4205.mp4",
+    "url": "/assets/videos/IMG_4205.mp4"
+  },
+  {
+    "video_id": "IMG_4212",
+    "target_joint": "髋部",
+    "target_body_parts": [
+      "腰部",
+      "髋部",
+      "膝关节"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "向前迈步",
+      "弓步站立",
+      "静态保持"
+    ],
+    "symptom_tags": [
+      "髋部僵硬",
+      "下肢无力",
+      "步态异常",
+      "平衡感差"
+    ],
+    "description_cn": "双手叉腰站立，单腿向前迈出呈浅弓步姿势，保持数秒后还原。",
+    "duration_seconds": 12,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "腰部",
+      "髋部",
+      "膝关节",
+      "踝关节"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性下肢骨折",
+      "严重平衡障碍"
+    ],
+    "file_name": "IMG_4212.mp4",
+    "url": "/assets/videos/IMG_4212.mp4"
+  },
+  {
+    "video_id": "IMG_4233",
+    "target_joint": "肩部",
+    "target_body_parts": [
+      "肩部",
+      "上臂"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "站立抬臂",
+      "肩前屈",
+      "单臂上举"
+    ],
+    "symptom_tags": [
+      "肩关节活动受限",
+      "肩部僵硬",
+      "肩周炎",
+      "上肢无力"
+    ],
+    "description_cn": "站立位交替进行单臂向前上方举起，恢复肩关节屈曲活动度。",
+    "duration_seconds": 14,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "肩部",
+      "上臂",
+      "颈部",
+      "躯干"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "elbow"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "肩袖损伤急性期",
+      "严重肩关节不稳"
+    ],
+    "file_name": "IMG_4233.mp4",
+    "url": "/assets/videos/IMG_4233.mp4"
+  },
+  {
+    "video_id": "IMG_4230",
+    "target_joint": "腰部",
+    "target_body_parts": [
+      "腰部",
+      "背部",
+      "髋部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "扶椅前屈",
+      "脊柱活动",
+      "腰部拉伸"
+    ],
+    "symptom_tags": [
+      "腰痛",
+      "背部僵硬",
+      "久坐不适",
+      "活动受限"
+    ],
+    "description_cn": "站立扶住椅背，身体前倾，进行脊柱的屈伸活动，放松腰背部。",
+    "duration_seconds": 13,
+    "difficulty": 1,
+    "equipment": "椅子",
+    "space_required": "small",
+    "body_parts_involved": [
+      "腰部",
+      "背部",
+      "髋部",
+      "腿部"
+    ],
+    "pose_landmarks_required": [
+      "neck",
+      "shoulder",
+      "hip",
+      "knee"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性腰扭伤",
+      "严重骨质疏松"
+    ],
+    "file_name": "IMG_4230.mp4",
+    "url": "/assets/videos/IMG_4230.mp4"
+  },
+  {
+    "video_id": "IMG_4225",
+    "target_joint": "腰部",
+    "target_body_parts": [
+      "腰部",
+      "腹部",
+      "背部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "站立侧屈",
+      "侧腰拉伸",
+      "单臂上举"
+    ],
+    "symptom_tags": [
+      "侧腰疼痛",
+      "腰部僵硬",
+      "肌肉紧绷",
+      "躯干活动受限"
+    ],
+    "description_cn": "双脚交叉站立，一手叉腰，另一手举过头顶向对侧侧屈，拉伸侧腰肌群。",
+    "duration_seconds": 14,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "腰部",
+      "腹部",
+      "肩部"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "hip"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性腰扭伤",
+      "严重脊柱不稳"
+    ],
+    "file_name": "IMG_4225.mp4",
+    "url": "/assets/videos/IMG_4225.mp4"
+  },
+  {
+    "video_id": "IMG_4227",
+    "target_joint": "髋部",
+    "target_body_parts": [
+      "髋部",
+      "臀部",
+      "腿部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "单腿站立",
+      "髋外展",
+      "平衡训练"
+    ],
+    "symptom_tags": [
+      "髋关节疼痛",
+      "臀中肌无力",
+      "平衡能力差",
+      "髋部稳定性不足"
+    ],
+    "description_cn": "单腿站立在台阶上，另一腿向外侧摆动，锻炼髋外展肌群和平衡能力。",
+    "duration_seconds": 22,
+    "difficulty": 3,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "髋部",
+      "臀部",
+      "腿部",
+      "核心"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "严重髋关节损伤",
+      "急性期疼痛"
+    ],
+    "file_name": "IMG_4227.mp4",
+    "url": "/assets/videos/IMG_4227.mp4"
+  },
+  {
+    "video_id": "IMG_4207",
+    "target_joint": "髋部",
+    "target_body_parts": [
+      "髋部",
+      "大腿",
+      "小腿"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "扶椅站立",
+      "高抬腿",
+      "髋关节屈曲"
+    ],
+    "symptom_tags": [
+      "髋关节僵硬",
+      "下肢无力",
+      "步态不稳",
+      "髋屈肌无力"
+    ],
+    "description_cn": "双手扶椅背保持平衡，进行单腿高抬腿练习，增强髋关节活动度与下肢力量。",
+    "duration_seconds": 12,
+    "difficulty": 2,
+    "equipment": "椅子",
+    "space_required": "small",
+    "body_parts_involved": [
+      "髋部",
+      "大腿",
+      "核心"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "下肢急性骨折",
+      "严重眩晕"
+    ],
+    "file_name": "IMG_4207.mp4",
+    "url": "/assets/videos/IMG_4207.mp4"
+  },
+  {
+    "video_id": "IMG_4232",
+    "target_joint": "肩部",
+    "target_body_parts": [
+      "肩部",
+      "颈部",
+      "上背部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "耸肩",
+      "沉肩",
+      "肩部后展"
+    ],
+    "symptom_tags": [
+      "肩颈僵硬",
+      "斜方肌紧张",
+      "圆肩",
+      "肩部活动受限"
+    ],
+    "description_cn": "站立姿势，进行双肩上下耸动及向后打开动作，用于放松肩颈及激活肩胛骨。",
+    "duration_seconds": 14,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "肩部",
+      "颈部",
+      "上背部"
+    ],
+    "pose_landmarks_required": [
+      "neck",
+      "shoulder"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "肩部急性骨折",
+      "严重肩袖损伤"
+    ],
+    "file_name": "IMG_4232.mp4",
+    "url": "/assets/videos/IMG_4232.mp4"
+  },
+  {
+    "video_id": "IMG_4224",
+    "target_joint": "腰部",
+    "target_body_parts": [
+      "腰部",
+      "侧腹部",
+      "背部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "站立侧弯",
+      "侧向拉伸",
+      "躯干伸展"
+    ],
+    "symptom_tags": [
+      "腰部僵硬",
+      "侧腹紧绷",
+      "背部酸痛",
+      "脊柱活动受限"
+    ],
+    "description_cn": "站立交叉腿，一手叉腰，另一手臂上举向侧方弯曲，拉伸腰腹侧面。",
+    "duration_seconds": 13,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "腰部",
+      "腹部",
+      "背部",
+      "肩部"
+    ],
+    "pose_landmarks_required": [
+      "neck",
+      "shoulder",
+      "hip"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性腰扭伤",
+      "脊柱骨折"
+    ],
+    "file_name": "IMG_4224.mp4",
+    "url": "/assets/videos/IMG_4224.mp4"
+  },
+  {
+    "video_id": "IMG_4236",
+    "target_joint": "肩部",
+    "target_body_parts": [
+      "肩部",
+      "上背部",
+      "手臂"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "acute",
+    "action_keywords": [
+      "站立",
+      "双臂后摆",
+      "肩部活动"
+    ],
+    "symptom_tags": [
+      "圆肩",
+      "肩颈僵硬",
+      "背部酸痛",
+      "体态不良"
+    ],
+    "description_cn": "自然站立，双臂向后摆动，锻炼肩背部肌肉，改善不良体态。",
+    "duration_seconds": 15,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "肩部",
+      "上背部",
+      "手臂"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "elbow",
+      "neck"
+    ],
+    "safety_level": "safe",
+    "contraindications": [],
+    "file_name": "IMG_4236.mp4",
+    "url": "/assets/videos/IMG_4236.mp4"
+  },
+  {
+    "video_id": "IMG_4235",
+    "target_joint": "肩部",
+    "target_body_parts": [
+      "肩部",
+      "上臂",
+      "颈部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "双臂上举",
+      "肩部屈曲",
+      "直立伸展"
+    ],
+    "symptom_tags": [
+      "肩关节僵硬",
+      "肩部活动受限",
+      "肩周炎",
+      "上肢无力"
+    ],
+    "description_cn": "站立位双臂缓慢向上举起至头顶，再缓慢放下，重复进行。",
+    "duration_seconds": 17,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "肩部",
+      "上臂",
+      "颈部",
+      "核心"
+    ],
+    "pose_landmarks_required": [
+      "neck",
+      "shoulder",
+      "elbow"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性肩关节损伤",
+      "严重肩袖撕裂"
+    ],
+    "file_name": "IMG_4235.mp4",
+    "url": "/assets/videos/IMG_4235.mp4"
+  },
+  {
+    "video_id": "IMG_4222",
+    "target_joint": "膝关节",
+    "target_body_parts": [
+      "大腿",
+      "臀部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "交叉下蹲",
+      "单腿平衡",
+      "屈膝伸展"
+    ],
+    "symptom_tags": [
+      "膝盖无力",
+      "髋部不稳",
+      "下肢力量不足",
+      "运动损伤恢复"
+    ],
+    "description_cn": "交叉步下蹲练习，增强下肢肌肉力量及关节稳定性。",
+    "duration_seconds": 13,
+    "difficulty": 4,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "大腿",
+      "臀部",
+      "腰部",
+      "脚踝"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "caution",
+    "contraindications": [
+      "急性膝关节损伤",
+      "严重平衡障碍",
+      "近期下肢手术"
+    ],
+    "file_name": "IMG_4222.mp4",
+    "url": "/assets/videos/IMG_4222.mp4"
+  },
+  {
+    "video_id": "IMG_4231",
+    "target_joint": "肩部",
+    "target_body_parts": [
+      "肩部",
+      "手臂",
+      "背部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "acute",
+    "action_keywords": [
+      "扶椅俯身",
+      "手臂下垂",
+      "钟摆运动",
+      "肩部松动"
+    ],
+    "symptom_tags": [
+      "肩周炎",
+      "肩袖损伤",
+      "肩部疼痛",
+      "术后康复",
+      "肩关节僵硬"
+    ],
+    "description_cn": "手扶椅背俯身，利用重力让手臂自然下垂并微幅摆动，进行肩关节松动。",
+    "duration_seconds": 15,
+    "difficulty": 1,
+    "equipment": "椅子",
+    "space_required": "small",
+    "body_parts_involved": [
+      "肩部",
+      "手臂",
+      "腰部"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "elbow",
+      "hip"
+    ],
+    "safety_level": "safe",
+    "contraindications": [],
+    "file_name": "IMG_4231.mp4",
+    "url": "/assets/videos/IMG_4231.mp4"
+  },
+  {
+    "video_id": "IMG_4238",
+    "target_joint": "肩部",
+    "target_body_parts": [
+      "肩部",
+      "上臂",
+      "前臂"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "肩外旋",
+      "站立开臂",
+      "肩袖激活"
+    ],
+    "symptom_tags": [
+      "肩部僵硬",
+      "肩周炎",
+      "圆肩驼背",
+      "上肢无力",
+      "活动受限"
+    ],
+    "description_cn": "站立位双臂屈肘90度进行肩外旋练习，激活肩袖肌群，改善肩关节活动度。",
+    "duration_seconds": 15,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "肩部",
+      "上臂",
+      "前臂"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "elbow"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性肩关节损伤",
+      "肩关节脱位"
+    ],
+    "file_name": "IMG_4238.mp4",
+    "url": "/assets/videos/IMG_4238.mp4"
+  },
+  {
+    "video_id": "IMG_4226",
+    "target_joint": "髋部",
+    "target_body_parts": [
+      "髋部",
+      "臀部",
+      "大腿"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "侧向点地",
+      "单腿站立",
+      "骨盆控制"
+    ],
+    "symptom_tags": [
+      "髋部疼痛",
+      "臀中肌无力",
+      "骨盆不稳",
+      "膝外翻"
+    ],
+    "description_cn": "单脚踩踏板，另一脚侧向点地，强化臀中肌与骨盆稳定性。",
+    "duration_seconds": 21,
+    "difficulty": 3,
+    "equipment": "椅子",
+    "space_required": "small",
+    "body_parts_involved": [
+      "髋部",
+      "大腿",
+      "核心"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "严重平衡障碍",
+      "急性髋关节损伤"
+    ],
+    "file_name": "IMG_4226.mp4",
+    "url": "/assets/videos/IMG_4226.mp4"
+  },
+  {
+    "video_id": "IMG_4234",
+    "target_joint": "肩部",
+    "target_body_parts": [
+      "肩部",
+      "上臂",
+      "肩胛骨"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "肩部上举",
+      "手臂外展",
+      "肩胛骨平面活动"
+    ],
+    "symptom_tags": [
+      "肩关节活动受限",
+      "肩部僵硬",
+      "肩周炎康复",
+      "肩袖损伤恢复"
+    ],
+    "description_cn": "站立位，单臂沿肩胛骨平面向前上方缓慢举起至最高点，锻炼肩部活动度。",
+    "duration_seconds": 14,
+    "difficulty": 2,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "肩部",
+      "上臂",
+      "肩胛骨"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "elbow",
+      "hip"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "肩关节急性炎症期",
+      "肩关节脱位未复位"
+    ],
+    "file_name": "IMG_4234.mp4",
+    "url": "/assets/videos/IMG_4234.mp4"
+  },
+  {
+    "video_id": "IMG_4245",
+    "target_joint": "肩部",
+    "target_body_parts": [
+      "肩部",
+      "胸部",
+      "上背部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "双臂前平举",
+      "水平外展",
+      "扩胸"
+    ],
+    "symptom_tags": [
+      "肩部僵硬",
+      "肩关节活动受限",
+      "圆肩",
+      "肩周炎"
+    ],
+    "description_cn": "站立位双臂前平举后向两侧水平打开，改善肩关节活动度。",
+    "duration_seconds": 20,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "肩部",
+      "胸部",
+      "上背部",
+      "手臂"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "elbow"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "肩关节脱位未愈",
+      "严重肩袖撕裂"
+    ],
+    "file_name": "IMG_4245.mp4",
+    "url": "/assets/videos/IMG_4245.mp4"
+  },
+  {
+    "video_id": "IMG_4242",
+    "target_joint": "肩部",
+    "target_body_parts": [
+      "肩部",
+      "上臂",
+      "胸部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "肩前屈",
+      "手臂上举",
+      "站立抬臂"
+    ],
+    "symptom_tags": [
+      "肩关节僵硬",
+      "肩周炎",
+      "活动受限",
+      "肩部无力"
+    ],
+    "description_cn": "站立位进行单侧手臂的前屈上举动作，用于恢复肩关节活动度。",
+    "duration_seconds": 16,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "肩部",
+      "上臂",
+      "核心"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "elbow",
+      "neck"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性肩袖撕裂",
+      "严重肩关节脱位"
+    ],
+    "file_name": "IMG_4242.mp4",
+    "url": "/assets/videos/IMG_4242.mp4"
+  },
+  {
+    "video_id": "IMG_4219",
+    "target_joint": "髋部",
+    "target_body_parts": [
+      "臀部",
+      "大腿"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "站立髋伸展",
+      "屈膝后抬腿",
+      "臀肌激活",
+      "单腿平衡"
+    ],
+    "symptom_tags": [
+      "臀肌无力",
+      "髋关节活动受限",
+      "骨盆前倾",
+      "下背部疼痛",
+      "步态异常"
+    ],
+    "description_cn": "站立位单腿支撑，另一腿屈膝向后抬起。主要锻炼臀大肌及髋关节伸展能力。",
+    "duration_seconds": 15,
+    "difficulty": 2,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "臀部",
+      "大腿",
+      "核心",
+      "脚踝"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle",
+      "shoulder"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "严重平衡障碍",
+      "急性髋关节损伤",
+      "无法单腿站立者"
+    ],
+    "file_name": "IMG_4219.mp4",
+    "url": "/assets/videos/IMG_4219.mp4"
+  },
+  {
+    "video_id": "IMG_4240",
+    "target_joint": "肩部",
+    "target_body_parts": [
+      "肩部",
+      "上背部",
+      "手臂"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "肩关节内旋",
+      "背后伸手",
+      "肩部伸展"
+    ],
+    "symptom_tags": [
+      "肩周炎",
+      "肩部僵硬",
+      "活动受限",
+      "肩袖损伤",
+      "上肢乏力"
+    ],
+    "description_cn": "站立位进行肩关节内旋练习，双臂尝试在背后触碰或交握，改善肩部灵活性。",
+    "duration_seconds": 17,
+    "difficulty": 2,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "肩部",
+      "上背部",
+      "手臂"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "elbow",
+      "neck"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "肩关节急性扭伤",
+      "严重肩袖撕裂",
+      "肩关节脱位"
+    ],
+    "file_name": "IMG_4240.mp4",
+    "url": "/assets/videos/IMG_4240.mp4"
+  },
+  {
+    "video_id": "IMG_4237",
+    "target_joint": "肩部",
+    "target_body_parts": [
+      "肩部",
+      "上臂",
+      "颈部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "双臂上举",
+      "肩关节外展",
+      "直立站立",
+      "缓慢控制"
+    ],
+    "symptom_tags": [
+      "肩关节僵硬",
+      "活动受限",
+      "肩周炎",
+      "肩部酸痛",
+      "姿势不良"
+    ],
+    "description_cn": "站立位双臂经体侧缓慢上举过头，旨在恢复肩关节全范围活动度。",
+    "duration_seconds": 16,
+    "difficulty": 2,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "肩部",
+      "上臂",
+      "核心"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "elbow",
+      "neck"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "肩关节急性炎症",
+      "严重肩袖撕裂"
+    ],
+    "file_name": "IMG_4237.mp4",
+    "url": "/assets/videos/IMG_4237.mp4"
+  },
+  {
+    "video_id": "IMG_4211",
+    "target_joint": "膝关节",
+    "target_body_parts": [
+      "大腿",
+      "臀部",
+      "小腿"
+    ],
+    "severity": "中度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "扶椅支撑",
+      "单腿踏上",
+      "重心前移",
+      "屈膝下蹲"
+    ],
+    "symptom_tags": [
+      "膝关节无力",
+      "髌骨疼痛",
+      "上下楼梯困难",
+      "股四头肌薄弱",
+      "下肢平衡差"
+    ],
+    "description_cn": "借助椅子进行单腿支撑下的屈膝下蹲，强化下肢肌力与关节稳定性。",
+    "duration_seconds": 17,
+    "difficulty": 3,
+    "equipment": "椅子",
+    "space_required": "small",
+    "body_parts_involved": [
+      "大腿",
+      "臀部",
+      "核心",
+      "小腿"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性膝关节损伤",
+      "严重平衡障碍"
+    ],
+    "file_name": "IMG_4211.mp4",
+    "url": "/assets/videos/IMG_4211.mp4"
+  },
+  {
+    "video_id": "IMG_4244",
+    "target_joint": "肩部",
+    "target_body_parts": [
+      "肩部",
+      "上臂",
+      "上背部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "双臂侧平举",
+      "屈肘外旋",
+      "肩袖激活"
+    ],
+    "symptom_tags": [
+      "肩周炎",
+      "圆肩驼背",
+      "肩袖肌群无力",
+      "肩部僵硬"
+    ],
+    "description_cn": "站立位双臂侧平举屈肘，进行肩关节内外旋活动，激活肩袖肌群，改善肩部稳定性。",
+    "duration_seconds": 16,
+    "difficulty": 2,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "肩部",
+      "上臂",
+      "上背部"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "elbow"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "肩关节急性炎症期",
+      "严重肩袖撕裂"
+    ],
+    "file_name": "IMG_4244.mp4",
+    "url": "/assets/videos/IMG_4244.mp4"
+  },
+  {
+    "video_id": "IMG_4250",
+    "target_joint": "颈部",
+    "target_body_parts": [
+      "颈部",
+      "肩部",
+      "上背部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "颈部侧屈",
+      "手臂侧伸",
+      "站立拉伸"
+    ],
+    "symptom_tags": [
+      "颈部僵硬",
+      "落枕",
+      "肩颈酸痛",
+      "颈椎活动受限"
+    ],
+    "description_cn": "站立位，单臂侧平举延伸，头部向同侧侧屈，缓解颈侧肌肉紧张。",
+    "duration_seconds": 15,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "颈部",
+      "肩部",
+      "手臂"
+    ],
+    "pose_landmarks_required": [
+      "neck",
+      "shoulder"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "颈椎骨折未愈合",
+      "急性颈椎间盘突出伴剧烈疼痛"
+    ],
+    "file_name": "IMG_4250.mp4",
+    "url": "/assets/videos/IMG_4250.mp4"
+  },
+  {
+    "video_id": "IMG_4249",
+    "target_joint": "肩部",
+    "target_body_parts": [
+      "肩部",
+      "手臂",
+      "背部",
+      "胸部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "双臂前平举",
+      "肩部前屈",
+      "站立伸展"
+    ],
+    "symptom_tags": [
+      "肩关节僵硬",
+      "活动受限",
+      "肩部疼痛",
+      "上肢乏力"
+    ],
+    "description_cn": "站立位双臂向前平举至肩高，保持伸展后缓慢放下，活动肩关节。",
+    "duration_seconds": 15,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "肩部",
+      "手臂",
+      "背部",
+      "胸部"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "elbow",
+      "hip"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "肩部急性扭伤",
+      "严重肩袖撕裂"
+    ],
+    "file_name": "IMG_4249.mp4",
+    "url": "/assets/videos/IMG_4249.mp4"
+  },
+  {
+    "video_id": "IMG_4243",
+    "target_joint": "肩部",
+    "target_body_parts": [
+      "肩部",
+      "上肢"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "站立位",
+      "单臂上举",
+      "肩关节活动"
+    ],
+    "symptom_tags": [
+      "肩关节疼痛",
+      "肩关节活动受限",
+      "肩周炎",
+      "肩部僵硬"
+    ],
+    "description_cn": "站立位单臂向前上方抬起，用于改善肩关节前屈活动度及缓解肩部僵硬。",
+    "duration_seconds": 15,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "肩部",
+      "手臂",
+      "躯干"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "elbow"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "肩袖撕裂急性期",
+      "近期肩部手术未愈合"
+    ],
+    "file_name": "IMG_4243.mp4",
+    "url": "/assets/videos/IMG_4243.mp4"
+  },
+  {
+    "video_id": "IMG_4253",
+    "target_joint": "颈部",
+    "target_body_parts": [
+      "颈部",
+      "肩部",
+      "上背部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "颈部侧屈",
+      "侧向拉伸",
+      "站立拉伸"
+    ],
+    "symptom_tags": [
+      "颈部僵硬",
+      "肩颈酸痛",
+      "斜方肌紧张",
+      "颈椎活动受限"
+    ],
+    "description_cn": "站立位颈部侧屈拉伸，配合手臂下压动作，缓解肩颈肌肉紧张。",
+    "duration_seconds": 17,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "颈部",
+      "肩部",
+      "上背部"
+    ],
+    "pose_landmarks_required": [
+      "neck",
+      "shoulder"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性颈椎损伤",
+      "严重颈椎病"
+    ],
+    "file_name": "IMG_4253.mp4",
+    "url": "/assets/videos/IMG_4253.mp4"
+  },
+  {
+    "video_id": "IMG_4247",
+    "target_joint": "肩部",
+    "target_body_parts": [
+      "肩部",
+      "上臂",
+      "背部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "站立双臂上举",
+      "肩部伸展",
+      "无负重推举"
+    ],
+    "symptom_tags": [
+      "肩部僵硬",
+      "肩关节活动受限",
+      "肩周炎恢复期",
+      "上肢无力"
+    ],
+    "description_cn": "站立位双臂屈肘上举后伸直过头顶，缓慢往复，旨在恢复肩关节活动度。",
+    "duration_seconds": 19,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "肩部",
+      "上臂",
+      "背部"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "elbow"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性肩袖撕裂",
+      "严重肩关节不稳",
+      "过顶动作疼痛"
+    ],
+    "file_name": "IMG_4247.mp4",
+    "url": "/assets/videos/IMG_4247.mp4"
+  },
+  {
+    "video_id": "IMG_4241",
+    "target_joint": "肩部",
+    "target_body_parts": [
+      "肩部",
+      "胸部",
+      "上背部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "站立肩后伸",
+      "背后手交握",
+      "肩部前屈"
+    ],
+    "symptom_tags": [
+      "肩部僵硬",
+      "圆肩驼背",
+      "肩关节活动受限",
+      "胸肌紧张",
+      "肩周炎"
+    ],
+    "description_cn": "站立位进行肩关节后伸内旋及前屈交替训练，旨在改善肩部活动度，缓解肩颈僵硬。",
+    "duration_seconds": 18,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "肩部",
+      "胸部",
+      "上背部"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "elbow",
+      "neck"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "肩袖撕裂急性期",
+      "肩关节脱位史"
+    ],
+    "file_name": "IMG_4241.mp4",
+    "url": "/assets/videos/IMG_4241.mp4"
+  },
+  {
+    "video_id": "IMG_4258",
+    "target_joint": "肩部",
+    "target_body_parts": [
+      "肩部",
+      "肘部",
+      "上肢"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "双臂前伸",
+      "屈肘回收",
+      "肩部前屈",
+      "肘关节屈伸"
+    ],
+    "symptom_tags": [
+      "肩关节活动受限",
+      "上肢无力",
+      "肩部僵硬",
+      "肩肘协调障碍"
+    ],
+    "description_cn": "站立位进行肩部前屈与肘关节屈伸训练，增强上肢活动度和协调性",
+    "duration_seconds": 14,
+    "difficulty": 2,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "肩部",
+      "肘部",
+      "上肢",
+      "胸部"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "elbow"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "严重肩袖损伤",
+      "急性肩关节炎症",
+      "肩关节脱位"
+    ],
+    "file_name": "IMG_4258.mp4",
+    "url": "/assets/videos/IMG_4258.mp4"
+  },
+  {
+    "video_id": "IMG_4223",
+    "target_joint": "髋部",
+    "target_body_parts": [
+      "臀部",
+      "大腿",
+      "腰部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "单腿支撑",
+      "髋部折叠",
+      "静态保持",
+      "平衡训练"
+    ],
+    "symptom_tags": [
+      "髋关节不稳",
+      "臀部无力",
+      "平衡感差",
+      "腘绳肌紧张"
+    ],
+    "description_cn": "单腿后撤屈髋并保持，强化臀腿力量与单腿平衡稳定性。",
+    "duration_seconds": 14,
+    "difficulty": 3,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "臀部",
+      "大腿",
+      "腰部"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle",
+      "shoulder"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性髋部损伤",
+      "严重平衡障碍",
+      "近期下肢手术"
+    ],
+    "file_name": "IMG_4223.mp4",
+    "url": "/assets/videos/IMG_4223.mp4"
+  },
+  {
+    "video_id": "IMG_4208",
+    "target_joint": "膝关节",
+    "target_body_parts": [
+      "膝关节",
+      "大腿",
+      "臀部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "扶椅单腿蹲",
+      "下肢力量",
+      "平衡控制"
+    ],
+    "symptom_tags": [
+      "膝关节无力",
+      "髌骨疼痛",
+      "上下楼困难",
+      "下肢不稳"
+    ],
+    "description_cn": "手扶椅背保持平衡，单腿支撑进行浅蹲练习，旨在强化膝关节周围肌肉及改善下肢稳定性。",
+    "duration_seconds": 16,
+    "difficulty": 2,
+    "equipment": "椅子",
+    "space_required": "small",
+    "body_parts_involved": [
+      "膝关节",
+      "大腿",
+      "臀部",
+      "踝关节"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性下肢损伤",
+      "严重骨质疏松",
+      "平衡功能严重受损"
+    ],
+    "file_name": "IMG_4208.mp4",
+    "url": "/assets/videos/IMG_4208.mp4"
+  },
+  {
+    "video_id": "IMG_4259",
+    "target_joint": "肘部",
+    "target_body_parts": [
+      "上肢",
+      "肘部",
+      "前臂",
+      "手部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "肘关节屈伸",
+      "空手弯举",
+      "上肢活动"
+    ],
+    "symptom_tags": [
+      "肘关节僵硬",
+      "活动受限",
+      "术后恢复",
+      "肌力减退",
+      "关节润滑"
+    ],
+    "description_cn": "站立位进行双肘屈伸练习，双手握拳，前臂向上抬起至胸前高度后缓慢放下。",
+    "duration_seconds": 16,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "上肢",
+      "肘部",
+      "前臂",
+      "肩部"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "elbow"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "肘关节骨折未愈合",
+      "严重肘关节不稳"
+    ],
+    "file_name": "IMG_4259.mp4",
+    "url": "/assets/videos/IMG_4259.mp4"
+  },
+  {
+    "video_id": "IMG_4268",
+    "target_joint": "肩部",
+    "target_body_parts": [
+      "肩部",
+      "上臂",
+      "前臂",
+      "手腕"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "手臂前平举",
+      "手腕背屈伸展",
+      "神经滑动练习"
+    ],
+    "symptom_tags": [
+      "手臂麻木",
+      "肩部僵硬",
+      "腕管综合征",
+      "神经卡压",
+      "上肢放射痛"
+    ],
+    "description_cn": "站立位单臂前平举，配合手腕背屈与放松交替，进行上肢神经滑动练习。",
+    "duration_seconds": 12,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "肩部",
+      "肘部",
+      "手腕",
+      "颈部"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "elbow"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性神经炎症期",
+      "剧烈疼痛",
+      "肩部术后早期"
+    ],
+    "file_name": "IMG_4268.mp4",
+    "url": "/assets/videos/IMG_4268.mp4"
+  },
+  {
+    "video_id": "IMG_4256",
+    "target_joint": "颈部",
+    "target_body_parts": [
+      "颈部",
+      "肩部",
+      "斜方肌"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "颈部侧屈",
+      "侧方拉伸",
+      "手部辅助",
+      "静态保持"
+    ],
+    "symptom_tags": [
+      "颈部僵硬",
+      "落枕",
+      "颈肌劳损",
+      "斜方肌紧张",
+      "活动受限"
+    ],
+    "description_cn": "站立位，手部辅助头部向侧方倾斜，进行颈部侧屈拉伸，保持静止。",
+    "duration_seconds": 14,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "颈部",
+      "肩部",
+      "上肢"
+    ],
+    "pose_landmarks_required": [
+      "neck",
+      "shoulder",
+      "elbow"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性颈椎损伤",
+      "严重颈椎病",
+      "颈部剧烈疼痛"
+    ],
+    "file_name": "IMG_4256.mp4",
+    "url": "/assets/videos/IMG_4256.mp4"
+  },
+  {
+    "video_id": "IMG_4263",
+    "target_joint": "肘部",
+    "target_body_parts": [
+      "手臂",
+      "手腕",
+      "前臂"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "站立抬臂",
+      "手掌翻转",
+      "前臂旋转"
+    ],
+    "symptom_tags": [
+      "前臂僵硬",
+      "手腕不适",
+      "肘部酸痛",
+      "活动受限"
+    ],
+    "description_cn": "站立位单臂前伸，进行手掌翻转及腕部活动，旨在恢复前臂旋转功能及缓解局部僵硬。",
+    "duration_seconds": 13,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "手臂",
+      "手腕",
+      "前臂"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "elbow"
+    ],
+    "safety_level": "safe",
+    "contraindications": [],
+    "file_name": "IMG_4263.mp4",
+    "url": "/assets/videos/IMG_4263.mp4"
+  },
+  {
+    "video_id": "IMG_4266",
+    "target_joint": "肘部",
+    "target_body_parts": [
+      "手臂",
+      "前臂",
+      "手腕"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "手臂前平举",
+      "手腕屈伸",
+      "前臂拉伸"
+    ],
+    "symptom_tags": [
+      "网球肘",
+      "前臂酸痛",
+      "手腕僵硬",
+      "肘部活动受限"
+    ],
+    "description_cn": "站立位手臂前平举，进行手腕的屈曲与背伸活动，拉伸前臂肌群。",
+    "duration_seconds": 14,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "肩部",
+      "肘部",
+      "前臂",
+      "手腕"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "elbow"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性腕部扭伤",
+      "严重肘关节疼痛"
+    ],
+    "file_name": "IMG_4266.mp4",
+    "url": "/assets/videos/IMG_4266.mp4"
+  },
+  {
+    "video_id": "IMG_4275",
+    "target_joint": "肘部",
+    "target_body_parts": [
+      "手臂",
+      "前臂",
+      "手腕",
+      "肩部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "站立",
+      "手臂前平举",
+      "手腕拉伸",
+      "前臂放松"
+    ],
+    "symptom_tags": [
+      "手腕疼痛",
+      "前臂僵硬",
+      "肘部酸痛",
+      "鼠标手",
+      "腱鞘炎预防"
+    ],
+    "description_cn": "站立双臂前平举，通过手部互压拉伸腕关节及前臂肌群，缓解上肢疲劳。",
+    "duration_seconds": 13,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "上肢",
+      "前臂",
+      "手腕",
+      "肩部"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "elbow"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "腕部骨折未愈合",
+      "急性腕关节扭伤"
+    ],
+    "file_name": "IMG_4275.mp4",
+    "url": "/assets/videos/IMG_4275.mp4"
+  },
+  {
+    "video_id": "IMG_4254",
+    "target_joint": "颈部",
+    "target_body_parts": [
+      "颈部",
+      "肩部",
+      "手臂"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "颈部侧屈",
+      "手臂前平举",
+      "站立位"
+    ],
+    "symptom_tags": [
+      "颈部僵硬",
+      "肩颈酸痛",
+      "颈椎不适",
+      "落枕",
+      "活动受限"
+    ],
+    "description_cn": "站立位，进行手臂前平举与颈部侧屈练习，缓解肩颈肌肉紧张。",
+    "duration_seconds": 18,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "颈部",
+      "肩部",
+      "手臂"
+    ],
+    "pose_landmarks_required": [
+      "neck",
+      "shoulder",
+      "elbow"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "颈椎骨折",
+      "严重眩晕",
+      "急性颈部扭伤"
+    ],
+    "file_name": "IMG_4254.mp4",
+    "url": "/assets/videos/IMG_4254.mp4"
+  },
+  {
+    "video_id": "IMG_4277",
+    "target_joint": "肘部",
+    "target_body_parts": [
+      "前臂",
+      "手腕",
+      "手部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "站立伸臂",
+      "手腕屈曲",
+      "前臂拉伸"
+    ],
+    "symptom_tags": [
+      "网球肘",
+      "前臂酸痛",
+      "手腕僵硬",
+      "鼠标手"
+    ],
+    "description_cn": "站立位伸直手臂，另一手辅助向下压手腕，拉伸前臂伸肌群。",
+    "duration_seconds": 15,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "上肢",
+      "前臂",
+      "手腕"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "elbow"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "腕部急性骨折",
+      "严重腕关节扭伤"
+    ],
+    "file_name": "IMG_4277.mp4",
+    "url": "/assets/videos/IMG_4277.mp4"
+  },
+  {
+    "video_id": "IMG_4255",
+    "target_joint": "颈部",
+    "target_body_parts": [
+      "眼部",
+      "头部",
+      "颈部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "chronic",
+    "action_keywords": [
+      "眼部按摩",
+      "穴位按揉",
+      "缓解疲劳"
+    ],
+    "symptom_tags": [
+      "眼疲劳",
+      "头痛",
+      "颈部僵硬",
+      "精神紧张",
+      "干眼症"
+    ],
+    "description_cn": "站立位，右手抬起轻柔按揉右眼周及太阳穴，缓解眼疲劳与头部紧张。",
+    "duration_seconds": 14,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "眼部",
+      "头部",
+      "颈部",
+      "肩部",
+      "手臂"
+    ],
+    "pose_landmarks_required": [
+      "neck",
+      "shoulder",
+      "elbow"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "眼部急性感染",
+      "近期眼部手术",
+      "面部骨折"
+    ],
+    "file_name": "IMG_4255.mp4",
+    "url": "/assets/videos/IMG_4255.mp4"
+  },
+  {
+    "video_id": "IMG_4278",
+    "target_joint": "肘部",
+    "target_body_parts": [
+      "手臂",
+      "手腕",
+      "前臂"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "站立",
+      "手臂前平举",
+      "手腕屈伸拉伸"
+    ],
+    "symptom_tags": [
+      "手腕酸痛",
+      "前臂紧张",
+      "鼠标手",
+      "腱鞘炎",
+      "肘部疲劳"
+    ],
+    "description_cn": "站立位双臂前平举，单手辅助进行手腕屈伸拉伸，放松前臂肌群。",
+    "duration_seconds": 14,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "手臂",
+      "手腕",
+      "前臂"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "elbow"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "手腕急性扭伤",
+      "前臂骨折未愈合"
+    ],
+    "file_name": "IMG_4278.mp4",
+    "url": "/assets/videos/IMG_4278.mp4"
+  },
+  {
+    "video_id": "IMG_4271",
+    "target_joint": "肘部",
+    "target_body_parts": [
+      "前臂",
+      "手腕",
+      "手臂"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "手臂前平举",
+      "手腕背伸",
+      "手腕掌屈"
+    ],
+    "symptom_tags": [
+      "前臂酸痛",
+      "手腕僵硬",
+      "鼠标手",
+      "网球肘",
+      "腱鞘炎预防"
+    ],
+    "description_cn": "站立位手臂前平举，进行手腕的屈伸活动，用于拉伸前臂肌群。",
+    "duration_seconds": 14,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "肩部",
+      "肘部",
+      "前臂",
+      "手腕"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "elbow"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性手腕扭伤",
+      "肘关节骨折未愈合"
+    ],
+    "file_name": "IMG_4271.mp4",
+    "url": "/assets/videos/IMG_4271.mp4"
+  },
+  {
+    "video_id": "IMG_4264",
+    "target_joint": "肘部",
+    "target_body_parts": [
+      "前臂",
+      "手腕",
+      "手部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "acute",
+    "action_keywords": [
+      "手腕屈伸",
+      "前臂旋转",
+      "关节活动"
+    ],
+    "symptom_tags": [
+      "前臂酸痛",
+      "手腕僵硬",
+      "鼠标手",
+      "网球肘",
+      "腱鞘炎"
+    ],
+    "description_cn": "站立位，单臂前伸，进行手腕的屈伸、侧偏及前臂的旋前旋后练习。",
+    "duration_seconds": 13,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "前臂",
+      "手腕",
+      "肘部"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "elbow"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "手腕急性骨折",
+      "严重韧带撕裂"
+    ],
+    "file_name": "IMG_4264.mp4",
+    "url": "/assets/videos/IMG_4264.mp4"
+  },
+  {
+    "video_id": "IMG_4272",
+    "target_joint": "肘部",
+    "target_body_parts": [
+      "前臂",
+      "手腕"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "站立",
+      "手臂前伸",
+      "手腕拉伸"
+    ],
+    "symptom_tags": [
+      "前臂紧张",
+      "手腕酸痛",
+      "肘部内侧痛",
+      "鼠标手"
+    ],
+    "description_cn": "站立双臂前平举，双手交叉掌心向前推，拉伸前臂屈肌群。",
+    "duration_seconds": 14,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "肩部",
+      "肘部",
+      "前臂",
+      "手腕"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "elbow"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "手腕急性扭伤"
+    ],
+    "file_name": "IMG_4272.mp4",
+    "url": "/assets/videos/IMG_4272.mp4"
+  },
+  {
+    "video_id": "IMG_4261",
+    "target_joint": "肘部",
+    "target_body_parts": [
+      "右上臂",
+      "右前臂",
+      "右手腕"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "屈肘举臂",
+      "前臂旋后",
+      "手腕伸展"
+    ],
+    "symptom_tags": [
+      "前臂酸痛",
+      "手腕僵硬",
+      "肘部不适",
+      "旋后受限"
+    ],
+    "description_cn": "站立位，屈肘90度举臂，掌心向上，进行前臂旋后及手腕手指的活动练习。",
+    "duration_seconds": 15,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "右肩",
+      "右肘",
+      "右手"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "elbow"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "肘部骨折未愈合",
+      "严重肘关节不稳"
+    ],
+    "file_name": "IMG_4261.mp4",
+    "url": "/assets/videos/IMG_4261.mp4"
+  },
+  {
+    "video_id": "IMG_4274",
+    "target_joint": "肘部",
+    "target_body_parts": [
+      "肩部",
+      "肘部",
+      "前臂",
+      "手腕"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "站立位",
+      "双臂前平举",
+      "手腕背伸拉伸"
+    ],
+    "symptom_tags": [
+      "前臂酸痛",
+      "手腕僵硬",
+      "肘部内侧疼痛",
+      "鼠标手",
+      "长时间打字疲劳"
+    ],
+    "description_cn": "站立位双臂向前平举，掌心向前手指向上，保持伸展以拉伸前臂屈肌群。",
+    "duration_seconds": 12,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "肩部",
+      "肘部",
+      "前臂",
+      "手腕"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "elbow"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "肘部急性炎症期",
+      "严重腕管综合征急性发作期"
+    ],
+    "file_name": "IMG_4274.mp4",
+    "url": "/assets/videos/IMG_4274.mp4"
+  },
+  {
+    "video_id": "IMG_4279",
+    "target_joint": "肘部",
+    "target_body_parts": [
+      "前臂",
+      "手腕",
+      "肩部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "站立",
+      "手臂前平举",
+      "手腕背伸拉伸"
+    ],
+    "symptom_tags": [
+      "前臂酸痛",
+      "手腕僵硬",
+      "鼠标手",
+      "腱鞘炎预防"
+    ],
+    "description_cn": "站立位双臂前平举，单手辅助向后拉伸对侧手腕，放松前臂屈肌群。",
+    "duration_seconds": 14,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "前臂",
+      "手腕",
+      "肩部"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "elbow"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "手腕急性扭伤",
+      "前臂骨折未愈合"
+    ],
+    "file_name": "IMG_4279.mp4",
+    "url": "/assets/videos/IMG_4279.mp4"
+  },
+  {
+    "video_id": "IMG_4280",
+    "target_joint": "肘部",
+    "target_body_parts": [
+      "前臂",
+      "手腕",
+      "手部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "站立位",
+      "手臂前伸",
+      "手腕背伸拉伸",
+      "前臂放松"
+    ],
+    "symptom_tags": [
+      "前臂酸痛",
+      "手腕僵硬",
+      "鼠标手",
+      "网球肘预防",
+      "肘部外侧不适"
+    ],
+    "description_cn": "站立位单臂前平举，另一手辅助向后拉伸手腕，有效放松前臂屈肌群。",
+    "duration_seconds": 13,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "肩部",
+      "肘部",
+      "前臂",
+      "手腕"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "elbow"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性腕关节扭伤",
+      "严重肘部骨折未愈合"
+    ],
+    "file_name": "IMG_4280.mp4",
+    "url": "/assets/videos/IMG_4280.mp4"
+  },
+  {
+    "video_id": "IMG_4293",
+    "target_joint": "踝关节",
+    "target_body_parts": [
+      "小腿",
+      "脚踝",
+      "足部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "acute",
+    "action_keywords": [
+      "坐姿提踵",
+      "脚踝屈伸",
+      "小腿训练"
+    ],
+    "symptom_tags": [
+      "下肢水肿",
+      "踝关节僵硬",
+      "小腿无力",
+      "久坐疲劳",
+      "血液循环不畅"
+    ],
+    "description_cn": "坐在椅子上，双手自然放置，进行脚后跟抬起和放下的动作，活动踝关节并锻炼小腿肌肉。",
+    "duration_seconds": 15,
+    "difficulty": 1,
+    "equipment": "椅子",
+    "space_required": "small",
+    "body_parts_involved": [
+      "小腿",
+      "脚踝",
+      "足部"
+    ],
+    "pose_landmarks_required": [
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "踝关节急性骨折",
+      "严重跟腱损伤"
+    ],
+    "file_name": "IMG_4293.mp4",
+    "url": "/assets/videos/IMG_4293.mp4"
+  },
+  {
+    "video_id": "IMG_4286",
+    "target_joint": "肘部",
+    "target_body_parts": [
+      "前臂",
+      "手腕",
+      "手"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "手腕屈伸",
+      "前臂支撑",
+      "哑铃负重"
+    ],
+    "symptom_tags": [
+      "手腕无力",
+      "前臂酸痛",
+      "网球肘",
+      "握力下降"
+    ],
+    "description_cn": "坐姿前臂支撑，手持哑铃进行手腕的屈伸练习，增强前臂肌群力量。",
+    "duration_seconds": 10,
+    "difficulty": 1,
+    "equipment": "哑铃",
+    "space_required": "small",
+    "body_parts_involved": [
+      "前臂",
+      "手腕",
+      "肘部"
+    ],
+    "pose_landmarks_required": [
+      "elbow",
+      "shoulder"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "手腕急性扭伤",
+      "严重腕关节炎"
+    ],
+    "file_name": "IMG_4286.mp4",
+    "url": "/assets/videos/IMG_4286.mp4"
+  },
+  {
+    "video_id": "IMG_4262",
+    "target_joint": "肘部",
+    "target_body_parts": [
+      "肘部",
+      "前臂",
+      "手部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "站立",
+      "屈肘",
+      "抓握练习",
+      "前臂旋转"
+    ],
+    "symptom_tags": [
+      "肘部疼痛",
+      "前臂酸痛",
+      "抓握无力",
+      "旋转受限",
+      "网球肘"
+    ],
+    "description_cn": "站立位，屈肘抬起前臂，进行手指抓握与前臂旋转练习，缓解前臂肌肉紧张。",
+    "duration_seconds": 13,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "肩部",
+      "肘部",
+      "前臂",
+      "手部"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "elbow"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性肘部创伤",
+      "严重未愈合骨折"
+    ],
+    "file_name": "IMG_4262.mp4",
+    "url": "/assets/videos/IMG_4262.mp4"
+  },
+  {
+    "video_id": "IMG_4292",
+    "target_joint": "踝关节",
+    "target_body_parts": [
+      "小腿",
+      "脚踝",
+      "大腿"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "坐姿提踵",
+      "脚跟抬起",
+      "小腿训练"
+    ],
+    "symptom_tags": [
+      "小腿无力",
+      "踝关节僵硬",
+      "下肢循环不畅",
+      "跟腱康复"
+    ],
+    "description_cn": "坐在椅子上，双脚平放，反复踮起脚尖再放下，增强小腿力量及踝关节灵活性。",
+    "duration_seconds": 13,
+    "difficulty": 1,
+    "equipment": "椅子",
+    "space_required": "small",
+    "body_parts_involved": [
+      "小腿",
+      "脚踝",
+      "大腿"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "踝关节急性骨折",
+      "严重下肢静脉血栓"
+    ],
+    "file_name": "IMG_4292.mp4",
+    "url": "/assets/videos/IMG_4292.mp4"
+  },
+  {
+    "video_id": "IMG_4284",
+    "target_joint": "肘部",
+    "target_body_parts": [
+      "前臂",
+      "手腕",
+      "手"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "坐位腕屈伸",
+      "前臂支撑",
+      "哑铃抗阻"
+    ],
+    "symptom_tags": [
+      "前臂酸痛",
+      "手腕无力",
+      "肘部外侧疼痛",
+      "肘部内侧疼痛",
+      "握力下降"
+    ],
+    "description_cn": "坐位前臂支撑，手持哑铃进行腕关节屈伸练习，适用于前臂及肘部肌群强化。",
+    "duration_seconds": 10,
+    "difficulty": 1,
+    "equipment": "哑铃",
+    "space_required": "small",
+    "body_parts_involved": [
+      "前臂",
+      "手腕",
+      "手",
+      "肘部"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "elbow"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性腕关节扭伤",
+      "未愈合的前臂骨折",
+      "严重肘关节疼痛"
+    ],
+    "file_name": "IMG_4284.mp4",
+    "url": "/assets/videos/IMG_4284.mp4"
+  },
+  {
+    "video_id": "IMG_4299",
+    "target_joint": "膝关节",
+    "target_body_parts": [
+      "大腿",
+      "膝关节",
+      "小腿"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "坐位伸膝",
+      "股四头肌训练",
+      "腿部伸展"
+    ],
+    "symptom_tags": [
+      "膝关节疼痛",
+      "股四头肌无力",
+      "膝关节炎",
+      "术后康复",
+      "髌骨轨迹不良"
+    ],
+    "description_cn": "坐在椅子上，缓慢伸直单侧小腿并悬停，锻炼股四头肌力量，增强膝关节稳定性。",
+    "duration_seconds": 12,
+    "difficulty": 1,
+    "equipment": "椅子",
+    "space_required": "small",
+    "body_parts_involved": [
+      "大腿",
+      "膝关节",
+      "小腿"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [],
+    "file_name": "IMG_4299.mp4",
+    "url": "/assets/videos/IMG_4299.mp4"
+  },
+  {
+    "video_id": "IMG_4287",
+    "target_joint": "肘部",
+    "target_body_parts": [
+      "前臂",
+      "手腕",
+      "手部",
+      "肘部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "手腕屈伸",
+      "前臂支撑",
+      "坐姿负重"
+    ],
+    "symptom_tags": [
+      "网球肘",
+      "高尔夫球肘",
+      "前臂酸痛",
+      "手腕无力",
+      "鼠标手"
+    ],
+    "description_cn": "坐姿前臂支撑于椅背，手持轻哑铃进行手腕屈伸练习，强化前臂肌群。",
+    "duration_seconds": 12,
+    "difficulty": 1,
+    "equipment": "哑铃",
+    "space_required": "small",
+    "body_parts_involved": [
+      "前臂",
+      "手腕",
+      "手部",
+      "肘部"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "elbow"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性扭伤",
+      "骨折未愈合",
+      "严重肘关节炎"
+    ],
+    "file_name": "IMG_4287.mp4",
+    "url": "/assets/videos/IMG_4287.mp4"
+  },
+  {
+    "video_id": "IMG_4295",
+    "target_joint": "腰部",
+    "target_body_parts": [
+      "上背部",
+      "腰部",
+      "肩部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "坐姿",
+      "双手交握",
+      "含胸拔背",
+      "脊柱伸展"
+    ],
+    "symptom_tags": [
+      "腰背僵硬",
+      "久坐不适",
+      "胸椎活动受限",
+      "姿势不良"
+    ],
+    "description_cn": "坐姿脊柱活动度训练。双手交握前推含胸，随后抬头挺胸伸展脊柱。",
+    "duration_seconds": 13,
+    "difficulty": 1,
+    "equipment": "椅子",
+    "space_required": "small",
+    "body_parts_involved": [
+      "上背部",
+      "腰部",
+      "肩部",
+      "颈部"
+    ],
+    "pose_landmarks_required": [
+      "neck",
+      "shoulder",
+      "hip"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性脊柱损伤",
+      "严重骨质疏松"
+    ],
+    "file_name": "IMG_4295.mp4",
+    "url": "/assets/videos/IMG_4295.mp4"
+  },
+  {
+    "video_id": "IMG_4296",
+    "target_joint": "颈部",
+    "target_body_parts": [
+      "颈部",
+      "头部",
+      "肩部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "chronic",
+    "action_keywords": [
+      "坐姿抱头",
+      "颈部后伸",
+      "颈部拉伸"
+    ],
+    "symptom_tags": [
+      "颈部僵硬",
+      "颈椎疲劳",
+      "肩颈酸痛",
+      "低头族",
+      "颈部活动受限"
+    ],
+    "description_cn": "坐在椅子上双手抱头，缓慢进行颈部后仰伸展，重复多次以放松颈后肌群。",
+    "duration_seconds": 14,
+    "difficulty": 2,
+    "equipment": "椅子",
+    "space_required": "small",
+    "body_parts_involved": [
+      "颈部",
+      "肩部",
+      "上背部"
+    ],
+    "pose_landmarks_required": [
+      "neck",
+      "shoulder"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性颈部扭伤",
+      "颈椎不稳",
+      "严重骨质疏松"
+    ],
+    "file_name": "IMG_4296.mp4",
+    "url": "/assets/videos/IMG_4296.mp4"
+  },
+  {
+    "video_id": "IMG_4297",
+    "target_joint": "膝关节",
+    "target_body_parts": [
+      "大腿",
+      "膝盖",
+      "小腿"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "坐姿",
+      "交替抬腿",
+      "伸膝"
+    ],
+    "symptom_tags": [
+      "膝盖无力",
+      "关节僵硬",
+      "肌肉萎缩",
+      "髌骨疼痛"
+    ],
+    "description_cn": "坐在椅子上，双手扶住大腿，交替伸直并抬起双腿，锻炼股四头肌力量。",
+    "duration_seconds": 15,
+    "difficulty": 1,
+    "equipment": "椅子",
+    "space_required": "small",
+    "body_parts_involved": [
+      "大腿",
+      "膝盖",
+      "小腿",
+      "髋部"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [],
+    "file_name": "IMG_4297.mp4",
+    "url": "/assets/videos/IMG_4297.mp4"
+  },
+  {
+    "video_id": "IMG_4288",
+    "target_joint": "肘部",
+    "target_body_parts": [
+      "前臂",
+      "手腕",
+      "上臂"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "手腕伸展",
+      "哑铃腕屈伸",
+      "前臂肌力训练"
+    ],
+    "symptom_tags": [
+      "网球肘",
+      "高尔夫球肘",
+      "手腕酸痛",
+      "抓握无力"
+    ],
+    "description_cn": "坐姿前臂支撑于椅背，手持轻哑铃进行手腕屈伸练习，强化前臂肌群。",
+    "duration_seconds": 30,
+    "difficulty": 2,
+    "equipment": "哑铃",
+    "space_required": "small",
+    "body_parts_involved": [
+      "前臂",
+      "手腕",
+      "上臂",
+      "肩部"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "elbow"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性腕部扭伤",
+      "未愈合的骨折"
+    ],
+    "file_name": "IMG_4288.mp4",
+    "url": "/assets/videos/IMG_4288.mp4"
+  },
+  {
+    "video_id": "IMG_4289",
+    "target_joint": "肘部",
+    "target_body_parts": [
+      "前臂",
+      "手腕",
+      "手部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "腕部屈伸",
+      "前臂支撑",
+      "轻负重训练"
+    ],
+    "symptom_tags": [
+      "网球肘",
+      "高尔夫球肘",
+      "前臂酸痛",
+      "手腕乏力"
+    ],
+    "description_cn": "坐姿前臂支撑于台面，手持轻哑铃进行手腕屈伸练习，增强前臂肌群力量。",
+    "duration_seconds": 17,
+    "difficulty": 1,
+    "equipment": "哑铃",
+    "space_required": "small",
+    "body_parts_involved": [
+      "前臂",
+      "手腕",
+      "手部",
+      "肘部"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "elbow"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "腕部急性扭伤",
+      "肘部骨折未愈合"
+    ],
+    "file_name": "IMG_4289.mp4",
+    "url": "/assets/videos/IMG_4289.mp4"
+  },
+  {
+    "video_id": "IMG_4251",
+    "target_joint": "腰部",
+    "target_body_parts": [
+      "颈部",
+      "肩部",
+      "腰部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "站立侧弯",
+      "体侧伸展",
+      "脊柱侧屈"
+    ],
+    "symptom_tags": [
+      "腰部僵硬",
+      "侧腰酸痛",
+      "肩颈紧张",
+      "脊柱活动受限"
+    ],
+    "description_cn": "站立位单臂侧举，身体向对侧弯曲，拉伸侧腰及躯干肌群。",
+    "duration_seconds": 15,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "颈部",
+      "肩部",
+      "腰部",
+      "手臂"
+    ],
+    "pose_landmarks_required": [
+      "neck",
+      "shoulder",
+      "hip"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性腰部扭伤",
+      "严重脊柱侧弯",
+      "眩晕症"
+    ],
+    "file_name": "IMG_4251.mp4",
+    "url": "/assets/videos/IMG_4251.mp4"
+  },
+  {
+    "video_id": "IMG_4306",
+    "target_joint": "颈部",
+    "target_body_parts": [
+      "颈部",
+      "肩部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "颈部侧屈",
+      "手辅助拉伸"
+    ],
+    "symptom_tags": [
+      "颈部僵硬",
+      "斜方肌紧张",
+      "落枕"
+    ],
+    "description_cn": "站立位，单手辅助头部向对侧倾斜，拉伸颈部侧方肌肉。",
+    "duration_seconds": 14,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "颈部",
+      "肩部",
+      "手臂"
+    ],
+    "pose_landmarks_required": [
+      "neck",
+      "shoulder"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性颈椎损伤",
+      "颈部剧烈疼痛"
+    ],
+    "file_name": "IMG_4306.mp4",
+    "url": "/assets/videos/IMG_4306.mp4"
+  },
+  {
+    "video_id": "IMG_4246",
+    "target_joint": "肩部",
+    "target_body_parts": [
+      "肩部",
+      "背部",
+      "上肢"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "站姿",
+      "前平举",
+      "屈肘后拉",
+      "肩胛后缩"
+    ],
+    "symptom_tags": [
+      "圆肩驼背",
+      "肩部僵硬",
+      "肩胛骨疼痛",
+      "上交叉综合征",
+      "肩袖损伤恢复"
+    ],
+    "description_cn": "站立位双臂前平举，随后屈肘向后拉至胸前，强化肩胛骨后缩肌群，改善肩部姿态。",
+    "duration_seconds": 16,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "肩部",
+      "背部",
+      "肘部",
+      "上肢"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "elbow"
+    ],
+    "safety_level": "safe",
+    "contraindications": [],
+    "file_name": "IMG_4246.mp4",
+    "url": "/assets/videos/IMG_4246.mp4"
+  },
+  {
+    "video_id": "IMG_4315",
+    "target_joint": "颈部",
+    "target_body_parts": [
+      "颈部",
+      "肩部",
+      "上背部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "颈部伸展",
+      "头部后仰",
+      "缓慢控制"
+    ],
+    "symptom_tags": [
+      "颈部僵硬",
+      "颈椎不适",
+      "肩颈酸痛",
+      "姿势不良"
+    ],
+    "description_cn": "站立位颈部后仰伸展，缓慢抬头至极限位置保持，缓解颈前侧肌肉紧张。",
+    "duration_seconds": 16,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "颈部",
+      "肩部"
+    ],
+    "pose_landmarks_required": [
+      "neck",
+      "shoulder"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "严重颈椎病",
+      "颈椎不稳定",
+      "急性颈部损伤"
+    ],
+    "file_name": "IMG_4315.mp4",
+    "url": "/assets/videos/IMG_4315.mp4"
+  },
+  {
+    "video_id": "IMG_4303",
+    "target_joint": "膝关节",
+    "target_body_parts": [
+      "大腿",
+      "膝盖",
+      "小腿"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "坐姿伸膝",
+      "交替抬腿",
+      "股四头肌训练"
+    ],
+    "symptom_tags": [
+      "膝关节活动受限",
+      "股四头肌无力",
+      "下肢血液循环不畅",
+      "膝关节炎康复"
+    ],
+    "description_cn": "坐在椅子上，保持躯干稳定，交替向前伸直单腿，强化大腿前侧肌肉及膝关节活动度。",
+    "duration_seconds": 14,
+    "difficulty": 1,
+    "equipment": "椅子",
+    "space_required": "small",
+    "body_parts_involved": [
+      "大腿",
+      "膝盖",
+      "小腿"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "膝关节急性损伤期",
+      "严重膝关节疼痛"
+    ],
+    "file_name": "IMG_4303.mp4",
+    "url": "/assets/videos/IMG_4303.mp4"
+  },
+  {
+    "video_id": "IMG_4307",
+    "target_joint": "颈部",
+    "target_body_parts": [
+      "颈部",
+      "肩部",
+      "上背部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "颈部侧屈",
+      "斜方肌拉伸",
+      "徒手拉伸"
+    ],
+    "symptom_tags": [
+      "颈部僵硬",
+      "肩颈酸痛",
+      "落枕",
+      "紧张性头痛"
+    ],
+    "description_cn": "站立位颈部侧屈拉伸，手部辅助增加拉伸幅度，缓解颈部侧方肌肉紧张。",
+    "duration_seconds": 15,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "颈部",
+      "肩部",
+      "上背部"
+    ],
+    "pose_landmarks_required": [
+      "neck",
+      "shoulder"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性颈椎损伤",
+      "严重颈椎不稳"
+    ],
+    "file_name": "IMG_4307.mp4",
+    "url": "/assets/videos/IMG_4307.mp4"
+  },
+  {
+    "video_id": "IMG_4314",
+    "target_joint": "颈部",
+    "target_body_parts": [
+      "颈部",
+      "头部",
+      "上背部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "chronic",
+    "action_keywords": [
+      "颈部屈伸",
+      "低头放松",
+      "颈椎活动"
+    ],
+    "symptom_tags": [
+      "颈部僵硬",
+      "颈椎疲劳",
+      "低头族综合征",
+      "颈部活动受限"
+    ],
+    "description_cn": "站立位缓慢进行颈部屈曲与回正动作，用于缓解颈部肌肉紧张。",
+    "duration_seconds": 13,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "颈部",
+      "头部",
+      "脊柱"
+    ],
+    "pose_landmarks_required": [
+      "neck",
+      "shoulder"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "颈椎骨折",
+      "严重颈椎不稳",
+      "急性颈部剧烈疼痛"
+    ],
+    "file_name": "IMG_4314.mp4",
+    "url": "/assets/videos/IMG_4314.mp4"
+  },
+  {
+    "video_id": "IMG_4310",
+    "target_joint": "颈部",
+    "target_body_parts": [
+      "颈部",
+      "头部",
+      "肩部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "颈部旋转",
+      "左右转头",
+      "颈椎活动度"
+    ],
+    "symptom_tags": [
+      "颈部僵硬",
+      "落枕",
+      "颈椎活动受限",
+      "肩颈酸痛"
+    ],
+    "description_cn": "站立位进行缓慢的颈部左右旋转练习，旨在改善颈椎活动范围，缓解颈部肌肉紧张。",
+    "duration_seconds": 20,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "颈部",
+      "头部",
+      "肩部"
+    ],
+    "pose_landmarks_required": [
+      "neck"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "颈椎骨折",
+      "严重颈椎不稳",
+      "急性颈部创伤"
+    ],
+    "file_name": "IMG_4310.mp4",
+    "url": "/assets/videos/IMG_4310.mp4"
+  },
+  {
+    "video_id": "IMG_4309",
+    "target_joint": "颈部",
+    "target_body_parts": [
+      "颈部",
+      "肩部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "chronic",
+    "action_keywords": [
+      "颈部侧屈",
+      "左右拉伸",
+      "颈部活动度"
+    ],
+    "symptom_tags": [
+      "颈部僵硬",
+      "颈椎酸痛",
+      "落枕",
+      "肩颈疲劳"
+    ],
+    "description_cn": "站立位，头部缓慢向左右两侧侧屈，拉伸颈部侧面肌肉，保持躯干稳定。",
+    "duration_seconds": 14,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "颈部",
+      "肩部"
+    ],
+    "pose_landmarks_required": [
+      "neck",
+      "shoulder"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性颈部扭伤",
+      "颈椎骨折未愈合",
+      "严重眩晕症"
+    ],
+    "file_name": "IMG_4309.mp4",
+    "url": "/assets/videos/IMG_4309.mp4"
+  },
+  {
+    "video_id": "IMG_4308",
+    "target_joint": "颈部",
+    "target_body_parts": [
+      "颈部",
+      "颈椎",
+      "肩部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "颈部侧屈",
+      "颈部拉伸",
+      "左右侧弯"
+    ],
+    "symptom_tags": [
+      "颈部僵硬",
+      "颈部疼痛",
+      "活动受限",
+      "肩颈酸痛"
+    ],
+    "description_cn": "站立位颈部侧屈练习，缓慢左右侧弯头部，改善颈椎活动度。",
+    "duration_seconds": 15,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "颈部",
+      "肩部",
+      "上背部"
+    ],
+    "pose_landmarks_required": [
+      "neck",
+      "shoulder"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "颈椎骨折",
+      "严重颈椎不稳"
+    ],
+    "file_name": "IMG_4308.mp4",
+    "url": "/assets/videos/IMG_4308.mp4"
+  },
+  {
+    "video_id": "IMG_4311",
+    "target_joint": "颈部",
+    "target_body_parts": [
+      "颈部",
+      "头部",
+      "上肢"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "颈部旋转",
+      "手部辅助",
+      "站立拉伸"
+    ],
+    "symptom_tags": [
+      "颈部僵硬",
+      "落枕",
+      "颈椎活动受限",
+      "颈部肌肉紧张"
+    ],
+    "description_cn": "站立位进行颈部旋转拉伸，利用手部辅助增加向侧方的活动幅度，缓解颈部僵硬。",
+    "duration_seconds": 13,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "颈部",
+      "头部",
+      "上肢"
+    ],
+    "pose_landmarks_required": [
+      "neck"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性颈椎损伤",
+      "颈椎骨折",
+      "严重眩晕症"
+    ],
+    "file_name": "IMG_4311.mp4",
+    "url": "/assets/videos/IMG_4311.mp4"
+  },
+  {
+    "video_id": "IMG_4260",
+    "target_joint": "肩部",
+    "target_body_parts": [
+      "肩部",
+      "上臂",
+      "前臂"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "屈肘抬臂",
+      "肩部前屈",
+      "前平举变式"
+    ],
+    "symptom_tags": [
+      "肩周炎",
+      "肩关节僵硬",
+      "肩部活动受限",
+      "三角肌无力",
+      "肩袖损伤"
+    ],
+    "description_cn": "站立位进行屈肘肩前屈练习，活动肩关节，增强上肢力量，适合肩周炎康复。",
+    "duration_seconds": 18,
+    "difficulty": 2,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "肩部",
+      "上臂",
+      "前臂"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "elbow"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "肩部急性炎症",
+      "严重肩袖撕裂",
+      "近期肩部手术"
+    ],
+    "file_name": "IMG_4260.mp4",
+    "url": "/assets/videos/IMG_4260.mp4"
+  },
+  {
+    "video_id": "IMG_4327",
+    "target_joint": "腰部",
+    "target_body_parts": [
+      "肩部",
+      "肘部",
+      "腰部",
+      "髋部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "chronic",
+    "action_keywords": [
+      "俯卧支撑",
+      "核心激活",
+      "静态保持"
+    ],
+    "symptom_tags": [
+      "核心无力",
+      "腰背酸痛",
+      "姿势不良",
+      "久坐不适"
+    ],
+    "description_cn": "女性俯卧于垫上，前臂支撑抬起上半身，保持身体呈直线，锻炼核心肌群。",
+    "duration_seconds": 11,
+    "difficulty": 2,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "肩部",
+      "肘部",
+      "腰部",
+      "髋部"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "elbow",
+      "hip",
+      "knee"
+    ],
+    "safety_level": "safe",
+    "contraindications": [],
+    "file_name": "IMG_4327.mp4",
+    "url": "/assets/videos/IMG_4327.mp4"
+  },
+  {
+    "video_id": "IMG_4300",
+    "target_joint": "膝关节",
+    "target_body_parts": [
+      "大腿",
+      "小腿",
+      "膝盖"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "坐姿伸膝",
+      "股四头肌激活",
+      "关节活动度"
+    ],
+    "symptom_tags": [
+      "膝关节僵硬",
+      "术后康复",
+      "下肢无力",
+      "久坐不适",
+      "髌股关节疼痛"
+    ],
+    "description_cn": "坐在椅子上，缓慢伸直膝关节并勾起脚尖，随后放松还原，用于恢复关节活动度及肌肉力量。",
+    "duration_seconds": 6,
+    "difficulty": 1,
+    "equipment": "椅子",
+    "space_required": "small",
+    "body_parts_involved": [
+      "大腿",
+      "小腿",
+      "膝盖",
+      "脚踝"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [],
+    "file_name": "IMG_4300.mp4",
+    "url": "/assets/videos/IMG_4300.mp4"
+  },
+  {
+    "video_id": "IMG_4329",
+    "target_joint": "腰部",
+    "target_body_parts": [
+      "腰部",
+      "肩部",
+      "颈部",
+      "核心肌群"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "俯卧伸展",
+      "上半身推起",
+      "脊柱后伸",
+      "眼镜蛇式"
+    ],
+    "symptom_tags": [
+      "腰痛",
+      "脊柱僵硬",
+      "姿势不良",
+      "核心无力",
+      "腰背酸痛"
+    ],
+    "description_cn": "俯卧位双手支撑推起上半身，伸展腰椎和胸椎，增强背部肌群力量。",
+    "duration_seconds": 21,
+    "difficulty": 2,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "腰部",
+      "肩部",
+      "颈部",
+      "核心肌群",
+      "手臂"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "neck",
+      "hip"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性腰椎损伤",
+      "严重椎间盘突出",
+      "脊柱不稳定"
+    ],
+    "file_name": "IMG_4329.mp4",
+    "url": "/assets/videos/IMG_4329.mp4"
+  },
+  {
+    "video_id": "IMG_4269",
+    "target_joint": "肩部",
+    "target_body_parts": [
+      "肩部",
+      "上臂",
+      "前臂",
+      "手腕"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "站立",
+      "手臂前平举",
+      "手腕屈伸"
+    ],
+    "symptom_tags": [
+      "肩部活动受限",
+      "前臂酸痛",
+      "腕部僵硬",
+      "上肢无力"
+    ],
+    "description_cn": "站立位单臂前平举，保持肘部伸直，进行手腕的屈伸活动。",
+    "duration_seconds": 14,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "肩部",
+      "肘部",
+      "前臂",
+      "手腕"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "elbow"
+    ],
+    "safety_level": "safe",
+    "contraindications": [],
+    "file_name": "IMG_4269.mp4",
+    "url": "/assets/videos/IMG_4269.mp4"
+  },
+  {
+    "video_id": "IMG_4319",
+    "target_joint": "颈部",
+    "target_body_parts": [
+      "颈部",
+      "肩部",
+      "上背部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "颈部侧屈拉伸",
+      "手部辅助牵引",
+      "站立位拉伸"
+    ],
+    "symptom_tags": [
+      "颈部僵硬",
+      "落枕",
+      "斜方肌紧张",
+      "颈椎疲劳",
+      "肩颈酸痛"
+    ],
+    "description_cn": "站立位颈部侧屈拉伸，手部辅助轻压头部，缓解颈部及上背部肌肉紧张。",
+    "duration_seconds": 15,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "颈部",
+      "肩部",
+      "手臂"
+    ],
+    "pose_landmarks_required": [
+      "neck",
+      "shoulder",
+      "elbow"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性颈椎损伤",
+      "颈椎骨折",
+      "严重颈椎不稳"
+    ],
+    "file_name": "IMG_4319.mp4",
+    "url": "/assets/videos/IMG_4319.mp4"
+  },
+  {
+    "video_id": "IMG_4301",
+    "target_joint": "膝关节",
+    "target_body_parts": [
+      "大腿",
+      "膝盖",
+      "小腿"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "坐姿伸膝",
+      "股四头肌训练",
+      "踝背屈"
+    ],
+    "symptom_tags": [
+      "膝关节术后",
+      "大腿肌肉萎缩",
+      "膝盖僵硬",
+      "下肢无力"
+    ],
+    "description_cn": "坐在椅子上，双手扶膝，缓慢伸直小腿并勾起脚尖，锻炼股四头肌及踝关节活动度。",
+    "duration_seconds": 14,
+    "difficulty": 1,
+    "equipment": "椅子",
+    "space_required": "small",
+    "body_parts_involved": [
+      "大腿",
+      "膝盖",
+      "小腿",
+      "脚踝"
+    ],
+    "pose_landmarks_required": [
+      "knee",
+      "ankle",
+      "hip"
+    ],
+    "safety_level": "safe",
+    "contraindications": [],
+    "file_name": "IMG_4301.mp4",
+    "url": "/assets/videos/IMG_4301.mp4"
+  },
+  {
+    "video_id": "IMG_4323",
+    "target_joint": "颈部",
+    "target_body_parts": [
+      "颈部",
+      "肩部",
+      "头部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "颈部侧屈",
+      "手部辅助",
+      "站立拉伸",
+      "肌肉放松"
+    ],
+    "symptom_tags": [
+      "颈部僵硬",
+      "斜方肌紧张",
+      "颈椎不适",
+      "落枕",
+      "肩颈酸痛"
+    ],
+    "description_cn": "站立位颈部侧屈拉伸，手部轻压辅助，缓解颈部侧面及斜方肌紧张。",
+    "duration_seconds": 13,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "颈部",
+      "肩部",
+      "头部"
+    ],
+    "pose_landmarks_required": [
+      "neck",
+      "shoulder"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性颈椎损伤",
+      "严重颈椎不稳"
+    ],
+    "file_name": "IMG_4323.mp4",
+    "url": "/assets/videos/IMG_4323.mp4"
+  },
+  {
+    "video_id": "IMG_4318",
+    "target_joint": "颈部",
+    "target_body_parts": [
+      "颈部",
+      "肩部",
+      "上背部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "chronic",
+    "action_keywords": [
+      "颈部侧屈",
+      "手辅助拉伸",
+      "斜方肌拉伸"
+    ],
+    "symptom_tags": [
+      "颈部僵硬",
+      "肩颈酸痛",
+      "落枕",
+      "斜方肌紧张"
+    ],
+    "description_cn": "站立位，一手背于身后，另一手辅助头部向对侧侧屈，拉伸颈部侧方及斜方肌。",
+    "duration_seconds": 15,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "颈部",
+      "肩部",
+      "上背部"
+    ],
+    "pose_landmarks_required": [
+      "neck",
+      "shoulder"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性颈部扭伤",
+      "颈椎骨折",
+      "严重眩晕"
+    ],
+    "file_name": "IMG_4318.mp4",
+    "url": "/assets/videos/IMG_4318.mp4"
+  },
+  {
+    "video_id": "IMG_4324",
+    "target_joint": "腰部",
+    "target_body_parts": [
+      "腰部",
+      "背部",
+      "颈部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "四足跪姿",
+      "拱背低头",
+      "塌腰抬头",
+      "脊柱活动"
+    ],
+    "symptom_tags": [
+      "腰部僵硬",
+      "背部疼痛",
+      "脊柱灵活性差",
+      "久坐不适"
+    ],
+    "description_cn": "在四足跪姿下，交替进行拱背低头和塌腰抬头，以放松和活动脊柱。",
+    "duration_seconds": 19,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "腰部",
+      "背部",
+      "颈部",
+      "肩部"
+    ],
+    "pose_landmarks_required": [
+      "neck",
+      "shoulder",
+      "hip",
+      "knee"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "手腕急性损伤",
+      "严重腰椎间盘突出急性期"
+    ],
+    "file_name": "IMG_4324.mp4",
+    "url": "/assets/videos/IMG_4324.mp4"
+  },
+  {
+    "video_id": "IMG_4321",
+    "target_joint": "颈部",
+    "target_body_parts": [
+      "颈部",
+      "肩部",
+      "头部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "颈部侧屈",
+      "辅助拉伸",
+      "站立位"
+    ],
+    "symptom_tags": [
+      "颈部僵硬",
+      "肩颈酸痛",
+      "落枕",
+      "斜方肌紧张"
+    ],
+    "description_cn": "站立位，单手扶头向侧方轻拉，拉伸颈部侧方肌肉群，缓解肩颈紧张。",
+    "duration_seconds": 14,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "颈部",
+      "肩部",
+      "手臂"
+    ],
+    "pose_landmarks_required": [
+      "neck",
+      "shoulder"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性颈椎损伤",
+      "颈部剧烈疼痛"
+    ],
+    "file_name": "IMG_4321.mp4",
+    "url": "/assets/videos/IMG_4321.mp4"
+  },
+  {
+    "video_id": "IMG_4317",
+    "target_joint": "颈部",
+    "target_body_parts": [
+      "颈部",
+      "上背部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "收下巴",
+      "颈部回缩",
+      "直立站立"
+    ],
+    "symptom_tags": [
+      "颈椎病",
+      "头前伸",
+      "颈部僵硬",
+      "肩颈酸痛"
+    ],
+    "description_cn": "站立姿势，水平向后收缩下巴，感受颈后拉伸，改善头前伸。",
+    "duration_seconds": 15,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "颈部",
+      "头部"
+    ],
+    "pose_landmarks_required": [
+      "neck",
+      "shoulder"
+    ],
+    "safety_level": "safe",
+    "contraindications": [],
+    "file_name": "IMG_4317.mp4",
+    "url": "/assets/videos/IMG_4317.mp4"
+  },
+  {
+    "video_id": "IMG_4312",
+    "target_joint": "颈部",
+    "target_body_parts": [
+      "颈部",
+      "头部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "颈部旋转",
+      "辅助拉伸",
+      "站立位"
+    ],
+    "symptom_tags": [
+      "颈部僵硬",
+      "落枕",
+      "活动受限",
+      "肌肉酸痛"
+    ],
+    "description_cn": "站立位，手扶脸颊辅助头部向侧方旋转并保持，用于改善颈部活动度。",
+    "duration_seconds": 12,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "颈部",
+      "头部",
+      "肩部"
+    ],
+    "pose_landmarks_required": [
+      "neck",
+      "shoulder"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性颈椎外伤",
+      "严重颈椎不稳"
+    ],
+    "file_name": "IMG_4312.mp4",
+    "url": "/assets/videos/IMG_4312.mp4"
+  },
+  {
+    "video_id": "IMG_4326",
+    "target_joint": "腰部",
+    "target_body_parts": [
+      "腰部",
+      "背部",
+      "肩部",
+      "髋部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "跪姿",
+      "前屈",
+      "婴儿式",
+      "伸展"
+    ],
+    "symptom_tags": [
+      "腰痛",
+      "背部僵硬",
+      "肩颈紧张",
+      "髋部紧张",
+      "疲劳恢复"
+    ],
+    "description_cn": "从四点跪姿开始，臀部向后坐向脚后跟，双臂向前伸展，呈婴儿式放松腰背。",
+    "duration_seconds": 21,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "腰部",
+      "背部",
+      "肩部",
+      "髋部"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "hip",
+      "knee",
+      "neck"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "膝盖损伤",
+      "脚踝损伤",
+      "妊娠晚期"
+    ],
+    "file_name": "IMG_4326.mp4",
+    "url": "/assets/videos/IMG_4326.mp4"
+  },
+  {
+    "video_id": "IMG_4330",
+    "target_joint": "膝关节",
+    "target_body_parts": [
+      "大腿后侧",
+      "臀部",
+      "腰部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "俯卧",
+      "交替屈膝",
+      "腘绳肌训练"
+    ],
+    "symptom_tags": [
+      "腘绳肌无力",
+      "膝关节不稳",
+      "久坐腰酸",
+      "臀部激活"
+    ],
+    "description_cn": "俯卧于垫上，交替屈膝上抬小腿，强化大腿后侧及臀部肌群。",
+    "duration_seconds": 25,
+    "difficulty": 2,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "大腿",
+      "臀部",
+      "膝关节",
+      "腰部"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性膝关节损伤",
+      "严重腰椎间盘突出"
+    ],
+    "file_name": "IMG_4330.mp4",
+    "url": "/assets/videos/IMG_4330.mp4"
+  },
+  {
+    "video_id": "IMG_4328",
+    "target_joint": "腰部",
+    "target_body_parts": [
+      "腰部",
+      "背部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "俯卧支撑",
+      "腰部伸展",
+      "静态保持"
+    ],
+    "symptom_tags": [
+      "腰痛",
+      "腰肌劳损",
+      "脊柱僵硬",
+      "久坐疲劳",
+      "轻度驼背"
+    ],
+    "description_cn": "俯卧并用前臂支撑上半身，缓慢抬起胸部，保持腰部伸展以缓解脊柱压力。",
+    "duration_seconds": 19,
+    "difficulty": 1,
+    "equipment": "坐垫",
+    "space_required": "small",
+    "body_parts_involved": [
+      "腰部",
+      "背部",
+      "颈部",
+      "肩部"
+    ],
+    "pose_landmarks_required": [
+      "neck",
+      "shoulder",
+      "hip"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性腰部扭伤",
+      "严重腰椎滑脱",
+      "脊柱骨折"
+    ],
+    "file_name": "IMG_4328.mp4",
+    "url": "/assets/videos/IMG_4328.mp4"
+  },
+  {
+    "video_id": "IMG_4332",
+    "target_joint": "髋部",
+    "target_body_parts": [
+      "臀部",
+      "大腿",
+      "核心"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "四足支撑",
+      "屈膝后抬腿",
+      "臀肌收缩"
+    ],
+    "symptom_tags": [
+      "臀部无力",
+      "下背部疼痛",
+      "髋关节僵硬",
+      "步态异常"
+    ],
+    "description_cn": "四足跪姿支撑，单腿屈膝向后上方抬起，锻炼臀部肌肉。",
+    "duration_seconds": 16,
+    "difficulty": 2,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "臀部",
+      "大腿",
+      "核心",
+      "手臂"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle",
+      "shoulder"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "手腕受伤",
+      "急性膝关节炎"
+    ],
+    "file_name": "IMG_4332.mp4",
+    "url": "/assets/videos/IMG_4332.mp4"
+  },
+  {
+    "video_id": "IMG_4334",
+    "target_joint": "髋部",
+    "target_body_parts": [
+      "臀部",
+      "髋部",
+      "腰部",
+      "腿部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "四足跪姿",
+      "交替抬腿",
+      "臀部激活",
+      "髋部伸展"
+    ],
+    "symptom_tags": [
+      "臀部无力",
+      "髋部僵硬",
+      "腰痛",
+      "步态异常",
+      "髋关节不稳"
+    ],
+    "description_cn": "四足跪姿交替抬腿训练，激活臀部肌肉，增强髋部稳定性和核心控制力。",
+    "duration_seconds": 16,
+    "difficulty": 2,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "臀部",
+      "髋部",
+      "腰部",
+      "腿部"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性髋关节损伤",
+      "严重膝关节问题",
+      "急性腰部损伤"
+    ],
+    "file_name": "IMG_4334.mp4",
+    "url": "/assets/videos/IMG_4334.mp4"
+  },
+  {
+    "video_id": "IMG_4337",
+    "target_joint": "腰部",
+    "target_body_parts": [
+      "腰部",
+      "肩部",
+      "臀部",
+      "腿部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "鸟狗式",
+      "对侧伸展",
+      "核心稳定",
+      "四点支撑"
+    ],
+    "symptom_tags": [
+      "腰痛",
+      "核心无力",
+      "平衡障碍",
+      "脊柱不稳",
+      "肩背紧张"
+    ],
+    "description_cn": "四足跪姿起始，对侧手臂前伸与腿部后伸，保持躯干稳定成直线。",
+    "duration_seconds": 18,
+    "difficulty": 2,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "腰部",
+      "肩部",
+      "臀部",
+      "腿部"
+    ],
+    "pose_landmarks_required": [
+      "neck",
+      "shoulder",
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性腰部扭伤",
+      "严重的肩关节损伤",
+      "严重的膝关节疼痛"
+    ],
+    "file_name": "IMG_4337.mp4",
+    "url": "/assets/videos/IMG_4337.mp4"
+  },
+  {
+    "video_id": "IMG_4348",
+    "target_joint": "髋部",
+    "target_body_parts": [
+      "部",
+      "腰部",
+      "腿部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "仰卧抱膝",
+      "单膝拉伸",
+      "髋部柔韧"
+    ],
+    "symptom_tags": [
+      "下背痛",
+      "髋关节僵硬",
+      "肌肉紧张",
+      "活动受限",
+      "姿势不良"
+    ],
+    "description_cn": "平躺于垫上，单膝抱胸拉伸，缓解下背部紧张，改善髋关节灵活性。",
+    "duration_seconds": 13,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "髋部",
+      "腰部",
+      "腿部"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性髋关节损伤",
+      "严重骨质疏松"
+    ],
+    "file_name": "IMG_4348.mp4",
+    "url": "/assets/videos/IMG_4348.mp4"
+  },
+  {
+    "video_id": "IMG_4349",
+    "target_joint": "髋部",
+    "target_body_parts": [
+      "髋部",
+      "腰部",
+      "大腿",
+      "小腿"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "仰卧抱膝",
+      "拉伸髋部",
+      "放松腰部"
+    ],
+    "symptom_tags": [
+      "髋部紧张",
+      "腰部酸痛",
+      "腿部疲劳"
+    ],
+    "description_cn": "仰卧位，双膝弯曲抱于胸前，拉伸髋部和腰部。",
+    "duration_seconds": 15,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "髋部",
+      "腰部",
+      "大腿",
+      "小腿"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "严重髋部损伤",
+      "急性腰部扭伤"
+    ],
+    "file_name": "IMG_4349.mp4",
+    "url": "/assets/videos/IMG_4349.mp4"
+  },
+  {
+    "video_id": "IMG_4345",
+    "target_joint": "髋部",
+    "target_body_parts": [
+      "髋部",
+      "大腿",
+      "腰部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "仰卧屈膝",
+      "双腿外展",
+      "髋部滑动"
+    ],
+    "symptom_tags": [
+      "髋关节僵硬",
+      "内收肌紧张",
+      "骨盆活动受限",
+      "髋部术后恢复"
+    ],
+    "description_cn": "仰卧屈膝，双脚沿地面向两侧缓慢滑动打开再并拢，改善髋关节活动度。",
+    "duration_seconds": 22,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "髋部",
+      "大腿内侧",
+      "核心"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性髋关节骨折",
+      "严重髋关节不稳"
+    ],
+    "file_name": "IMG_4345.mp4",
+    "url": "/assets/videos/IMG_4345.mp4"
+  },
+  {
+    "video_id": "IMG_4331",
+    "target_joint": "腰部",
+    "target_body_parts": [
+      "腰部",
+      "肩部",
+      "背部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "跪姿伸展",
+      "婴儿式",
+      "脊柱活动"
+    ],
+    "symptom_tags": [
+      "腰背僵硬",
+      "肩颈紧张",
+      "肌肉放松",
+      "脊柱灵活性"
+    ],
+    "description_cn": "四足跪姿转换为婴儿式，拉伸放松腰背与肩部。",
+    "duration_seconds": 14,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "腰部",
+      "肩部",
+      "手臂",
+      "臀部"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "hip",
+      "knee",
+      "neck"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "膝盖严重损伤",
+      "手腕剧烈疼痛"
+    ],
+    "file_name": "IMG_4331.mp4",
+    "url": "/assets/videos/IMG_4331.mp4"
+  },
+  {
+    "video_id": "IMG_4359",
+    "target_joint": "膝关节",
+    "target_body_parts": [
+      "大腿后侧",
+      "臀部",
+      "下背部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "仰卧抬腿",
+      "大腿后侧拉伸",
+      "膝关节活动",
+      "核心稳定"
+    ],
+    "symptom_tags": [
+      "大腿后侧紧张",
+      "髋部活动受限",
+      "下背部不适",
+      "膝关节僵硬",
+      "肌肉放松"
+    ],
+    "description_cn": "仰卧位单腿伸展拉伸，双手辅助控制膝关节活动范围，缓慢伸直与弯曲交替。",
+    "duration_seconds": 22,
+    "difficulty": 2,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "大腿后侧",
+      "臀部",
+      "下背部",
+      "核心肌群"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性膝关节损伤",
+      "严重腰椎间盘突出"
+    ],
+    "file_name": "IMG_4359.mp4",
+    "url": "/assets/videos/IMG_4359.mp4"
+  },
+  {
+    "video_id": "IMG_4357",
+    "target_joint": "髋部",
+    "target_body_parts": [
+      "髋部",
+      "大腿前侧",
+      "腰部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "chronic",
+    "action_keywords": [
+      "跪姿弓步",
+      "髋屈肌拉伸",
+      "重心前移"
+    ],
+    "symptom_tags": [
+      "髋部僵硬",
+      "久坐腰痛",
+      "大腿前侧酸痛",
+      "髂腰肌紧张"
+    ],
+    "description_cn": "单膝跪地呈弓步，双手扶膝与髋，重心前移拉伸后腿髋屈肌。",
+    "duration_seconds": 13,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "髋部",
+      "大腿",
+      "腰部"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "膝关节损伤",
+      "髋关节急性炎症"
+    ],
+    "file_name": "IMG_4357.mp4",
+    "url": "/assets/videos/IMG_4357.mp4"
+  },
+  {
+    "video_id": "IMG_4350",
+    "target_joint": "腰部",
+    "target_body_parts": [
+      "腰部",
+      "背部",
+      "肩部",
+      "髋部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "chronic",
+    "action_keywords": [
+      "仰卧扭转",
+      "脊柱拉伸",
+      "肩部活动"
+    ],
+    "symptom_tags": [
+      "腰背僵硬",
+      "脊柱灵活性差",
+      "肩颈紧张",
+      "轻度腰痛"
+    ],
+    "description_cn": "仰卧屈膝向一侧扭转，配合手臂开合动作，拉伸腰背部并活动肩胸椎。",
+    "duration_seconds": 17,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "腰部",
+      "背部",
+      "髋部",
+      "手臂"
+    ],
+    "pose_landmarks_required": [
+      "neck",
+      "shoulder",
+      "elbow",
+      "hip",
+      "knee"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性腰部扭伤",
+      "严重脊柱病变"
+    ],
+    "file_name": "IMG_4350.mp4",
+    "url": "/assets/videos/IMG_4350.mp4"
+  },
+  {
+    "video_id": "IMG_4339",
+    "target_joint": "腰部",
+    "target_body_parts": [
+      "腰部",
+      "臀部",
+      "肩部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "四足支撑",
+      "对侧伸展",
+      "鸟狗式",
+      "核心稳定"
+    ],
+    "symptom_tags": [
+      "下背痛",
+      "核心无力",
+      "脊柱不稳",
+      "平衡感差",
+      "姿势不良"
+    ],
+    "description_cn": "四足跪姿，交替向前伸直手臂并向后伸直对侧腿部，保持躯干稳定。",
+    "duration_seconds": 13,
+    "difficulty": 2,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "腰部",
+      "臀部",
+      "肩部",
+      "手臂",
+      "腿部"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "hip",
+      "knee",
+      "elbow"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性腰扭伤",
+      "严重肩关节损伤",
+      "膝关节严重疼痛"
+    ],
+    "file_name": "IMG_4339.mp4",
+    "url": "/assets/videos/IMG_4339.mp4"
+  },
+  {
+    "video_id": "IMG_4344",
+    "target_joint": "腰部",
+    "target_body_parts": [
+      "腰部",
+      "髋部",
+      "大腿"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "仰卧抬腿",
+      "左右摆腿",
+      "脊柱扭转"
+    ],
+    "symptom_tags": [
+      "下背痛",
+      "腰部僵硬",
+      "髋关节紧张",
+      "脊柱灵活度"
+    ],
+    "description_cn": "仰卧屈膝抬起双腿至桌面姿势，双腿并拢缓慢向左右两侧摆动，放松腰背部。",
+    "duration_seconds": 21,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "腰部",
+      "髋部",
+      "大腿",
+      "核心"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性腰椎间盘突出",
+      "脊柱骨折"
+    ],
+    "file_name": "IMG_4344.mp4",
+    "url": "/assets/videos/IMG_4344.mp4"
+  },
+  {
+    "video_id": "IMG_4340",
+    "target_joint": "腰部",
+    "target_body_parts": [
+      "腰部",
+      "髋部",
+      "肩部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "四足支撑",
+      "对侧伸展",
+      "核心稳定",
+      "交替抬肢"
+    ],
+    "symptom_tags": [
+      "下背痛",
+      "核心无力",
+      "平衡感差",
+      "姿势控制"
+    ],
+    "description_cn": "四足跪姿，交替向前伸直手臂并向后伸直对侧腿，保持躯干稳定不旋转。",
+    "duration_seconds": 30,
+    "difficulty": 2,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "腰部",
+      "髋部",
+      "肩部",
+      "膝盖"
+    ],
+    "pose_landmarks_required": [
+      "neck",
+      "shoulder",
+      "hip",
+      "knee"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性腰痛发作期",
+      "严重平衡障碍"
+    ],
+    "file_name": "IMG_4340.mp4",
+    "url": "/assets/videos/IMG_4340.mp4"
+  },
+  {
+    "video_id": "IMG_4342",
+    "target_joint": "腰部",
+    "target_body_parts": [
+      "腹部",
+      "髋部",
+      "大腿"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "仰卧交替点地",
+      "核心稳定性",
+      "髋部控制"
+    ],
+    "symptom_tags": [
+      "下背痛",
+      "核心无力",
+      "骨盆不稳",
+      "久坐不适"
+    ],
+    "description_cn": "仰卧屈膝抬起呈90度，交替将脚尖轻触地面后还原，锻炼核心稳定性。",
+    "duration_seconds": 26,
+    "difficulty": 2,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "腹部",
+      "髋部",
+      "大腿"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性腰椎间盘突出",
+      "严重髋关节损伤"
+    ],
+    "file_name": "IMG_4342.mp4",
+    "url": "/assets/videos/IMG_4342.mp4"
+  },
+  {
+    "video_id": "IMG_4356",
+    "target_joint": "髋部",
+    "target_body_parts": [
+      "髋部",
+      "大腿",
+      "膝盖",
+      "腰部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "半跪姿",
+      "髋部拉伸",
+      "低弓步",
+      "重心前移"
+    ],
+    "symptom_tags": [
+      "髋部僵硬",
+      "久坐不适",
+      "髂腰肌紧张",
+      "大腿前侧紧绷",
+      "活动受限"
+    ],
+    "description_cn": "单膝跪地呈低弓步，重心缓慢前移拉伸髋部前侧，保持躯干直立。",
+    "duration_seconds": 12,
+    "difficulty": 2,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "髋部",
+      "大腿",
+      "膝盖",
+      "腰部"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "髋关节急性损伤",
+      "膝关节严重疼痛"
+    ],
+    "file_name": "IMG_4356.mp4",
+    "url": "/assets/videos/IMG_4356.mp4"
+  },
+  {
+    "video_id": "IMG_4285",
+    "target_joint": "肘部",
+    "target_body_parts": [
+      "前臂",
+      "腕部",
+      "手部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "前臂支撑",
+      "弹力带抗阻",
+      "腕部伸展",
+      "坐姿"
+    ],
+    "symptom_tags": [
+      "网球肘",
+      "前臂酸痛",
+      "腕部无力",
+      "肘部外侧痛",
+      "抓握力弱"
+    ],
+    "description_cn": "坐姿前臂支撑，手握弹力带进行腕部伸展抗阻练习，缓解肘部疼痛。",
+    "duration_seconds": 11,
+    "difficulty": 1,
+    "equipment": "弹力带",
+    "space_required": "small",
+    "body_parts_involved": [
+      "前臂",
+      "腕部",
+      "手部",
+      "肘部"
+    ],
+    "pose_landmarks_required": [
+      "elbow",
+      "shoulder"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性炎症期",
+      "严重撕裂伤"
+    ],
+    "file_name": "IMG_4285.mp4",
+    "url": "/assets/videos/IMG_4285.mp4"
+  },
+  {
+    "video_id": "IMG_4363",
+    "target_joint": "髋部",
+    "target_body_parts": [
+      "臀部",
+      "大腿后侧",
+      "腰部",
+      "腹部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "仰卧抬臀",
+      "臀桥",
+      "髋部伸展"
+    ],
+    "symptom_tags": [
+      "臀部无力",
+      "下背痛",
+      "久坐不适",
+      "核心不稳",
+      "髋部活动受限"
+    ],
+    "description_cn": "仰卧位进行臀桥训练，强化臀大肌及核心力量，改善骨盆稳定性。",
+    "duration_seconds": 22,
+    "difficulty": 2,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "臀部",
+      "大腿",
+      "腰部",
+      "腹部"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle",
+      "shoulder"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性腰椎间盘突出",
+      "严重髋关节炎症"
+    ],
+    "file_name": "IMG_4363.mp4",
+    "url": "/assets/videos/IMG_4363.mp4"
+  },
+  {
+    "video_id": "IMG_4347",
+    "target_joint": "腰部",
+    "target_body_parts": [
+      "腰部",
+      "臀部",
+      "大腿"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "仰卧位",
+      "单腿抱膝",
+      "拉伸放松"
+    ],
+    "symptom_tags": [
+      "下背痛",
+      "臀部紧绷",
+      "腰部僵硬",
+      "久坐不适"
+    ],
+    "description_cn": "仰卧位，双手抱住单侧膝盖拉向胸口，保持拉伸，放松下背部及臀部肌肉。",
+    "duration_seconds": 12,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "腰部",
+      "臀部",
+      "大腿"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性腰椎间盘突出",
+      "髋关节术后未愈合"
+    ],
+    "file_name": "IMG_4347.mp4",
+    "url": "/assets/videos/IMG_4347.mp4"
+  },
+  {
+    "video_id": "IMG_4351",
+    "target_joint": "腰部",
+    "target_body_parts": [
+      "腰部",
+      "肩部",
+      "背部",
+      "髋部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "chronic",
+    "action_keywords": [
+      "仰卧扭转",
+      "胸椎拉伸",
+      "手臂开合"
+    ],
+    "symptom_tags": [
+      "背部僵硬",
+      "胸椎活动受限",
+      "肩背酸痛",
+      "久坐疲劳",
+      "脊柱灵活性差"
+    ],
+    "description_cn": "仰卧屈膝侧倒固定下半身，配合手臂开合进行胸椎旋转训练，改善脊柱灵活性。",
+    "duration_seconds": 18,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "腰部",
+      "肩部",
+      "背部",
+      "髋部"
+    ],
+    "pose_landmarks_required": [
+      "neck",
+      "shoulder",
+      "hip",
+      "knee"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性腰椎间盘突出",
+      "脊柱骨折未愈",
+      "严重骨质疏松"
+    ],
+    "file_name": "IMG_4351.mp4",
+    "url": "/assets/videos/IMG_4351.mp4"
+  },
+  {
+    "video_id": "IMG_4341",
+    "target_joint": "腰部",
+    "target_body_parts": [
+      "腰部",
+      "髋部",
+      "大腿"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "仰卧交替抬腿",
+      "骨盆稳定",
+      "核心激活"
+    ],
+    "symptom_tags": [
+      "腰痛",
+      "腰椎不稳",
+      "核心无力",
+      "髋部僵硬"
+    ],
+    "description_cn": "仰卧位，双膝弯曲，双脚着地。保持腰部贴紧地面，交替缓慢抬起单侧大腿，锻炼核心稳定性。",
+    "duration_seconds": 26,
+    "difficulty": 2,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "腰部",
+      "髋部",
+      "大腿"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性腰椎剧烈疼痛",
+      "严重腰椎间盘突出急性期"
+    ],
+    "file_name": "IMG_4341.mp4",
+    "url": "/assets/videos/IMG_4341.mp4"
+  },
+  {
+    "video_id": "IMG_4353",
+    "target_joint": "髋部",
+    "target_body_parts": [
+      "臀部",
+      "大腿",
+      "髋部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "仰卧",
+      "4字拉伸",
+      "抱膝"
+    ],
+    "symptom_tags": [
+      "坐骨神经痛",
+      "臀部疼痛",
+      "髋关节僵硬",
+      "梨状肌综合征"
+    ],
+    "description_cn": "仰卧位，将一侧脚踝置于对侧膝盖上方，双手抱住下方大腿拉向胸前，拉伸臀部肌肉。",
+    "duration_seconds": 16,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "臀部",
+      "大腿",
+      "腰部",
+      "髋部"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性髋部损伤",
+      "髋关节置换术后(需遵医嘱)"
+    ],
+    "file_name": "IMG_4353.mp4",
+    "url": "/assets/videos/IMG_4353.mp4"
+  },
+  {
+    "video_id": "IMG_4352",
+    "target_joint": "髋部",
+    "target_body_parts": [
+      "臀部",
+      "髋部",
+      "大腿"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "仰卧",
+      "抱膝",
+      "交叉腿",
+      "臀部拉伸"
+    ],
+    "symptom_tags": [
+      "坐骨神经痛",
+      "梨状肌综合征",
+      "髋部疼痛",
+      "臀部紧绷",
+      "下背部疼痛"
+    ],
+    "description_cn": "仰卧位，将一侧脚踝交叉放于对侧膝盖，双手抱住大腿拉向胸部，深度拉伸臀部肌肉。",
+    "duration_seconds": 16,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "臀部",
+      "髋部",
+      "大腿"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "髋关节置换术后早期",
+      "急性髋关节损伤"
+    ],
+    "file_name": "IMG_4352.mp4",
+    "url": "/assets/videos/IMG_4352.mp4"
+  },
+  {
+    "video_id": "IMG_4364",
+    "target_joint": "髋部",
+    "target_body_parts": [
+      "臀部",
+      "大腿后侧",
+      "下背部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "单腿臀桥",
+      "髋部伸展",
+      "核心激活"
+    ],
+    "symptom_tags": [
+      "臀肌无力",
+      "骨盆不稳",
+      "下背痛",
+      "髋关节活动受限"
+    ],
+    "description_cn": "仰卧单腿臀桥练习。在保持臀部抬起的状态下交替伸直单腿，强化臀大肌及核心稳定性。",
+    "duration_seconds": 20,
+    "difficulty": 3,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "臀部",
+      "大腿",
+      "核心"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性腰椎间盘突出",
+      "严重髋关节疼痛",
+      "近期腹部手术"
+    ],
+    "file_name": "IMG_4364.mp4",
+    "url": "/assets/videos/IMG_4364.mp4"
+  },
+  {
+    "video_id": "IMG_4371",
+    "target_joint": "髋部",
+    "target_body_parts": [
+      "髋部",
+      "腰部",
+      "大腿"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "侧卧支撑",
+      "提髋",
+      "臀中肌训练"
+    ],
+    "symptom_tags": [
+      "髋部无力",
+      "骨盆不稳",
+      "腰痛预防",
+      "步态异常"
+    ],
+    "description_cn": "侧卧位前臂支撑，双膝弯曲，进行骨盆升降训练，强化臀中肌。",
+    "duration_seconds": 13,
+    "difficulty": 2,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "髋部",
+      "腰部",
+      "大腿"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "shoulder",
+      "knee"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性髋部损伤",
+      "严重腰痛"
+    ],
+    "file_name": "IMG_4371.mp4",
+    "url": "/assets/videos/IMG_4371.mp4"
+  },
+  {
+    "video_id": "IMG_4276",
+    "target_joint": "肘部",
+    "target_body_parts": [
+      "手臂",
+      "手腕",
+      "前臂"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "手臂前平举",
+      "手腕拉伸",
+      "前臂放松"
+    ],
+    "symptom_tags": [
+      "前臂酸痛",
+      "手腕僵硬",
+      "鼠标手",
+      "肘部不适",
+      "手部疲劳"
+    ],
+    "description_cn": "站立位，单臂前平举，另一手辅助向后拉伸手腕，保持拉伸感以放松前臂。",
+    "duration_seconds": 13,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "手臂",
+      "手腕",
+      "前臂",
+      "肩部"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "elbow"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "腕部急性扭伤",
+      "严重肘部炎症",
+      "前臂骨折未愈合"
+    ],
+    "file_name": "IMG_4276.mp4",
+    "url": "/assets/videos/IMG_4276.mp4"
+  },
+  {
+    "video_id": "IMG_4376",
+    "target_joint": "髋部",
+    "target_body_parts": [
+      "髋部",
+      "大腿",
+      "臀部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "侧卧抬腿",
+      "髋外展",
+      "直腿上抬"
+    ],
+    "symptom_tags": [
+      "髋部疼痛",
+      "臀中肌无力",
+      "步态不稳",
+      "髋关节活动受限"
+    ],
+    "description_cn": "侧卧直腿抬举，锻炼臀中肌与髋外展肌群，增强骨盆稳定性。",
+    "duration_seconds": 14,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "髋部",
+      "大腿",
+      "臀部",
+      "腰部"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "髋关节急性炎症",
+      "髋部骨折未愈合"
+    ],
+    "file_name": "IMG_4376.mp4",
+    "url": "/assets/videos/IMG_4376.mp4"
+  },
+  {
+    "video_id": "IMG_4343",
+    "target_joint": "腰部",
+    "target_body_parts": [
+      "腰部",
+      "髋部",
+      "腹部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "仰卧摆膝",
+      "屈髋抬腿",
+      "核心激活"
+    ],
+    "symptom_tags": [
+      "腰痛",
+      "下背部紧张",
+      "髋部僵硬",
+      "久坐疲劳"
+    ],
+    "description_cn": "仰卧双膝左右摆动放松腰椎，随后屈髋抬腿，适用于缓解下背紧张与核心激活。",
+    "duration_seconds": 12,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "腰部",
+      "髋部",
+      "腹部",
+      "大腿"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "hip",
+      "knee"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性腰扭伤",
+      "严重腰椎间盘突出"
+    ],
+    "file_name": "IMG_4343.mp4",
+    "url": "/assets/videos/IMG_4343.mp4"
+  },
+  {
+    "video_id": "IMG_4378",
+    "target_joint": "髋部",
+    "target_body_parts": [
+      "臀部",
+      "大腿",
+      "骨盆",
+      "核心"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "侧卧抬膝",
+      "蚌式开合",
+      "髋外旋",
+      "臀肌激活"
+    ],
+    "symptom_tags": [
+      "髋部无力",
+      "骨盆不稳",
+      "膝盖内扣",
+      "髂胫束摩擦",
+      "臀中肌薄弱"
+    ],
+    "description_cn": "侧卧位进行蚌式开合动作，双膝像贝壳一样打开再合拢，主要锻炼臀中肌。",
+    "duration_seconds": 12,
+    "difficulty": 2,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "臀部",
+      "大腿",
+      "髋部",
+      "核心"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性髋关节损伤",
+      "严重髋部疼痛"
+    ],
+    "file_name": "IMG_4378.mp4",
+    "url": "/assets/videos/IMG_4378.mp4"
+  },
+  {
+    "video_id": "IMG_4365",
+    "target_joint": "髋部",
+    "target_body_parts": [
+      "臀部",
+      "大腿",
+      "腰部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "单腿臀桥",
+      "髋部伸展",
+      "核心稳定"
+    ],
+    "symptom_tags": [
+      "臀部无力",
+      "腰痛缓解",
+      "骨盆稳定",
+      "腘绳肌激活"
+    ],
+    "description_cn": "仰卧位单腿臀桥练习，通过单腿支撑抬起臀部，强化臀大肌及核心稳定性。",
+    "duration_seconds": 21,
+    "difficulty": 3,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "臀部",
+      "大腿后侧",
+      "腰部",
+      "腹部"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle",
+      "shoulder"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性腰痛发作期",
+      "髋关节严重损伤",
+      "近期腹部或髋部手术"
+    ],
+    "file_name": "IMG_4365.mp4",
+    "url": "/assets/videos/IMG_4365.mp4"
+  },
+  {
+    "video_id": "IMG_4374",
+    "target_joint": "髋部",
+    "target_body_parts": [
+      "臀部",
+      "大腿",
+      "骨盆"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "侧卧",
+      "屈膝",
+      "髋外展",
+      "蚌式开合"
+    ],
+    "symptom_tags": [
+      "髋部疼痛",
+      "膝盖内扣",
+      "臀肌无力",
+      "骨盆不稳",
+      "下背痛"
+    ],
+    "description_cn": "侧卧屈膝，保持双脚贴合，上方膝盖向上抬起，强化臀中肌。",
+    "duration_seconds": 11,
+    "difficulty": 2,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "臀部",
+      "大腿",
+      "核心"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "髋关节急性炎症",
+      "髋部严重活动受限"
+    ],
+    "file_name": "IMG_4374.mp4",
+    "url": "/assets/videos/IMG_4374.mp4"
+  },
+  {
+    "video_id": "IMG_4366",
+    "target_joint": "腰部",
+    "target_body_parts": [
+      "腰部",
+      "肩部",
+      "腹部",
+      "背部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "跪姿平板支撑",
+      "核心收紧",
+      "静态保持"
+    ],
+    "symptom_tags": [
+      "腰肌劳损",
+      "核心无力",
+      "体态矫正",
+      "肩颈酸痛"
+    ],
+    "description_cn": "双肘与膝盖支撑身体，保持头背臀呈直线，锻炼核心稳定性。",
+    "duration_seconds": 14,
+    "difficulty": 2,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "腰部",
+      "肩部",
+      "肘部",
+      "髋部"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "elbow",
+      "hip",
+      "knee"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "手腕严重扭伤",
+      "急性腰椎间盘突出"
+    ],
+    "file_name": "IMG_4366.mp4",
+    "url": "/assets/videos/IMG_4366.mp4"
+  },
+  {
+    "video_id": "IMG_4362",
+    "target_joint": "腰部",
+    "target_body_parts": [
+      "腹部",
+      "腰部",
+      "髋部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "仰卧交替伸展",
+      "死虫式",
+      "核心稳定"
+    ],
+    "symptom_tags": [
+      "腰痛",
+      "核心无力",
+      "骨盆不稳",
+      "久坐不适"
+    ],
+    "description_cn": "仰卧死虫式变体训练，交替下放对侧手脚，强化核心与骨盆稳定性。",
+    "duration_seconds": 27,
+    "difficulty": 3,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "腹部",
+      "腰部",
+      "髋部",
+      "肩部"
+    ],
+    "pose_landmarks_required": [
+      "neck",
+      "shoulder",
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性腰痛发作期",
+      "无法维持腰部贴地"
+    ],
+    "file_name": "IMG_4362.mp4",
+    "url": "/assets/videos/IMG_4362.mp4"
+  },
+  {
+    "video_id": "IMG_4383",
+    "target_joint": "腰部",
+    "target_body_parts": [
+      "核心肌群",
+      "肩部",
+      "手臂",
+      "腿部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "平板支撑",
+      "核心稳定",
+      "跪姿转换",
+      "四肢支撑"
+    ],
+    "symptom_tags": [
+      "核心无力",
+      "腰背疼痛",
+      "姿势控制",
+      "稳定性差",
+      "肌肉激活"
+    ],
+    "description_cn": "从四足跪姿开始，依次伸直双腿进入平板支撑，再依次收回膝盖回到跪姿，重复进行。",
+    "duration_seconds": 17,
+    "difficulty": 3,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "核心肌群",
+      "肩部",
+      "手臂",
+      "腿部",
+      "背部"
+    ],
+    "pose_landmarks_required": [
+      "neck",
+      "shoulder",
+      "elbow",
+      "hip",
+      "knee"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性腰背疼痛",
+      "肩袖损伤",
+      "手腕疼痛",
+      "严重核心无力"
+    ],
+    "file_name": "IMG_4383.mp4",
+    "url": "/assets/videos/IMG_4383.mp4"
+  },
+  {
+    "video_id": "IMG_4373",
+    "target_joint": "腰部",
+    "target_body_parts": [
+      "腰部",
+      "腹部",
+      "肩部",
+      "臀部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "侧平板支撑",
+      "核心稳定",
+      "侧卧抬髋"
+    ],
+    "symptom_tags": [
+      "腰痛",
+      "核心无力",
+      "姿势不良",
+      "骨盆不稳"
+    ],
+    "description_cn": "侧卧于垫上，单肘支撑地面，发力抬起髋部使身体呈直线，保持静止以锻炼侧腰与核心稳定性。",
+    "duration_seconds": 13,
+    "difficulty": 3,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "腰部",
+      "腹部",
+      "肩部",
+      "臀部",
+      "腿部"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "肩部损伤",
+      "急性腰痛发作期",
+      "严重脊柱不稳"
+    ],
+    "file_name": "IMG_4373.mp4",
+    "url": "/assets/videos/IMG_4373.mp4"
+  },
+  {
+    "video_id": "IMG_4367",
+    "target_joint": "腰部",
+    "target_body_parts": [
+      "腹部",
+      "背部",
+      "肩部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "前臂支撑",
+      "平板支撑",
+      "核心收紧"
+    ],
+    "symptom_tags": [
+      "腰背无力",
+      "核心不稳",
+      "体态不良",
+      "久坐疲劳"
+    ],
+    "description_cn": "俯卧位双肘支撑，双腿伸直抬离地面，保持身体呈一条直线，强化核心稳定性。",
+    "duration_seconds": 15,
+    "difficulty": 3,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "腹部",
+      "背部",
+      "肩部",
+      "手臂"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "elbow",
+      "hip",
+      "knee"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性腰痛",
+      "肘部损伤",
+      "肩部严重疼痛"
+    ],
+    "file_name": "IMG_4367.mp4",
+    "url": "/assets/videos/IMG_4367.mp4"
+  },
+  {
+    "video_id": "IMG_4370",
+    "target_joint": "腰部",
+    "target_body_parts": [
+      "腹部",
+      "臀部",
+      "腰部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "侧卧支撑",
+      "侧桥式",
+      "静态保持"
+    ],
+    "symptom_tags": [
+      "腰肌劳损",
+      "核心无力",
+      "骨盆不稳",
+      "体态矫正"
+    ],
+    "description_cn": "侧卧屈膝，前臂支撑。收紧核心抬起臀部使身体呈直线，保持片刻后缓慢放下。",
+    "duration_seconds": 15,
+    "difficulty": 3,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "腹部",
+      "臀部",
+      "腰部",
+      "手臂"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "hip",
+      "knee",
+      "elbow"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性腰扭伤",
+      "严重肩袖损伤"
+    ],
+    "file_name": "IMG_4370.mp4",
+    "url": "/assets/videos/IMG_4370.mp4"
+  },
+  {
+    "video_id": "IMG_4372",
+    "target_joint": "腰部",
+    "target_body_parts": [
+      "腰部",
+      "臀部",
+      "肩部"
+    ],
+    "severity": "中度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "侧平板支撑",
+      "髋部上抬",
+      "核心收紧",
+      "身体呈直线"
+    ],
+    "symptom_tags": [
+      "腰痛",
+      "核心无力",
+      "脊柱稳定性差",
+      "姿势不良",
+      "髋部无力"
+    ],
+    "description_cn": "侧卧用手肘支撑，收紧核心抬起髋部，保持身体呈直线，锻炼核心与臀部力量。",
+    "duration_seconds": 15,
+    "difficulty": 3,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "腰部",
+      "臀部",
+      "肩部",
+      "腹部"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性腰部损伤",
+      "严重肩部疼痛",
+      "未控制的高血压"
+    ],
+    "file_name": "IMG_4372.mp4",
+    "url": "/assets/videos/IMG_4372.mp4"
+  },
+  {
+    "video_id": "IMG_4379",
+    "target_joint": "髋部",
+    "target_body_parts": [
+      "臀部",
+      "大腿"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "侧卧抬腿",
+      "髋外展",
+      "臀部激活"
+    ],
+    "symptom_tags": [
+      "髋部疼痛",
+      "膝内扣",
+      "臀肌无力",
+      "骨盆不稳"
+    ],
+    "description_cn": "侧卧位，上方腿伸直向上抬起，锻炼臀中肌，增强髋关节稳定性。",
+    "duration_seconds": 16,
+    "difficulty": 2,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "臀部",
+      "大腿",
+      "核心"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性髋关节损伤",
+      "严重髋部疼痛"
+    ],
+    "file_name": "IMG_4379.mp4",
+    "url": "/assets/videos/IMG_4379.mp4"
+  },
+  {
+    "video_id": "IMG_4380",
+    "target_joint": "膝关节",
+    "target_body_parts": [
+      "大腿",
+      "臀部",
+      "手臂"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "侧卧拉伸",
+      "股四头肌拉伸",
+      "大腿前侧放松"
+    ],
+    "symptom_tags": [
+      "大腿前侧紧绷",
+      "膝关节僵硬",
+      "运动后肌肉酸痛",
+      "久坐腿部不适"
+    ],
+    "description_cn": "侧卧位，上方手握住同侧脚踝向后拉伸，放松大腿前侧股四头肌。",
+    "duration_seconds": 16,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "大腿",
+      "臀部",
+      "手臂",
+      "核心"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "膝关节急性损伤",
+      "严重的膝关节不稳",
+      "髋关节剧烈疼痛"
+    ],
+    "file_name": "IMG_4380.mp4",
+    "url": "/assets/videos/IMG_4380.mp4"
+  },
+  {
+    "video_id": "IMG_4360",
+    "target_joint": "髋部",
+    "target_body_parts": [
+      "大腿后侧",
+      "臀部",
+      "下背部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "仰卧拉伸",
+      "单腿伸展",
+      "腘绳肌放松"
+    ],
+    "symptom_tags": [
+      "腘绳肌紧张",
+      "下背痛",
+      "坐骨神经痛",
+      "髋关节僵硬",
+      "腿部疲劳"
+    ],
+    "description_cn": "仰卧位双手抱大腿后侧，缓慢伸直小腿进行拉伸，有效放松腘绳肌，改善下肢柔韧性。",
+    "duration_seconds": 22,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "大腿",
+      "臀部",
+      "腰部",
+      "小腿"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性腘绳肌撕裂",
+      "严重腰椎间盘突出伴放射痛",
+      "近期髋膝关节手术"
+    ],
+    "file_name": "IMG_4360.mp4",
+    "url": "/assets/videos/IMG_4360.mp4"
+  },
+  {
+    "video_id": "IMG_4396",
+    "target_joint": "膝关节",
+    "target_body_parts": [
+      "腰部",
+      "髋部",
+      "膝关节",
+      "踝关节"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "仰卧",
+      "伸膝",
+      "毛巾辅助",
+      "缓慢控制"
+    ],
+    "symptom_tags": [
+      "膝关节疼痛",
+      "活动度受限",
+      "僵硬",
+      "术后康复",
+      "肌力恢复"
+    ],
+    "description_cn": "仰卧位，膝盖下方垫毛巾，缓慢伸直腿部进行膝关节伸展练习",
+    "duration_seconds": 15,
+    "difficulty": 2,
+    "equipment": "坐垫",
+    "space_required": "small",
+    "body_parts_involved": [
+      "腰部",
+      "髋部",
+      "膝关节",
+      "踝关节"
+    ],
+    "pose_landmarks_required": [
+      "knee",
+      "ankle",
+      "hip"
+    ],
+    "safety_level": "safe",
+    "contraindications": [],
+    "file_name": "IMG_4396.mp4",
+    "url": "/assets/videos/IMG_4396.mp4"
+  },
+  {
+    "video_id": "IMG_4394",
+    "target_joint": "肩部",
+    "target_body_parts": [
+      "肩部",
+      "胸部",
+      "上背部",
+      "颈部",
+      "核心"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "胸椎旋转",
+      "四足跪姿",
+      "手臂上举",
+      "肩部活动"
+    ],
+    "symptom_tags": [
+      "肩颈僵硬",
+      "胸椎活动受限",
+      "上背部紧张",
+      "肩关节活动度不足",
+      "姿势不良"
+    ],
+    "description_cn": "四足跪姿，一手穿过对侧腋下后向上打开，进行胸椎旋转练习",
+    "duration_seconds": 20,
+    "difficulty": 2,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "肩部",
+      "胸部",
+      "上背部",
+      "颈部",
+      "核心"
+    ],
+    "pose_landmarks_required": [
+      "neck",
+      "shoulder",
+      "hip",
+      "knee"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "严重肩关节损伤",
+      "急性胸椎损伤",
+      "严重颈椎病"
+    ],
+    "file_name": "IMG_4394.mp4",
+    "url": "/assets/videos/IMG_4394.mp4"
+  },
+  {
+    "video_id": "IMG_4387",
+    "target_joint": "膝关节",
+    "target_body_parts": [
+      "大腿",
+      "小腿",
+      "臀部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "俯卧",
+      "交替屈膝",
+      "腘绳肌强化"
+    ],
+    "symptom_tags": [
+      "膝关节疼痛",
+      "腘绳肌紧张",
+      "腿部无力",
+      "运动损伤康复"
+    ],
+    "description_cn": "俯卧姿势交替弯曲膝盖，锻炼大腿后侧腘绳肌，增强膝关节稳定性。",
+    "duration_seconds": 18,
+    "difficulty": 2,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "大腿",
+      "小腿",
+      "臀部",
+      "腰部"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性腘绳肌撕裂",
+      "膝关节术后早期"
+    ],
+    "file_name": "IMG_4387.mp4",
+    "url": "/assets/videos/IMG_4387.mp4"
+  },
+  {
+    "video_id": "IMG_4399",
+    "target_joint": "髋部",
+    "target_body_parts": [
+      "腰部",
+      "髋部",
+      "膝关节",
+      "腿部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "仰卧位",
+      "交替伸腿",
+      "核心稳定",
+      "控制性运动"
+    ],
+    "symptom_tags": [
+      "腰部不适",
+      "髋关节僵硬",
+      "核心无力",
+      "下肢控制弱",
+      "术后恢复期"
+    ],
+    "description_cn": "仰卧位交替单腿伸直训练，增强核心稳定性和下肢控制能力",
+    "duration_seconds": 18,
+    "difficulty": 2,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "腰部",
+      "髋部",
+      "膝关节",
+      "腿部"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性腰部损伤",
+      "严重髋关节疾病",
+      "近期腹部手术"
+    ],
+    "file_name": "IMG_4399.mp4",
+    "url": "/assets/videos/IMG_4399.mp4"
+  },
+  {
+    "video_id": "IMG_4385",
+    "target_joint": "腰部",
+    "target_body_parts": [
+      "肩部",
+      "腰部",
+      "腹部",
+      "腿部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "平板支撑",
+      "核心收紧",
+      "身体呈直线"
+    ],
+    "symptom_tags": [
+      "腰背酸痛",
+      "核心无力",
+      "姿势不良",
+      "脊柱稳定性差"
+    ],
+    "description_cn": "从四足跪姿伸直双腿进入平板支撑，保持头背臀腿呈直线，强化核心稳定性。",
+    "duration_seconds": 17,
+    "difficulty": 3,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "肩部",
+      "腰部",
+      "腹部",
+      "腿部"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性腰痛",
+      "腕管综合征",
+      "严重高血压"
+    ],
+    "file_name": "IMG_4385.mp4",
+    "url": "/assets/videos/IMG_4385.mp4"
+  },
+  {
+    "video_id": "IMG_4382",
+    "target_joint": "膝关节",
+    "target_body_parts": [
+      "大腿",
+      "腹部",
+      "髋部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "仰卧",
+      "直腿抬高",
+      "膝盖伸展"
+    ],
+    "symptom_tags": [
+      "膝关节无力",
+      "股四头肌萎缩",
+      "髋关节僵硬",
+      "下背部不适"
+    ],
+    "description_cn": "仰卧位直腿抬高训练，强化大腿前侧肌肉及核心稳定性。",
+    "duration_seconds": 18,
+    "difficulty": 2,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "大腿",
+      "腹部",
+      "髋部"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性腰椎间盘突出",
+      "严重髋关节疼痛"
+    ],
+    "file_name": "IMG_4382.mp4",
+    "url": "/assets/videos/IMG_4382.mp4"
+  },
+  {
+    "video_id": "IMG_4393",
+    "target_joint": "颈部",
+    "target_body_parts": [
+      "颈部",
+      "上背部",
+      "肩部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "仰卧",
+      "颈部支撑",
+      "放松训练"
+    ],
+    "symptom_tags": [
+      "颈部僵硬",
+      "颈椎不适",
+      "上背紧张",
+      "姿势不良"
+    ],
+    "description_cn": "仰卧位使用小球支撑颈部，进行轻柔的颈部放松训练。",
+    "duration_seconds": 16,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "颈部",
+      "上背部",
+      "肩部"
+    ],
+    "pose_landmarks_required": [
+      "neck",
+      "shoulder"
+    ],
+    "safety_level": "safe",
+    "contraindications": [],
+    "file_name": "IMG_4393.mp4",
+    "url": "/assets/videos/IMG_4393.mp4"
+  },
+  {
+    "video_id": "IMG_4395",
+    "target_joint": "腰部",
+    "target_body_parts": [
+      "肩部",
+      "腰部",
+      "背部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "跪姿旋转",
+      "胸椎伸展",
+      "肩部活动"
+    ],
+    "symptom_tags": [
+      "胸椎僵硬",
+      "肩背酸痛",
+      "活动受限",
+      "姿态改善"
+    ],
+    "description_cn": "跪姿躯干旋转伸展，有效改善胸椎灵活性与肩关节活动度。",
+    "duration_seconds": 17,
+    "difficulty": 2,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "肩部",
+      "腰部",
+      "颈部"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "hip",
+      "neck"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性脊柱损伤",
+      "严重肩袖撕裂"
+    ],
+    "file_name": "IMG_4395.mp4",
+    "url": "/assets/videos/IMG_4395.mp4"
+  },
+  {
+    "video_id": "IMG_4386",
+    "target_joint": "膝关节",
+    "target_body_parts": [
+      "大腿后侧",
+      "臀部",
+      "小腿"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "chronic",
+    "action_keywords": [
+      "俯卧屈膝",
+      "交替勾腿",
+      "腘绳肌激活"
+    ],
+    "symptom_tags": [
+      "大腿后侧无力",
+      "膝关节不稳",
+      "腘绳肌紧张",
+      "运动损伤预防"
+    ],
+    "description_cn": "俯卧位交替屈膝抬腿，强化大腿后侧腘绳肌群，增强膝关节稳定性。",
+    "duration_seconds": 21,
+    "difficulty": 2,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "大腿",
+      "臀部",
+      "小腿",
+      "腰部"
+    ],
+    "pose_landmarks_required": [
+      "knee",
+      "hip",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性腘绳肌拉伤",
+      "膝关节急性炎症"
+    ],
+    "file_name": "IMG_4386.mp4",
+    "url": "/assets/videos/IMG_4386.mp4"
+  },
+  {
+    "video_id": "IMG_4404",
+    "target_joint": "髋部",
+    "target_body_parts": [
+      "髋部",
+      "膝关节",
+      "大腿",
+      "小腿"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "仰卧",
+      "交替伸腿",
+      "屈膝",
+      "平躺"
+    ],
+    "symptom_tags": [
+      "髋部僵硬",
+      "膝关节活动受限",
+      "下肢血液循环",
+      "肌肉放松",
+      "关节灵活性"
+    ],
+    "description_cn": "仰卧交替伸腿练习，帮助恢复髋膝关节活动度。",
+    "duration_seconds": 17,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "髋部",
+      "膝关节",
+      "大腿",
+      "小腿"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee"
+    ],
+    "safety_level": "safe",
+    "contraindications": [],
+    "file_name": "IMG_4404.mp4",
+    "url": "/assets/videos/IMG_4404.mp4"
+  },
+  {
+    "video_id": "IMG_4391",
+    "target_joint": "肩部",
+    "target_body_parts": [
+      "肩部",
+      "上臂",
+      "背部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "侧卧肩外旋",
+      "毛巾卷辅助",
+      "肩袖肌群强化"
+    ],
+    "symptom_tags": [
+      "肩袖损伤",
+      "肩关节疼痛",
+      "冈下肌无力",
+      "肩部活动受限"
+    ],
+    "description_cn": "侧卧位，腋下夹毛巾卷保持肱骨内收，进行肩关节外旋练习，强化肩袖肌群。",
+    "duration_seconds": 17,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "肩部",
+      "手臂",
+      "上背部"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "elbow"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性肩关节脱位",
+      "未愈合的肩袖撕裂"
+    ],
+    "file_name": "IMG_4391.mp4",
+    "url": "/assets/videos/IMG_4391.mp4"
+  },
+  {
+    "video_id": "IMG_4384",
+    "target_joint": "腰部",
+    "target_body_parts": [
+      "腰部",
+      "腹部",
+      "大腿",
+      "肩部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "平板支撑",
+      "交替提膝",
+      "核心稳定"
+    ],
+    "symptom_tags": [
+      "下背痛",
+      "核心无力",
+      "骨盆不稳",
+      "髋部僵硬"
+    ],
+    "description_cn": "由四足跪姿进入平板支撑，交替将膝盖提向胸前，锻炼核心力量与身体协调性。",
+    "duration_seconds": 17,
+    "difficulty": 3,
+    "equipment": "none",
+    "space_required": "medium",
+    "body_parts_involved": [
+      "腰部",
+      "腹部",
+      "大腿",
+      "肩部"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "hip",
+      "knee"
+    ],
+    "safety_level": "caution",
+    "contraindications": [
+      "急性腰椎间盘突出",
+      "手腕严重疼痛",
+      "肩袖损伤"
+    ],
+    "file_name": "IMG_4384.mp4",
+    "url": "/assets/videos/IMG_4384.mp4"
+  },
+  {
+    "video_id": "IMG_4377",
+    "target_joint": "膝关节",
+    "target_body_parts": [
+      "大腿",
+      "髋部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "侧卧拉伸",
+      "股四头肌",
+      "屈膝",
+      "大腿前侧"
+    ],
+    "symptom_tags": [
+      "大腿紧绷",
+      "膝关节僵硬",
+      "髋部紧张",
+      "运动后放松",
+      "股四头肌短缩"
+    ],
+    "description_cn": "侧卧位，上方腿屈膝，手拉脚踝靠近臀部，拉伸大腿前侧股四头肌。",
+    "duration_seconds": 15,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "大腿",
+      "髋部",
+      "膝关节",
+      "手部"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle",
+      "shoulder"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "膝关节急性损伤",
+      "髋部严重疼痛",
+      "膝关节术后早期"
+    ],
+    "file_name": "IMG_4377.mp4",
+    "url": "/assets/videos/IMG_4377.mp4"
+  },
+  {
+    "video_id": "IMG_4397",
+    "target_joint": "髋部",
+    "target_body_parts": [
+      "大腿后侧",
+      "臀部",
+      "腰部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "仰卧抱膝",
+      "单腿伸展",
+      "腘绳肌拉伸"
+    ],
+    "symptom_tags": [
+      "大腿后侧紧绷",
+      "下背部酸痛",
+      "髋部紧张",
+      "坐骨神经不适"
+    ],
+    "description_cn": "仰卧位单腿抱膝拉伸，双手辅助将腿部拉向身体，伸展大腿后侧肌群，缓解腰背紧张。",
+    "duration_seconds": 13,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "腰部",
+      "臀部",
+      "大腿"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性腰椎间盘突出",
+      "严重膝关节损伤"
+    ],
+    "file_name": "IMG_4397.mp4",
+    "url": "/assets/videos/IMG_4397.mp4"
+  },
+  {
+    "video_id": "IMG_4414",
+    "target_joint": "肩部",
+    "target_body_parts": [
+      "肩部",
+      "上背部",
+      "手臂"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "手臂上举",
+      "肩部外展",
+      "靠墙站立"
+    ],
+    "symptom_tags": [
+      "肩关节活动受限",
+      "肩周炎",
+      "肩部僵硬"
+    ],
+    "description_cn": "靠墙站立，双臂缓慢上举至头顶，锻炼肩部活动度。",
+    "duration_seconds": 16,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "肩部",
+      "上背部",
+      "颈部",
+      "手臂"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "elbow",
+      "neck"
+    ],
+    "safety_level": "safe",
+    "contraindications": [],
+    "file_name": "IMG_4414.mp4",
+    "url": "/assets/videos/IMG_4414.mp4"
+  },
+  {
+    "video_id": "IMG_4408",
+    "target_joint": "肩部",
+    "target_body_parts": [
+      "肩部",
+      "胸部",
+      "手臂"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "靠墙站立",
+      "单臂扶墙",
+      "躯干旋转",
+      "胸部拉伸"
+    ],
+    "symptom_tags": [
+      "肩部僵硬",
+      "胸肌紧张",
+      "圆肩驼背",
+      "肩前侧疼痛"
+    ],
+    "description_cn": "侧身靠墙站立，单手扶墙，身体向对侧旋转打开，拉伸胸大肌及肩关节前侧。",
+    "duration_seconds": 15,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "肩部",
+      "胸部",
+      "手臂",
+      "躯干"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "elbow"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "肩关节急性损伤",
+      "肩关节脱位"
+    ],
+    "file_name": "IMG_4408.mp4",
+    "url": "/assets/videos/IMG_4408.mp4"
+  },
+  {
+    "video_id": "IMG_4405",
+    "target_joint": "膝关节",
+    "target_body_parts": [
+      "大腿",
+      "膝关节",
+      "小腿"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "acute",
+    "action_keywords": [
+      "仰卧直腿",
+      "股四头肌收缩",
+      "脚跟垫高"
+    ],
+    "symptom_tags": [
+      "膝关节疼痛",
+      "股四头肌无力",
+      "术后康复",
+      "膝关节僵硬"
+    ],
+    "description_cn": "仰卧位，一腿屈膝，另一腿伸直脚跟垫毛巾，进行股四头肌等长收缩练习。",
+    "duration_seconds": 13,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "大腿",
+      "膝关节",
+      "小腿"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [],
+    "file_name": "IMG_4405.mp4",
+    "url": "/assets/videos/IMG_4405.mp4"
+  },
+  {
+    "video_id": "IMG_4410",
+    "target_joint": "肩部",
+    "target_body_parts": [
+      "肩部",
+      "胸部",
+      "上背部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "靠墙站立",
+      "双臂上举",
+      "胸肩拉伸"
+    ],
+    "symptom_tags": [
+      "肩颈僵硬",
+      "圆肩",
+      "驼背",
+      "胸肌紧张",
+      "活动受限"
+    ],
+    "description_cn": "背对墙角站立，双臂上举贴墙保持静止，拉伸胸肩。",
+    "duration_seconds": 16,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "肩部",
+      "胸部",
+      "上背部"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "elbow",
+      "neck"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "肩关节脱位",
+      "严重肩袖损伤"
+    ],
+    "file_name": "IMG_4410.mp4",
+    "url": "/assets/videos/IMG_4410.mp4"
+  },
+  {
+    "video_id": "IMG_4411",
+    "target_joint": "踝关节",
+    "target_body_parts": [
+      "小腿",
+      "踝关节",
+      "足部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "靠墙拉伸",
+      "小腿后侧拉伸",
+      "静态保持"
+    ],
+    "symptom_tags": [
+      "小腿紧绷",
+      "跟腱短缩",
+      "足底筋膜炎",
+      "踝关节活动度受限"
+    ],
+    "description_cn": "背对墙壁站立，双手扶墙，后腿伸直脚跟着地，前腿微屈，身体前倾拉伸小腿后侧。",
+    "duration_seconds": 8,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "小腿",
+      "踝关节",
+      "肩部",
+      "躯干"
+    ],
+    "pose_landmarks_required": [
+      "ankle",
+      "knee",
+      "hip",
+      "shoulder"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性跟腱断裂",
+      "严重踝关节扭伤急性期"
+    ],
+    "file_name": "IMG_4411.mp4",
+    "url": "/assets/videos/IMG_4411.mp4"
+  },
+  {
+    "video_id": "IMG_4402",
+    "target_joint": "膝关节",
+    "target_body_parts": [
+      "膝关节",
+      "大腿",
+      "小腿"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "仰卧",
+      "脚跟垫高",
+      "膝关节伸直",
+      "静态保持"
+    ],
+    "symptom_tags": [
+      "膝关节僵硬",
+      "伸膝受限",
+      "术后康复",
+      "腘绳肌紧张",
+      "关节活动度下降"
+    ],
+    "description_cn": "仰卧位，脚跟垫毛巾卷，利用重力辅助膝关节被动伸直，改善关节伸展活动度。",
+    "duration_seconds": 15,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "膝关节",
+      "大腿",
+      "小腿"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "膝关节急性炎症期",
+      "严重骨质疏松"
+    ],
+    "file_name": "IMG_4402.mp4",
+    "url": "/assets/videos/IMG_4402.mp4"
+  },
+  {
+    "video_id": "IMG_4415",
+    "target_joint": "肩部",
+    "target_body_parts": [
+      "肩部",
+      "上背部",
+      "胸部",
+      "手臂"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "靠墙站立",
+      "双臂上举",
+      "肩关节滑动",
+      "墙壁天使"
+    ],
+    "symptom_tags": [
+      "肩关节僵硬",
+      "肩周炎",
+      "圆肩驼背",
+      "活动受限",
+      "上肢无力"
+    ],
+    "description_cn": "背靠墙站立，双臂沿墙壁缓慢上举至头顶，再缓缓放下，改善肩关节活动度。",
+    "duration_seconds": 17,
+    "difficulty": 2,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "肩部",
+      "上背部",
+      "胸部",
+      "手臂"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "elbow",
+      "neck"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "严重肩袖撕裂",
+      "肩关节脱位未愈合",
+      "急性肩周炎疼痛期"
+    ],
+    "file_name": "IMG_4415.mp4",
+    "url": "/assets/videos/IMG_4415.mp4"
+  },
+  {
+    "video_id": "IMG_4412",
+    "target_joint": "踝关节",
+    "target_body_parts": [
+      "小腿",
+      "足部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "扶墙拉伸",
+      "小腿后侧拉伸",
+      "弓步推墙"
+    ],
+    "symptom_tags": [
+      "小腿紧张",
+      "足底筋膜炎",
+      "跟腱炎",
+      "踝关节僵硬",
+      "运动后放松"
+    ],
+    "description_cn": "双手扶墙，呈弓步站立，后腿伸直，身体前倾以拉伸小腿后侧肌群。",
+    "duration_seconds": 15,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "小腿",
+      "足部",
+      "肩部",
+      "手臂"
+    ],
+    "pose_landmarks_required": [
+      "ankle",
+      "knee",
+      "shoulder"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性踝关节扭伤",
+      "跟腱断裂术后早期"
+    ],
+    "file_name": "IMG_4412.mp4",
+    "url": "/assets/videos/IMG_4412.mp4"
+  },
+  {
+    "video_id": "IMG_4419",
+    "target_joint": "踝关节",
+    "target_body_parts": [
+      "小腿",
+      "脚踝",
+      "足部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "靠墙拉伸",
+      "小腿伸展",
+      "推墙练习"
+    ],
+    "symptom_tags": [
+      "小腿紧绷",
+      "跟腱不适",
+      "足底疼痛",
+      "踝关节僵硬",
+      "运动后恢复"
+    ],
+    "description_cn": "面向墙壁站立，双手扶墙，前后脚开立，后腿伸直脚跟着地，身体前倾拉伸小腿后侧肌肉。",
+    "duration_seconds": 15,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "小腿",
+      "脚踝",
+      "大腿",
+      "足部"
+    ],
+    "pose_landmarks_required": [
+      "ankle",
+      "knee",
+      "hip",
+      "shoulder"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "踝关节急性扭伤",
+      "跟腱断裂术后早期",
+      "小腿骨折未愈合"
+    ],
+    "file_name": "IMG_4419.mp4",
+    "url": "/assets/videos/IMG_4419.mp4"
+  },
+  {
+    "video_id": "IMG_4392",
+    "target_joint": "肩部",
+    "target_body_parts": [
+      "肩部",
+      "上背部",
+      "手臂"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "侧卧",
+      "肩外旋",
+      "肩袖强化"
+    ],
+    "symptom_tags": [
+      "肩袖损伤",
+      "肩周炎",
+      "肩部无力",
+      "肩关节活动受限"
+    ],
+    "description_cn": "侧卧位手持轻物进行肩外旋练习，强化肩袖肌群，改善肩关节稳定性。",
+    "duration_seconds": 17,
+    "difficulty": 2,
+    "equipment": "哑铃",
+    "space_required": "small",
+    "body_parts_involved": [
+      "肩部",
+      "上背部",
+      "手臂",
+      "核心"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "elbow",
+      "hip",
+      "neck"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "肩袖急性撕裂",
+      "肩关节术后早期",
+      "严重肩部疼痛"
+    ],
+    "file_name": "IMG_4392.mp4",
+    "url": "/assets/videos/IMG_4392.mp4"
+  },
+  {
+    "video_id": "IMG_4403",
+    "target_joint": "膝关节",
+    "target_body_parts": [
+      "膝盖",
+      "大腿",
+      "小腿"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "acute",
+    "action_keywords": [
+      "仰卧",
+      "膝下垫物",
+      "下肢伸展",
+      "静态保持"
+    ],
+    "symptom_tags": [
+      "膝关节术后",
+      "关节肿胀",
+      "伸膝受限",
+      "股四头肌无力",
+      "关节僵硬"
+    ],
+    "description_cn": "仰卧位，一侧腿屈膝，另一侧腿伸直并在膝下垫毛巾卷，用于膝关节伸展或股四头肌激活。",
+    "duration_seconds": 13,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "膝盖",
+      "大腿",
+      "小腿"
+    ],
+    "pose_landmarks_required": [
+      "knee",
+      "hip",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "膝关节骨折未固定",
+      "严重韧带撕裂急性期"
+    ],
+    "file_name": "IMG_4403.mp4",
+    "url": "/assets/videos/IMG_4403.mp4"
+  },
+  {
+    "video_id": "IMG_4424",
+    "target_joint": "髋部",
+    "target_body_parts": [
+      "髋部",
+      "膝关节",
+      "大腿",
+      "小腿"
+    ],
+    "severity": "中度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "弹力带抗阻",
+      "髋部稳定",
+      "前后移动",
+      "腿部训练"
+    ],
+    "symptom_tags": [
+      "髋部不稳定",
+      "膝关节康复",
+      "下肢力量不足",
+      "步态异常",
+      "髋关节活动受限"
+    ],
+    "description_cn": "使用弹力带进行抗阻训练，前后移动腿部以增强髋部稳定性和下肢力量。",
+    "duration_seconds": 14,
+    "difficulty": 3,
+    "equipment": "弹力带",
+    "space_required": "medium",
+    "body_parts_involved": [
+      "髋部",
+      "膝关节",
+      "大腿",
+      "小腿",
+      "脚踝"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "caution",
+    "contraindications": [
+      "急性髋关节损伤",
+      "严重膝关节不稳",
+      "近期髋部或膝部手术"
+    ],
+    "file_name": "IMG_4424.mp4",
+    "url": "/assets/videos/IMG_4424.mp4"
+  },
+  {
+    "video_id": "IMG_4426",
+    "target_joint": "髋部",
+    "target_body_parts": [
+      "髋部",
+      "大腿",
+      "膝关节",
+      "核心肌群"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "单腿站立",
+      "高抬腿",
+      "髋部屈曲",
+      "平衡训练"
+    ],
+    "symptom_tags": [
+      "髋关节僵硬",
+      "膝关节不稳定",
+      "平衡能力差",
+      "下肢无力",
+      "步态异常",
+      "髋屈肌紧张"
+    ],
+    "description_cn": "单腿站立高抬腿训练，双手扶髋，缓慢抬起一侧膝盖至髋部高度，保持平衡后放下。",
+    "duration_seconds": 13,
+    "difficulty": 2,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "髋部",
+      "大腿",
+      "膝关节",
+      "核心肌群",
+      "踝关节"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性髋关节损伤",
+      "严重平衡障碍",
+      "近期下肢手术",
+      "急性膝关节炎症"
+    ],
+    "file_name": "IMG_4426.mp4",
+    "url": "/assets/videos/IMG_4426.mp4"
+  },
+  {
+    "video_id": "IMG_4418",
+    "target_joint": "膝关节",
+    "target_body_parts": [
+      "大腿",
+      "臀部",
+      "膝关节"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "靠墙静蹲",
+      "缓慢下蹲",
+      "静态保持"
+    ],
+    "symptom_tags": [
+      "膝盖无力",
+      "髌骨软化",
+      "上下楼梯痛",
+      "膝关节不稳",
+      "运动后膝痛"
+    ],
+    "description_cn": "背部紧贴墙壁缓慢下蹲至大腿水平，保持静止，增强股四头肌力量。",
+    "duration_seconds": 16,
+    "difficulty": 3,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "大腿",
+      "臀部",
+      "膝关节",
+      "腰部"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle",
+      "shoulder"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性膝关节扭伤",
+      "严重髌股关节疼痛综合征"
+    ],
+    "file_name": "IMG_4418.mp4",
+    "url": "/assets/videos/IMG_4418.mp4"
+  },
+  {
+    "video_id": "IMG_4421",
+    "target_joint": "髋部",
+    "target_body_parts": [
+      "臀部",
+      "大腿后侧",
+      "核心肌群"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "俯卧抬腿",
+      "髋部伸展",
+      "单腿后伸",
+      "腘绳肌激活"
+    ],
+    "symptom_tags": [
+      "髋部疼痛",
+      "坐骨神经痛",
+      "臀部无力",
+      "腰部不适",
+      "下肢乏力"
+    ],
+    "description_cn": "俯卧位单腿后伸训练，强化臀大肌与腘绳肌，改善髋部伸展功能",
+    "duration_seconds": 14,
+    "difficulty": 2,
+    "equipment": "椅子",
+    "space_required": "small",
+    "body_parts_involved": [
+      "髋部",
+      "臀部",
+      "大腿后侧",
+      "核心"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性髋关节损伤",
+      "严重腰椎间盘突出",
+      "髋部手术后未愈合"
+    ],
+    "file_name": "IMG_4421.mp4",
+    "url": "/assets/videos/IMG_4421.mp4"
+  },
+  {
+    "video_id": "IMG_4406",
+    "target_joint": "肩部",
+    "target_body_parts": [
+      "肩部",
+      "胸部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "靠墙拉伸",
+      "胸肌伸展",
+      "肩部放松"
+    ],
+    "symptom_tags": [
+      "圆肩",
+      "肩前侧疼痛",
+      "胸肌紧张",
+      "肩关节僵硬",
+      "上交叉综合征"
+    ],
+    "description_cn": "面对墙壁单手扶墙，身体向对侧旋转，拉伸胸肌与肩前部，改善圆肩姿态。",
+    "duration_seconds": 16,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "肩部",
+      "胸部",
+      "颈部",
+      "上背部"
+    ],
+    "pose_landmarks_required": [
+      "shoulder",
+      "neck"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "肩部急性损伤",
+      "肩关节脱位"
+    ],
+    "file_name": "IMG_4406.mp4",
+    "url": "/assets/videos/IMG_4406.mp4"
+  },
+  {
+    "video_id": "IMG_4390",
+    "target_joint": "膝关节",
+    "target_body_parts": [
+      "大腿后侧",
+      "腰部",
+      "小腿"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "坐姿拉伸",
+      "毛巾辅助",
+      "腘绳肌拉伸",
+      "腿部伸直"
+    ],
+    "symptom_tags": [
+      "大腿后侧紧绷",
+      "膝关节活动受限",
+      "下背部僵硬",
+      "腘绳肌短缩",
+      "久坐疲劳"
+    ],
+    "description_cn": "坐在垫上，用毛巾套住脚掌，双手拉住毛巾辅助双腿伸直，拉伸大腿后侧肌群。",
+    "duration_seconds": 14,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "腰部",
+      "髋部",
+      "膝关节",
+      "踝关节"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle",
+      "shoulder"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性腘绳肌拉伤",
+      "严重腰椎间盘突出",
+      "坐骨神经痛急性期"
+    ],
+    "file_name": "IMG_4390.mp4",
+    "url": "/assets/videos/IMG_4390.mp4"
+  },
+  {
+    "video_id": "IMG_4429",
+    "target_joint": "膝关节",
+    "target_body_parts": [
+      "腿部",
+      "膝关节",
+      "髋部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "acute",
+    "action_keywords": [
+      "坐姿腿部伸展",
+      "静态保持",
+      "膝关节伸直"
+    ],
+    "symptom_tags": [
+      "膝关节僵硬",
+      "腿部肌肉紧张",
+      "膝关节活动受限",
+      "久坐不适"
+    ],
+    "description_cn": "坐在凳子上，一条腿伸直平放于凳面并保持，另一条腿自然下垂，进行静态拉伸训练。",
+    "duration_seconds": 30,
+    "difficulty": 1,
+    "equipment": "椅子",
+    "space_required": "small",
+    "body_parts_involved": [
+      "大腿",
+      "小腿",
+      "膝关节",
+      "髋部"
+    ],
+    "pose_landmarks_required": [
+      "knee",
+      "hip"
+    ],
+    "safety_level": "safe",
+    "contraindications": [],
+    "file_name": "IMG_4429.mp4",
+    "url": "/assets/videos/IMG_4429.mp4"
+  },
+  {
+    "video_id": "IMG_4423",
+    "target_joint": "膝关节",
+    "target_body_parts": [
+      "大腿",
+      "臀部",
+      "小腿"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "弹力带抗阻",
+      "重心前后移动",
+      "膝关节屈伸"
+    ],
+    "symptom_tags": [
+      "膝关节不稳",
+      "股四头肌无力",
+      "下肢康复",
+      "髋关节控制"
+    ],
+    "description_cn": "侧身站立，前腿膝盖下方绑弹力带，双手叉腰，进行重心前后移动训练。",
+    "duration_seconds": 14,
+    "difficulty": 2,
+    "equipment": "弹力带",
+    "space_required": "small",
+    "body_parts_involved": [
+      "大腿",
+      "臀部",
+      "核心"
+    ],
+    "pose_landmarks_required": [
+      "knee",
+      "hip",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "膝关节急性炎症",
+      "严重韧带损伤"
+    ],
+    "file_name": "IMG_4423.mp4",
+    "url": "/assets/videos/IMG_4423.mp4"
+  },
+  {
+    "video_id": "IMG_4420",
+    "target_joint": "踝关节",
+    "target_body_parts": [
+      "小腿",
+      "踝关节",
+      "足部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "靠墙拉伸",
+      "小腿后侧拉伸",
+      "脚跟下压"
+    ],
+    "symptom_tags": [
+      "小腿僵硬",
+      "跟腱炎",
+      "足底筋膜炎",
+      "踝关节活动受限"
+    ],
+    "description_cn": "双手扶墙，后腿伸直脚跟踩地，身体前倾拉伸小腿后侧腓肠肌。",
+    "duration_seconds": 14,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "小腿",
+      "踝关节",
+      "足部"
+    ],
+    "pose_landmarks_required": [
+      "ankle",
+      "knee",
+      "hip",
+      "shoulder"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性跟腱断裂",
+      "严重踝关节扭伤急性期"
+    ],
+    "file_name": "IMG_4420.mp4",
+    "url": "/assets/videos/IMG_4420.mp4"
+  },
+  {
+    "video_id": "IMG_4413",
+    "target_joint": "踝关节",
+    "target_body_parts": [
+      "小腿",
+      "踝关节",
+      "足部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "扶墙拉伸",
+      "小腿后侧拉伸",
+      "静态保持",
+      "弓箭步"
+    ],
+    "symptom_tags": [
+      "小腿紧绷",
+      "足底筋膜炎",
+      "跟腱炎",
+      "踝关节僵硬",
+      "运动后恢复"
+    ],
+    "description_cn": "双手扶墙，呈弓箭步，后腿伸直，拉伸小腿后侧肌肉，改善踝关节活动度。",
+    "duration_seconds": 15,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "小腿",
+      "踝关节",
+      "肩部",
+      "背部"
+    ],
+    "pose_landmarks_required": [
+      "ankle",
+      "knee",
+      "hip",
+      "shoulder"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性踝关节扭伤",
+      "跟腱断裂术后早期"
+    ],
+    "file_name": "IMG_4413.mp4",
+    "url": "/assets/videos/IMG_4413.mp4"
+  },
+  {
+    "video_id": "IMG_4388",
+    "target_joint": "膝关节",
+    "target_body_parts": [
+      "大腿后侧",
+      "腰部",
+      "臀部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "毛巾辅助拉伸",
+      "坐姿腿后侧伸展",
+      "腘绳肌拉伸"
+    ],
+    "symptom_tags": [
+      "腿后侧紧绷",
+      "膝关节活动受限",
+      "腘绳肌紧张",
+      "久坐僵硬"
+    ],
+    "description_cn": "坐姿利用毛巾辅助拉伸腿后侧肌群，缓解腘绳肌紧张，改善膝关节活动度。",
+    "duration_seconds": 16,
+    "difficulty": 1,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "大腿",
+      "腰部",
+      "臀部"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle",
+      "shoulder"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性腘绳肌撕裂",
+      "严重膝关节损伤"
+    ],
+    "file_name": "IMG_4388.mp4",
+    "url": "/assets/videos/IMG_4388.mp4"
+  },
+  {
+    "video_id": "IMG_4425",
+    "target_joint": "髋部",
+    "target_body_parts": [
+      "髋部",
+      "大腿",
+      "核心",
+      "支撑腿"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "站立抬膝",
+      "髋关节屈曲",
+      "单腿平衡"
+    ],
+    "symptom_tags": [
+      "髋部活动受限",
+      "下肢肌力减弱",
+      "平衡能力下降",
+      "步态不稳"
+    ],
+    "description_cn": "双手叉腰站立，进行单腿屈膝上抬动作，锻炼髋屈肌及平衡能力。",
+    "duration_seconds": 12,
+    "difficulty": 2,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "髋部",
+      "大腿",
+      "核心",
+      "脚踝"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性髋关节损伤",
+      "严重平衡障碍",
+      "近期下肢骨折"
+    ],
+    "file_name": "IMG_4425.mp4",
+    "url": "/assets/videos/IMG_4425.mp4"
+  },
+  {
+    "video_id": "IMG_4434",
+    "target_joint": "膝关节",
+    "target_body_parts": [
+      "大腿",
+      "膝关节",
+      "小腿",
+      "踝关节"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "acute",
+    "action_keywords": [
+      "坐姿伸膝",
+      "静态伸展",
+      "关节活动度训练"
+    ],
+    "symptom_tags": [
+      "膝关节僵硬",
+      "活动度受限",
+      "肌肉紧张",
+      "术后康复",
+      "关节肿胀"
+    ],
+    "description_cn": "坐在椅子上，将一侧腿伸直放置于椅面，保持膝关节伸展状态进行静态拉伸。",
+    "duration_seconds": 10,
+    "difficulty": 1,
+    "equipment": "椅子",
+    "space_required": "small",
+    "body_parts_involved": [
+      "大腿",
+      "膝关节",
+      "小腿",
+      "踝关节"
+    ],
+    "pose_landmarks_required": [
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [],
+    "file_name": "IMG_4434.mp4",
+    "url": "/assets/videos/IMG_4434.mp4"
+  },
+  {
+    "video_id": "IMG_4428",
+    "target_joint": "膝关节",
+    "target_body_parts": [
+      "大腿",
+      "膝关节"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "坐姿直腿抬高",
+      "股四头肌收缩",
+      "膝关节伸展"
+    ],
+    "symptom_tags": [
+      "膝关节无力",
+      "髌股疼痛综合征",
+      "膝关节术后康复",
+      "大腿肌肉萎缩"
+    ],
+    "description_cn": "坐在长凳边缘，单腿伸直抬起至水平，锻炼股四头肌力量与膝关节稳定性。",
+    "duration_seconds": 12,
+    "difficulty": 1,
+    "equipment": "椅子",
+    "space_required": "small",
+    "body_parts_involved": [
+      "大腿",
+      "膝关节",
+      "髋部"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性膝关节严重肿胀",
+      "未固定的膝关节骨折"
+    ],
+    "file_name": "IMG_4428.mp4",
+    "url": "/assets/videos/IMG_4428.mp4"
+  },
+  {
+    "video_id": "IMG_4422",
+    "target_joint": "膝关节",
+    "target_body_parts": [
+      "大腿",
+      "膝盖",
+      "臀部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "俯卧伸膝",
+      "股四头肌收缩",
+      "等长保持"
+    ],
+    "symptom_tags": [
+      "膝关节无力",
+      "髌骨疼痛",
+      "术后康复",
+      "大腿肌肉萎缩"
+    ],
+    "description_cn": "俯卧于长凳边缘，单腿悬空缓慢伸直膝盖并保持，强化股四头肌。",
+    "duration_seconds": 15,
+    "difficulty": 3,
+    "equipment": "椅子",
+    "space_required": "small",
+    "body_parts_involved": [
+      "大腿前侧",
+      "膝关节",
+      "核心"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性膝关节肿胀",
+      "严重髌股关节疼痛"
+    ],
+    "file_name": "IMG_4422.mp4",
+    "url": "/assets/videos/IMG_4422.mp4"
+  },
+  {
+    "video_id": "IMG_4441",
+    "target_joint": "踝关节",
+    "target_body_parts": [
+      "踝关节",
+      "小腿",
+      "足部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "坐姿脚踝内外翻",
+      "踝关节活动度训练",
+      "足部血液循环"
+    ],
+    "symptom_tags": [
+      "踝关节僵硬",
+      "踝关节活动受限",
+      "踝扭伤康复",
+      "足部水肿",
+      "踝关节炎"
+    ],
+    "description_cn": "坐于椅上，双手扶膝，进行脚踝内外翻活动，改善踝关节灵活性与血液循环。",
+    "duration_seconds": 15,
+    "difficulty": 1,
+    "equipment": "椅子",
+    "space_required": "small",
+    "body_parts_involved": [
+      "踝关节",
+      "小腿",
+      "足部"
+    ],
+    "pose_landmarks_required": [
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性踝关节骨折",
+      "严重踝扭伤急性期",
+      "踝关节术后早期"
+    ],
+    "file_name": "IMG_4441.mp4",
+    "url": "/assets/videos/IMG_4441.mp4"
+  },
+  {
+    "video_id": "IMG_4432",
+    "target_joint": "踝关节",
+    "target_body_parts": [
+      "小腿",
+      "脚踝",
+      "足部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "acute",
+    "action_keywords": [
+      "踝泵运动",
+      "脚踝屈伸",
+      "促进回流"
+    ],
+    "symptom_tags": [
+      "下肢水肿",
+      "预防血栓",
+      "术后康复",
+      "踝关节僵硬"
+    ],
+    "description_cn": "坐姿腿部伸直，进行脚踝的背屈和跖屈练习，促进血液回流。",
+    "duration_seconds": 15,
+    "difficulty": 1,
+    "equipment": "椅子",
+    "space_required": "small",
+    "body_parts_involved": [
+      "下肢",
+      "脚踝",
+      "小腿"
+    ],
+    "pose_landmarks_required": [
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [],
+    "file_name": "IMG_4432.mp4",
+    "url": "/assets/videos/IMG_4432.mp4"
+  },
+  {
+    "video_id": "IMG_4435",
+    "target_joint": "踝关节",
+    "target_body_parts": [
+      "足部",
+      "小腿",
+      "踝关节"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "坐姿足部拉伸",
+      "踝关节活动",
+      "足底筋膜放松"
+    ],
+    "symptom_tags": [
+      "足底筋膜炎",
+      "踝关节僵硬",
+      "运动后放松",
+      "小腿紧张"
+    ],
+    "description_cn": "坐姿单腿搭在椅子上，双手辅助进行踝关节屈伸及足底拉伸动作。",
+    "duration_seconds": 12,
+    "difficulty": 1,
+    "equipment": "椅子",
+    "space_required": "small",
+    "body_parts_involved": [
+      "足部",
+      "小腿",
+      "踝关节"
+    ],
+    "pose_landmarks_required": [
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性踝关节扭伤",
+      "足部骨折未愈合"
+    ],
+    "file_name": "IMG_4435.mp4",
+    "url": "/assets/videos/IMG_4435.mp4"
+  },
+  {
+    "video_id": "IMG_4398",
+    "target_joint": "膝关节",
+    "target_body_parts": [
+      "大腿后侧",
+      "小腿",
+      "臀部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "仰卧抱膝",
+      "伸直小腿",
+      "腘绳肌拉伸"
+    ],
+    "symptom_tags": [
+      "腘绳肌紧张",
+      "下背痛",
+      "坐骨神经痛",
+      "膝关节僵硬",
+      "腿部麻木"
+    ],
+    "description_cn": "仰卧位抱住单侧大腿后侧并缓慢伸直小腿，拉伸腘绳肌。",
+    "duration_seconds": 14,
+    "difficulty": 2,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "大腿",
+      "臀部",
+      "腰部"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle",
+      "shoulder"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性腘绳肌撕裂",
+      "严重腰椎间盘突出伴剧痛"
+    ],
+    "file_name": "IMG_4398.mp4",
+    "url": "/assets/videos/IMG_4398.mp4"
+  },
+  {
+    "video_id": "IMG_4443",
+    "target_joint": "踝关节",
+    "target_body_parts": [
+      "踝关节",
+      "足部",
+      "小腿"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "坐姿",
+      "足内翻",
+      "足外翻",
+      "踝关节活动"
+    ],
+    "symptom_tags": [
+      "踝关节僵硬",
+      "活动受限",
+      "扭伤恢复",
+      "足部灵活性",
+      "关节活动度"
+    ],
+    "description_cn": "坐姿下进行足部内翻和外翻动作，温和活动踝关节，改善关节灵活性。",
+    "duration_seconds": 16,
+    "difficulty": 1,
+    "equipment": "椅子",
+    "space_required": "small",
+    "body_parts_involved": [
+      "踝关节",
+      "足部",
+      "小腿"
+    ],
+    "pose_landmarks_required": [
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "踝关节急性损伤",
+      "严重疼痛"
+    ],
+    "file_name": "IMG_4443.mp4",
+    "url": "/assets/videos/IMG_4443.mp4"
+  },
+  {
+    "video_id": "IMG_4436",
+    "target_joint": "髋部",
+    "target_body_parts": [
+      "臀部",
+      "大腿",
+      "髋部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "chronic",
+    "action_keywords": [
+      "坐姿",
+      "交叉腿",
+      "臀部拉伸",
+      "保持静止"
+    ],
+    "symptom_tags": [
+      "髋部僵硬",
+      "臀部酸痛",
+      "久坐不适",
+      "梨状肌紧张"
+    ],
+    "description_cn": "坐姿下将一侧脚踝搭在另一侧膝盖上，保持姿势拉伸臀部肌肉。",
+    "duration_seconds": 15,
+    "difficulty": 1,
+    "equipment": "椅子",
+    "space_required": "small",
+    "body_parts_involved": [
+      "臀部",
+      "大腿",
+      "髋部"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "髋关节置换术后",
+      "急性髋部损伤"
+    ],
+    "file_name": "IMG_4436.mp4",
+    "url": "/assets/videos/IMG_4436.mp4"
+  },
+  {
+    "video_id": "IMG_4437",
+    "target_joint": "髋部",
+    "target_body_parts": [
+      "髋部",
+      "臀部",
+      "大腿"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "坐姿翘腿",
+      "髋部拉伸",
+      "按压膝盖"
+    ],
+    "symptom_tags": [
+      "髋部僵硬",
+      "臀部酸痛",
+      "坐骨神经痛",
+      "活动受限"
+    ],
+    "description_cn": "坐在椅子上，将一侧脚踝搭在对侧膝盖上，双手轻压膝盖进行髋部拉伸。",
+    "duration_seconds": 12,
+    "difficulty": 1,
+    "equipment": "椅子",
+    "space_required": "small",
+    "body_parts_involved": [
+      "髋部",
+      "臀部",
+      "大腿"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性髋部损伤",
+      "严重髋关节关节炎"
+    ],
+    "file_name": "IMG_4437.mp4",
+    "url": "/assets/videos/IMG_4437.mp4"
+  },
+  {
+    "video_id": "IMG_4439",
+    "target_joint": "髋部",
+    "target_body_parts": [
+      "髋部",
+      "臀部",
+      "大腿"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "坐姿髋外展",
+      "弹力带抗阻",
+      "双脚外开"
+    ],
+    "symptom_tags": [
+      "髋部疼痛",
+      "臀中肌无力",
+      "髋关节康复",
+      "膝盖内扣"
+    ],
+    "description_cn": "坐在椅子上，双脚踩住弹力带，对抗阻力向外打开双腿，强化髋外展肌群。",
+    "duration_seconds": 15,
+    "difficulty": 2,
+    "equipment": "弹力带",
+    "space_required": "small",
+    "body_parts_involved": [
+      "髋部",
+      "臀部",
+      "大腿",
+      "脚踝"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "髋关节急性损伤",
+      "严重髋关节不稳"
+    ],
+    "file_name": "IMG_4439.mp4",
+    "url": "/assets/videos/IMG_4439.mp4"
+  },
+  {
+    "video_id": "IMG_4440",
+    "target_joint": "踝关节",
+    "target_body_parts": [
+      "小腿",
+      "脚踝",
+      "足部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "chronic",
+    "action_keywords": [
+      "坐姿提踵",
+      "踮脚尖",
+      "踝泵运动"
+    ],
+    "symptom_tags": [
+      "脚踝僵硬",
+      "小腿肌肉无力",
+      "下肢水肿",
+      "足底筋膜炎",
+      "跟腱炎"
+    ],
+    "description_cn": "坐在椅子上，双脚平放，缓慢进行踮脚尖和放下的动作，锻炼小腿肌肉和踝关节活动度。",
+    "duration_seconds": 16,
+    "difficulty": 1,
+    "equipment": "椅子",
+    "space_required": "small",
+    "body_parts_involved": [
+      "小腿",
+      "脚踝",
+      "足部"
+    ],
+    "pose_landmarks_required": [
+      "ankle",
+      "knee",
+      "hip"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "踝关节急性骨折",
+      "严重下肢深静脉血栓"
+    ],
+    "file_name": "IMG_4440.mp4",
+    "url": "/assets/videos/IMG_4440.mp4"
+  },
+  {
+    "video_id": "IMG_4445",
+    "target_joint": "踝关节",
+    "target_body_parts": [
+      "足部",
+      "小腿"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "坐姿",
+      "足底抓毛巾",
+      "足部肌肉训练"
+    ],
+    "symptom_tags": [
+      "足底筋膜炎",
+      "足弓塌陷",
+      "足部无力",
+      "踝关节活动受限",
+      "足跟痛"
+    ],
+    "description_cn": "坐在椅子上，利用脚趾抓握或滑动毛巾，增强足底肌肉力量。",
+    "duration_seconds": 14,
+    "difficulty": 1,
+    "equipment": "椅子",
+    "space_required": "small",
+    "body_parts_involved": [
+      "足部",
+      "小腿",
+      "踝关节"
+    ],
+    "pose_landmarks_required": [
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "足部开放性伤口",
+      "严重足部骨折未愈合"
+    ],
+    "file_name": "IMG_4445.mp4",
+    "url": "/assets/videos/IMG_4445.mp4"
+  },
+  {
+    "video_id": "IMG_4438",
+    "target_joint": "髋部",
+    "target_body_parts": [
+      "髋部",
+      "臀部",
+      "腰部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "chronic",
+    "action_keywords": [
+      "坐姿4字拉伸",
+      "髋部外旋",
+      "抱膝下压",
+      "臀部拉伸"
+    ],
+    "symptom_tags": [
+      "髋关节僵硬",
+      "坐骨神经痛",
+      "梨状肌紧张",
+      "下背部疼痛",
+      "久坐不适"
+    ],
+    "description_cn": "坐在椅子上，将一脚踝搭在对侧膝盖上呈4字，双手抱膝轻压，拉伸臀部肌肉。",
+    "duration_seconds": 14,
+    "difficulty": 2,
+    "equipment": "椅子",
+    "space_required": "small",
+    "body_parts_involved": [
+      "髋部",
+      "臀部",
+      "腰部"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "髋关节置换术后",
+      "急性髋关节损伤"
+    ],
+    "file_name": "IMG_4438.mp4",
+    "url": "/assets/videos/IMG_4438.mp4"
+  },
+  {
+    "video_id": "IMG_4451",
+    "target_joint": "踝关节",
+    "target_body_parts": [
+      "小腿",
+      "踝关节",
+      "足部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "扶墙提踵",
+      "足跟升降",
+      "离心训练"
+    ],
+    "symptom_tags": [
+      "跟腱炎",
+      "足底筋膜炎",
+      "小腿肌肉无力",
+      "踝关节活动受限",
+      "运动损伤恢复"
+    ],
+    "description_cn": "面对墙壁站立，双手扶墙保持平衡，双脚踩在垫高物上进行提踵练习，强化小腿及踝关节力量。",
+    "duration_seconds": 16,
+    "difficulty": 2,
+    "equipment": "坐垫",
+    "space_required": "small",
+    "body_parts_involved": [
+      "小腿",
+      "踝关节",
+      "足部",
+      "躯干"
+    ],
+    "pose_landmarks_required": [
+      "ankle",
+      "knee",
+      "hip",
+      "shoulder"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性踝关节扭伤",
+      "跟腱断裂术后早期",
+      "严重骨质疏松"
+    ],
+    "file_name": "IMG_4451.mp4",
+    "url": "/assets/videos/IMG_4451.mp4"
+  },
+  {
+    "video_id": "IMG_4447",
+    "target_joint": "踝关节",
+    "target_body_parts": [
+      "足底",
+      "足弓",
+      "小腿"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "chronic",
+    "action_keywords": [
+      "足底滚球",
+      "足筋膜放松",
+      "坐姿足部运动"
+    ],
+    "symptom_tags": [
+      "足底筋膜炎",
+      "足跟痛",
+      "足部酸痛",
+      "扁平足"
+    ],
+    "description_cn": "坐在椅子上，用脚底踩住小球前后滚动，按摩足底筋膜，缓解足部疲劳。",
+    "duration_seconds": 12,
+    "difficulty": 1,
+    "equipment": "椅子",
+    "space_required": "small",
+    "body_parts_involved": [
+      "足部",
+      "小腿",
+      "踝关节"
+    ],
+    "pose_landmarks_required": [
+      "ankle",
+      "knee",
+      "hip"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "足部急性扭伤",
+      "足部开放性伤口"
+    ],
+    "file_name": "IMG_4447.mp4",
+    "url": "/assets/videos/IMG_4447.mp4"
+  },
+  {
+    "video_id": "IMG_4459",
+    "target_joint": "髋部",
+    "target_body_parts": [
+      "髋部",
+      "膝关节",
+      "核心",
+      "踝关节"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "单腿平衡",
+      "髋部伸展",
+      "高抬腿",
+      "核心稳定"
+    ],
+    "symptom_tags": [
+      "髋部不稳",
+      "平衡障碍",
+      "下肢无力",
+      "膝关节不稳",
+      "核心 weakness"
+    ],
+    "description_cn": "单腿站立平衡训练，结合髋部伸展和高抬腿动作，增强下肢稳定性和核心控制。",
+    "duration_seconds": 25,
+    "difficulty": 3,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "髋部",
+      "膝关节",
+      "踝关节",
+      "核心",
+      "肩部"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle",
+      "shoulder"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "严重平衡障碍",
+      "急性髋部损伤",
+      "近期下肢手术"
+    ],
+    "file_name": "IMG_4459.mp4",
+    "url": "/assets/videos/IMG_4459.mp4"
+  },
+  {
+    "video_id": "IMG_4433",
+    "target_joint": "膝关节",
+    "target_body_parts": [
+      "大腿",
+      "膝盖",
+      "小腿",
+      "脚踝"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "acute",
+    "action_keywords": [
+      "坐姿伸膝",
+      "股四头肌收缩",
+      "踝泵运动"
+    ],
+    "symptom_tags": [
+      "膝关节术后",
+      "股四头肌无力",
+      "关节肿胀",
+      "下肢循环不畅"
+    ],
+    "description_cn": "坐在凳子上，腿部伸直，配合勾绷脚尖进行大腿前侧肌肉的等长收缩训练。",
+    "duration_seconds": 15,
+    "difficulty": 1,
+    "equipment": "椅子",
+    "space_required": "small",
+    "body_parts_involved": [
+      "大腿",
+      "膝盖",
+      "小腿",
+      "脚踝"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [],
+    "file_name": "IMG_4433.mp4",
+    "url": "/assets/videos/IMG_4433.mp4"
+  },
+  {
+    "video_id": "IMG_4446",
+    "target_joint": "踝关节",
+    "target_body_parts": [
+      "足部",
+      "小腿"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "脚趾抓毛巾",
+      "足底肌肉收缩",
+      "坐姿足部训练"
+    ],
+    "symptom_tags": [
+      "足底筋膜炎",
+      "足部无力",
+      "扁平足",
+      "跟痛症"
+    ],
+    "description_cn": "坐在椅子上，双脚踩在毛巾上，利用脚趾力量抓握并卷曲毛巾，锻炼足底肌肉。",
+    "duration_seconds": 13,
+    "difficulty": 1,
+    "equipment": "椅子",
+    "space_required": "small",
+    "body_parts_involved": [
+      "足部",
+      "小腿",
+      "脚踝"
+    ],
+    "pose_landmarks_required": [
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "足部开放性伤口",
+      "严重足部骨折未愈合"
+    ],
+    "file_name": "IMG_4446.mp4",
+    "url": "/assets/videos/IMG_4446.mp4"
+  },
+  {
+    "video_id": "IMG_4381",
+    "target_joint": "膝关节",
+    "target_body_parts": [
+      "大腿",
+      "膝盖",
+      "腹部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "仰卧",
+      "直腿抬高",
+      "腿部上举"
+    ],
+    "symptom_tags": [
+      "膝关节无力",
+      "大腿肌肉萎缩",
+      "髌骨疼痛",
+      "核心不稳"
+    ],
+    "description_cn": "仰卧位直腿抬高练习，强化股四头肌及核心，适用于膝关节康复。",
+    "duration_seconds": 17,
+    "difficulty": 2,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "大腿",
+      "膝盖",
+      "腹部",
+      "髋部"
+    ],
+    "pose_landmarks_required": [
+      "knee",
+      "hip",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性膝关节红肿",
+      "严重腰椎间盘突出"
+    ],
+    "file_name": "IMG_4381.mp4",
+    "url": "/assets/videos/IMG_4381.mp4"
+  },
+  {
+    "video_id": "IMG_4458",
+    "target_joint": "髋部",
+    "target_body_parts": [
+      "臀部",
+      "大腿后侧",
+      "腰部",
+      "核心"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "单腿硬拉",
+      "髋关节铰链",
+      "平衡训练",
+      "后链伸展"
+    ],
+    "symptom_tags": [
+      "髋部无力",
+      "平衡感差",
+      "腘绳肌紧张",
+      "下背痛",
+      "臀肌激活"
+    ],
+    "description_cn": "单腿站立屈髋前倾，对侧腿后伸，强化臀部与平衡能力。",
+    "duration_seconds": 20,
+    "difficulty": 3,
+    "equipment": "none",
+    "space_required": "medium",
+    "body_parts_involved": [
+      "臀部",
+      "大腿",
+      "腰部",
+      "脚踝"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle",
+      "shoulder"
+    ],
+    "safety_level": "caution",
+    "contraindications": [
+      "严重平衡障碍",
+      "急性踝关节扭伤",
+      "严重眩晕"
+    ],
+    "file_name": "IMG_4458.mp4",
+    "url": "/assets/videos/IMG_4458.mp4"
+  },
+  {
+    "video_id": "IMG_4457",
+    "target_joint": "髋部",
+    "target_body_parts": [
+      "臀部",
+      "大腿后侧",
+      "腰部",
+      "肩部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "单腿站立",
+      "髋部铰链",
+      "后腿抬起",
+      "双臂前伸"
+    ],
+    "symptom_tags": [
+      "髋关节不稳",
+      "平衡感差",
+      "臀肌无力",
+      "腰背酸痛",
+      "本体感觉缺失"
+    ],
+    "description_cn": "单腿站立，身体前倾同时向后抬起另一条腿，双臂向前伸展，保持身体呈一条直线，锻炼核心与平衡能力。",
+    "duration_seconds": 18,
+    "difficulty": 3,
+    "equipment": "none",
+    "space_required": "medium",
+    "body_parts_involved": [
+      "臀部",
+      "大腿",
+      "腰部",
+      "肩部",
+      "脚踝"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle",
+      "shoulder"
+    ],
+    "safety_level": "caution",
+    "contraindications": [
+      "严重平衡障碍",
+      "急性踝关节扭伤",
+      "重度膝关节疼痛"
+    ],
+    "file_name": "IMG_4457.mp4",
+    "url": "/assets/videos/IMG_4457.mp4"
+  },
+  {
+    "video_id": "IMG_4430",
+    "target_joint": "踝关节",
+    "target_body_parts": [
+      "小腿",
+      "足部",
+      "大腿"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "坐姿伸腿",
+      "踝关节屈伸",
+      "足背屈",
+      "足跖屈"
+    ],
+    "symptom_tags": [
+      "踝关节僵硬",
+      "小腿肿胀",
+      "术后康复",
+      "足部无力",
+      "血液循环不畅"
+    ],
+    "description_cn": "坐在凳子上，单腿伸直悬空，进行脚踝的勾脚和绷脚循环运动。",
+    "duration_seconds": 17,
+    "difficulty": 1,
+    "equipment": "椅子",
+    "space_required": "small",
+    "body_parts_involved": [
+      "大腿",
+      "小腿",
+      "足部"
+    ],
+    "pose_landmarks_required": [
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "踝关节骨折未愈合",
+      "急性严重扭伤伴剧痛"
+    ],
+    "file_name": "IMG_4430.mp4",
+    "url": "/assets/videos/IMG_4430.mp4"
+  },
+  {
+    "video_id": "IMG_4456",
+    "target_joint": "踝关节",
+    "target_body_parts": [
+      "小腿",
+      "脚踝",
+      "臀部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "单腿提踵",
+      "扶墙平衡",
+      "踝关节稳定性"
+    ],
+    "symptom_tags": [
+      "踝关节不稳",
+      "小腿无力",
+      "跟腱炎恢复",
+      "平衡感差"
+    ],
+    "description_cn": "手扶墙壁，单脚站在垫子上进行提踵练习，强化小腿力量与踝关节稳定性。",
+    "duration_seconds": 17,
+    "difficulty": 3,
+    "equipment": "坐垫",
+    "space_required": "small",
+    "body_parts_involved": [
+      "脚踝",
+      "小腿",
+      "膝盖",
+      "臀部"
+    ],
+    "pose_landmarks_required": [
+      "ankle",
+      "knee",
+      "hip",
+      "shoulder"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性踝关节扭伤",
+      "严重平衡障碍",
+      "无法单腿站立"
+    ],
+    "file_name": "IMG_4456.mp4",
+    "url": "/assets/videos/IMG_4456.mp4"
+  },
+  {
+    "video_id": "IMG_4427",
+    "target_joint": "膝关节",
+    "target_body_parts": [
+      "大腿",
+      "膝盖",
+      "脚踝"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "acute",
+    "action_keywords": [
+      "坐姿直腿",
+      "勾脚尖",
+      "股四头肌收缩"
+    ],
+    "symptom_tags": [
+      "膝关节术后",
+      "股四头肌无力",
+      "关节消肿",
+      "肌肉萎缩预防"
+    ],
+    "description_cn": "坐于长凳上，下肢伸直，反复勾脚尖以辅助股四头肌等长收缩。",
+    "duration_seconds": 20,
+    "difficulty": 1,
+    "equipment": "椅子",
+    "space_required": "small",
+    "body_parts_involved": [
+      "大腿",
+      "膝盖",
+      "脚踝"
+    ],
+    "pose_landmarks_required": [
+      "knee",
+      "ankle",
+      "hip"
+    ],
+    "safety_level": "safe",
+    "contraindications": [],
+    "file_name": "IMG_4427.mp4",
+    "url": "/assets/videos/IMG_4427.mp4"
+  },
+  {
+    "video_id": "IMG_4431",
+    "target_joint": "踝关节",
+    "target_body_parts": [
+      "小腿",
+      "脚踝",
+      "足部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "acute",
+    "action_keywords": [
+      "踝泵练习",
+      "勾脚尖",
+      "绷脚尖",
+      "坐姿"
+    ],
+    "symptom_tags": [
+      "下肢肿胀",
+      "术后康复",
+      "血液循环不畅",
+      "踝关节僵硬",
+      "预防血栓"
+    ],
+    "description_cn": "坐在长凳上，腿部伸直悬空，反复进行脚踝的勾起和下踩动作。",
+    "duration_seconds": 12,
+    "difficulty": 1,
+    "equipment": "椅子",
+    "space_required": "small",
+    "body_parts_involved": [
+      "下肢",
+      "小腿",
+      "脚踝"
+    ],
+    "pose_landmarks_required": [
+      "knee",
+      "ankle"
+    ],
+    "safety_level": "safe",
+    "contraindications": [],
+    "file_name": "IMG_4431.mp4",
+    "url": "/assets/videos/IMG_4431.mp4"
+  },
+  {
+    "video_id": "IMG_4454",
+    "target_joint": "踝关节",
+    "target_body_parts": [
+      "小腿",
+      "大腿",
+      "臀部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "单腿站立",
+      "平衡训练",
+      "扶墙辅助"
+    ],
+    "symptom_tags": [
+      "踝关节不稳",
+      "平衡感差",
+      "本体感觉缺失",
+      "下肢无力"
+    ],
+    "description_cn": "背对墙壁站在平衡垫上，双手扶墙，交替进行单腿站立以保持平衡。",
+    "duration_seconds": 14,
+    "difficulty": 2,
+    "equipment": "坐垫",
+    "space_required": "small",
+    "body_parts_involved": [
+      "小腿",
+      "大腿",
+      "臀部"
+    ],
+    "pose_landmarks_required": [
+      "ankle",
+      "knee",
+      "hip",
+      "shoulder"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性踝关节扭伤",
+      "严重平衡障碍",
+      "下肢骨折未愈合"
+    ],
+    "file_name": "IMG_4454.mp4",
+    "url": "/assets/videos/IMG_4454.mp4"
+  },
+  {
+    "video_id": "IMG_4460",
+    "target_joint": "髋部",
+    "target_body_parts": [
+      "臀部",
+      "大腿",
+      "腰部",
+      "脚踝"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "单腿站立",
+      "身体前倾",
+      "后腿抬起",
+      "双臂前伸"
+    ],
+    "symptom_tags": [
+      "髋部无力",
+      "平衡感差",
+      "膝关节不稳",
+      "腘绳肌紧张",
+      "核心薄弱"
+    ],
+    "description_cn": "单腿站立，身体前倾并抬起后腿，双臂前伸保持平衡，锻炼臀部与核心稳定性。",
+    "duration_seconds": 25,
+    "difficulty": 3,
+    "equipment": "none",
+    "space_required": "small",
+    "body_parts_involved": [
+      "臀部",
+      "大腿",
+      "腰部",
+      "脚踝"
+    ],
+    "pose_landmarks_required": [
+      "hip",
+      "knee",
+      "ankle",
+      "shoulder"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "严重平衡障碍",
+      "急性关节损伤"
+    ],
+    "file_name": "IMG_4460.mp4",
+    "url": "/assets/videos/IMG_4460.mp4"
+  },
+  {
+    "video_id": "IMG_4453",
+    "target_joint": "踝关节",
+    "target_body_parts": [
+      "小腿",
+      "脚踝",
+      "大腿",
+      "臀部"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "单腿提踵",
+      "扶墙平衡",
+      "静态保持"
+    ],
+    "symptom_tags": [
+      "跟腱炎康复",
+      "踝关节无力",
+      "平衡感差",
+      "小腿肌肉萎缩"
+    ],
+    "description_cn": "患者背对墙壁站在垫子上，单手扶墙，进行单腿提踵静态保持训练，强化小腿及踝关节稳定性。",
+    "duration_seconds": 14,
+    "difficulty": 4,
+    "equipment": "坐垫",
+    "space_required": "small",
+    "body_parts_involved": [
+      "小腿",
+      "脚踝",
+      "大腿",
+      "臀部"
+    ],
+    "pose_landmarks_required": [
+      "ankle",
+      "knee",
+      "hip",
+      "shoulder"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性踝关节扭伤",
+      "跟腱断裂术后早期",
+      "严重平衡障碍"
+    ],
+    "file_name": "IMG_4453.mp4",
+    "url": "/assets/videos/IMG_4453.mp4"
+  },
+  {
+    "video_id": "IMG_4455",
+    "target_joint": "踝关节",
+    "target_body_parts": [
+      "脚踝",
+      "小腿",
+      "核心"
+    ],
+    "severity": "轻度",
+    "rehab_stage": "sub_acute",
+    "action_keywords": [
+      "单腿站立",
+      "扶墙平衡",
+      "本体感觉",
+      "交替抬腿"
+    ],
+    "symptom_tags": [
+      "踝关节不稳",
+      "平衡感差",
+      "扭伤恢复",
+      "下肢无力"
+    ],
+    "description_cn": "双手扶墙，双脚站立于平衡垫上，交替进行单腿站立，以恢复踝关节本体感觉与平衡能力。",
+    "duration_seconds": 18,
+    "difficulty": 2,
+    "equipment": "坐垫",
+    "space_required": "small",
+    "body_parts_involved": [
+      "脚踝",
+      "小腿",
+      "大腿",
+      "臀部"
+    ],
+    "pose_landmarks_required": [
+      "ankle",
+      "knee",
+      "hip"
+    ],
+    "safety_level": "safe",
+    "contraindications": [
+      "急性扭伤",
+      "严重眩晕",
+      "骨折未愈合"
+    ],
+    "file_name": "IMG_4455.mp4",
+    "url": "/assets/videos/IMG_4455.mp4"
   }
 ]

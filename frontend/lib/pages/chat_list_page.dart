@@ -91,15 +91,13 @@ class ConversationStorage {
   }
 }
 
-/// 对话历史列表页
+/// 对话历史列表页（作为底部 Tab 时无需返回按钮）
 class ChatListPage extends StatefulWidget {
-  final VoidCallback onBack;
   /// 点击「开始新对话」或历史记录时回调，传入 null 表示新建
   final void Function(ConversationRecord? existing) onOpenChat;
 
   const ChatListPage({
     super.key,
-    required this.onBack,
     required this.onOpenChat,
   });
 
@@ -148,10 +146,8 @@ class _ChatListPageState extends State<ChatListPage> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0.5,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: AppTheme.textPrimary),
-          onPressed: widget.onBack,
-        ),
+        automaticallyImplyLeading: false,
+        centerTitle: false,
         title: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

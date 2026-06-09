@@ -1,19 +1,15 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io' show File, Platform;
-import 'dart:typed_data';
+import 'dart:io' show Platform;
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:video_player/video_player.dart';
 
 import '../theme/app_theme.dart';
 import '../config/api_config.dart';
-import 'pose_detection_page.dart' show PosePainter;
 
 // ── 阶段 ─────────────────────────────────────────────────────────────────────
 //  loading  →  watching  →  preview  →  countdown  →  recording
@@ -96,29 +92,9 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
   bool _videoReady = false;
   String? _videoLoadError;
 
-  // ── 摄像头 & 姿态 ────────────────────────────────────────────────────────
+  // ── 摄像头 ───────────────────────────────────────────────────────────────
   CameraController? _camCtrl;
-  PoseDetector? _detector;
-  bool _processingFrame = false;
-  int _frameIdx = 0;
   bool _pageDisposed = false;
-  bool _isPoseStreaming = false;
-  bool _isPosePolling = false;
-  Timer? _posePollTimer;
-
-  static const Map<DeviceOrientation, int> _orientations = {
-    DeviceOrientation.portraitUp: 0,
-    DeviceOrientation.landscapeLeft: 90,
-    DeviceOrientation.portraitDown: 180,
-    DeviceOrientation.landscapeRight: 270,
-  };
-
-  final ValueNotifier<({
-    List<Pose> poses,
-    Size imageSize,
-    InputImageRotation rotation,
-    CameraLensDirection lensDir,
-  })?> _poseVisual = ValueNotifier(null);
 
   // ── 倒计时 ───────────────────────────────────────────────────────────────
   int _countdownValue = 3;
@@ -236,61 +212,6 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
       enableAudio: true,
     );
     await _camCtrl!.initialize();
-
-    _detector = PoseDetector(
-      options: PoseDetectorOptions(
-        model: PoseDetectionModel.base,
-        mode: PoseDetectionMode.stream,
-      ),
-    );
-
-    await _startPoseStreamIfNeeded();
-  }
-
-  Future<void> _startPoseStreamIfNeeded() async {
-    if (_camCtrl == null || _isPoseStreaming) return;
-    try {
-      await _camCtrl!.startImageStream(_onCameraImage);
-      _isPoseStreaming = true;
-    } catch (_) {}
-  }
-
-  Future<void> _stopPoseStreamIfNeeded() async {
-    if (_camCtrl == null || !_isPoseStreaming) return;
-    try {
-      await _camCtrl!.stopImageStream();
-    } catch (_) {
-      // ignore
-    } finally {
-      _isPoseStreaming = false;
-    }
-  }
-
-  void _onCameraImage(CameraImage image) {
-    if (_pageDisposed || _processingFrame) return;
-    _frameIdx++;
-    if (_frameIdx % 3 != 0) return;
-
-    _processingFrame = true;
-    final inputData = _buildInput(image);
-    if (inputData == null) {
-      _processingFrame = false;
-      return;
-    }
-
-    _detector!.processImage(inputData.$1).then((poses) {
-      if (_pageDisposed || _camCtrl == null) return;
-      final rotation = _rotationForController(_camCtrl!);
-      _poseVisual.value = (
-        poses: poses,
-        imageSize: inputData.$2,
-        rotation: rotation,
-        lensDir: _camCtrl!.description.lensDirection,
-      );
-      _processingFrame = false;
-    }).catchError((Object _) {
-      _processingFrame = false;
-    });
   }
 
   // ── 开始倒计时（点击"开始录制"后，摄像头已就绪） ────────────────────────
@@ -317,15 +238,6 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
     if (_camCtrl == null || !_camCtrl!.value.isInitialized) return;
     try {
       await _camCtrl!.startVideoRecording();
-      // Android 录制时通常停掉 imageStream，用定时拍照维持实时骨架
-      if (!_camCtrl!.value.isStreamingImages) {
-        _isPoseStreaming = false;
-        _posePollTimer?.cancel();
-        _posePollTimer = Timer.periodic(
-          const Duration(milliseconds: 450),
-          (_) => unawaited(_pollPoseWhileRecording()),
-        );
-      }
       setState(() => _phase = _Phase.recording);
     } catch (e) {
       setState(() {
@@ -335,70 +247,17 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
     }
   }
 
-  Future<void> _pollPoseWhileRecording() async {
-    if (_pageDisposed || _camCtrl == null || _detector == null) return;
-    if (_phase != _Phase.recording || _isPosePolling) return;
-    _isPosePolling = true;
-    try {
-      final snap = await _camCtrl!.takePicture();
-      final input = InputImage.fromFilePath(snap.path);
-      final poses = await _detector!.processImage(input);
-      if (_pageDisposed || _camCtrl == null) return;
-
-      final rotation = _rotationForController(_camCtrl!);
-      final preview = _camCtrl!.value.previewSize;
-      final imageSize = preview != null
-          ? Size(preview.height, preview.width)
-          : const Size(480, 640);
-
-      _poseVisual.value = (
-        poses: poses,
-        imageSize: imageSize,
-        rotation: rotation,
-        lensDir: _camCtrl!.description.lensDirection,
-      );
-      try {
-        await File(snap.path).delete();
-      } catch (_) {}
-    } catch (_) {
-      // 部分机型录制中不支持 takePicture，忽略
-    } finally {
-      _isPosePolling = false;
-    }
-  }
-
-  InputImageRotation _rotationForController(CameraController controller) {
-    final camera = controller.description;
-    if (Platform.isIOS) {
-      return InputImageRotationValue.fromRawValue(camera.sensorOrientation) ??
-          InputImageRotation.rotation0deg;
-    }
-    var compensation =
-        _orientations[controller.value.deviceOrientation] ?? 0;
-    if (camera.lensDirection == CameraLensDirection.front) {
-      compensation = (camera.sensorOrientation + compensation) % 360;
-    } else {
-      compensation = (camera.sensorOrientation - compensation + 360) % 360;
-    }
-    return InputImageRotationValue.fromRawValue(compensation) ??
-        InputImageRotation.rotation0deg;
-  }
-
   // ── 停止录制并上传 ────────────────────────────────────────────────────────
 
   Future<void> _stopAndUpload() async {
     if (_camCtrl == null) return;
-    _posePollTimer?.cancel();
-    _posePollTimer = null;
     setState(() => _phase = _Phase.uploading);
 
     try {
-      await _stopPoseStreamIfNeeded();
       final xfile = await _camCtrl!.stopVideoRecording();
       _pageDisposed = true;
       await _camCtrl!.dispose();
       _camCtrl = null;
-      _detector?.close();
 
       await _uploadVideo(xfile.path);
     } catch (e) {
@@ -526,71 +385,13 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
     }
   }
 
-  // ── 摄像头输入构建 ────────────────────────────────────────────────────────
-
-  (InputImage, Size, InputImageRotation)? _buildInput(CameraImage image) {
-    if (_camCtrl == null) return null;
-    final rotation = InputImageRotationValue.fromRawValue(
-          _camCtrl!.description.sensorOrientation) ??
-        InputImageRotation.rotation0deg;
-
-    Uint8List? bytes;
-    int bytesPerRow = image.planes.first.bytesPerRow;
-
-    if (image.planes.length == 1) {
-      bytes = image.planes.first.bytes;
-    } else if (image.planes.length == 3) {
-      final nv21 = _toNv21(image);
-      if (nv21 == null) return null;
-      bytes = nv21;
-      bytesPerRow = image.width;
-    }
-    if (bytes == null) return null;
-
-    final inputImage = InputImage.fromBytes(
-      bytes: bytes,
-      metadata: InputImageMetadata(
-        size: Size(image.width.toDouble(), image.height.toDouble()),
-        rotation: rotation,
-        format: InputImageFormat.nv21,
-        bytesPerRow: bytesPerRow,
-      ),
-    );
-    return (inputImage, Size(image.width.toDouble(), image.height.toDouble()), rotation);
-  }
-
-  Uint8List? _toNv21(CameraImage image) {
-    final w = image.width, h = image.height;
-    final y = image.planes[0], u = image.planes[1], v = image.planes[2];
-    final out = Uint8List(w * h + (w * h ~/ 2));
-    var idx = 0;
-    for (var row = 0; row < h; row++) {
-      for (var col = 0; col < w; col++) {
-        out[idx++] = y.bytes[row * y.bytesPerRow + col * (y.bytesPerPixel ?? 1)];
-      }
-    }
-    for (var row = 0; row < h ~/ 2; row++) {
-      for (var col = 0; col < w ~/ 2; col++) {
-        out[idx++] = v.bytes[row * v.bytesPerRow + col * (v.bytesPerPixel ?? 1)];
-        out[idx++] = u.bytes[row * u.bytesPerRow + col * (u.bytesPerPixel ?? 1)];
-      }
-    }
-    return out;
-  }
-
   @override
   void dispose() {
     _pageDisposed = true;
     _countdownTimer?.cancel();
-    _posePollTimer?.cancel();
     _pollTimer?.cancel();
     _videoCtrl?.dispose();
-    if (_isPoseStreaming) {
-      _camCtrl?.stopImageStream();
-    }
     _camCtrl?.dispose();
-    _detector?.close();
-    _poseVisual.dispose();
     super.dispose();
   }
 
@@ -757,7 +558,6 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
       children: [
         if (_camCtrl != null && _camCtrl!.value.isInitialized)
           CameraPreview(_camCtrl!),
-        _buildPoseOverlay(),
         Positioned(
           left: 16,
           right: 16,
@@ -768,7 +568,7 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Text(
-                  '摄像头已就绪，调整好姿势后点击"开始录制"',
+                  '摄像头已就绪，调整好位置后点击「开始录制」',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white70,
@@ -812,7 +612,6 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
       children: [
         if (_camCtrl != null && _camCtrl!.value.isInitialized)
           CameraPreview(_camCtrl!),
-        _buildPoseOverlay(),
         Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -849,7 +648,6 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
       children: [
         if (_camCtrl != null && _camCtrl!.value.isInitialized)
           CameraPreview(_camCtrl!),
-        _buildPoseOverlay(),
         Positioned(
           top: 16,
           left: 0,
@@ -923,26 +721,6 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildPoseOverlay() {
-    return ValueListenableBuilder(
-      valueListenable: _poseVisual,
-      builder: (context2, val, child2) {
-        if (val == null) return const SizedBox();
-        return RepaintBoundary(
-          child: CustomPaint(
-            painter: PosePainter(
-              poses: val.poses,
-              imageSize: val.imageSize,
-              rotation: val.rotation,
-              cameraLensDirection: val.lensDir,
-              drawSkeleton: true,
-            ),
-          ),
-        );
-      },
     );
   }
 
@@ -1168,7 +946,6 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
                       await prefs.remove(_taskPrefKey);
                       if (!mounted) return;
                       _pageDisposed = false;
-                      _poseVisual.value = null;
                       _result = null;
                       _uploadError = null;
                       setState(() => _phase = _Phase.loading);

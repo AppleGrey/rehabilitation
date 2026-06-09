@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'theme/app_theme.dart';
-import 'pages/home_page.dart';
 import 'pages/training_page.dart';
 import 'pages/result_page.dart';
 import 'pages/plan_page.dart';
 import 'pages/progress_page.dart';
 import 'pages/knowledge_page.dart';
 import 'pages/profile_center_page.dart';
-import 'pages/pose_detection_page.dart';
 import 'pages/chat_list_page.dart';
 import 'pages/chat_page.dart';
 import 'pages/rehab_video_page.dart';
@@ -35,43 +33,36 @@ class AppNavigator extends StatefulWidget {
 }
 
 class _AppNavigatorState extends State<AppNavigator> {
-  // 页面索引:
-  // 0 = 主页面组（带底部导航）
-  // 1 = AI 问诊列表页（历史会话）
-  // 2 = AI 问诊对话页
-  // 3 = 康复视频 + 动作评估页
-  // 4 = 训练详情页
-  // 5 = 训练结果页
-  // 6 = 姿态检测页
+  // 0 = 主 Tab（默认中间「问诊」）
+  // 1 = 问诊对话  2 = 康复视频  3 = 训练  4 = 结果
   int _currentPage = 0;
-  int _bottomNavIndex = 0;
+  int _bottomNavIndex = 2;
   bool _showBottomNav = true;
 
-  // 传递给子页面的数据
   String? _rehabVideoUrl;
   String? _rehabVideoId;
   String? _rehabSessionId;
   String? _rehabVideoTitle;
-  ConversationRecord? _openRecord; // 打开的历史记录（null = 新建）
+  ConversationRecord? _openRecord;
 
-  void _navigateToHome() {
+  void _navigateToMain({int? tabIndex}) {
     setState(() {
       _currentPage = 0;
       _showBottomNav = true;
+      if (tabIndex != null) {
+        _bottomNavIndex = tabIndex;
+      }
     });
   }
 
   void _navigateToChatList() {
-    setState(() {
-      _currentPage = 1;
-      _showBottomNav = false;
-    });
+    _navigateToMain(tabIndex: 2);
   }
 
   void _navigateToChat({ConversationRecord? existing}) {
     setState(() {
       _openRecord = existing;
-      _currentPage = 2;
+      _currentPage = 1;
       _showBottomNav = false;
     });
   }
@@ -87,38 +78,16 @@ class _AppNavigatorState extends State<AppNavigator> {
       _rehabVideoId = videoId;
       _rehabSessionId = sessionId;
       _rehabVideoTitle = videoTitle;
-      _currentPage = 3;
-      _showBottomNav = false;
-    });
-  }
-
-  void _navigateToTraining() {
-    setState(() {
-      _currentPage = 4;
+      _currentPage = 2;
       _showBottomNav = false;
     });
   }
 
   void _navigateToResult() {
     setState(() {
-      _currentPage = 5;
+      _currentPage = 4;
       _showBottomNav = false;
     });
-  }
-
-  void _navigateToPoseDetection() {
-    setState(() {
-      _currentPage = 6;
-      _showBottomNav = false;
-    });
-  }
-
-  void _onPageSelected(int index) {
-    if (index == 1) {
-      _navigateToTraining();
-    } else {
-      setState(() => _bottomNavIndex = index);
-    }
   }
 
   @override
@@ -126,7 +95,10 @@ class _AppNavigatorState extends State<AppNavigator> {
     return Scaffold(
       body: _buildCurrentPage(),
       bottomNavigationBar: _showBottomNav
-          ? NavBar(currentIndex: _bottomNavIndex, onTap: (i) => setState(() => _bottomNavIndex = i))
+          ? NavBar(
+              currentIndex: _bottomNavIndex,
+              onTap: (i) => setState(() => _bottomNavIndex = i),
+            )
           : null,
     );
   }
@@ -136,11 +108,6 @@ class _AppNavigatorState extends State<AppNavigator> {
       case 0:
         return _buildMainPages();
       case 1:
-        return ChatListPage(
-          onBack: _navigateToHome,
-          onOpenChat: (existing) => _navigateToChat(existing: existing),
-        );
-      case 2:
         return ChatPage(
           key: ValueKey(_openRecord?.sessionId ?? 'new'),
           onBack: _navigateToChatList,
@@ -152,7 +119,7 @@ class _AppNavigatorState extends State<AppNavigator> {
             videoTitle: '康复训练演示',
           ),
         );
-      case 3:
+      case 2:
         return RehabVideoPage(
           key: ValueKey('$_rehabVideoId-$_rehabSessionId'),
           onBack: _navigateToChatList,
@@ -161,44 +128,37 @@ class _AppNavigatorState extends State<AppNavigator> {
           sessionId: _rehabSessionId,
           videoTitle: _rehabVideoTitle,
         );
-      case 4:
+      case 3:
         return TrainingPage(
-          onBack: _navigateToHome,
+          onBack: () => _navigateToMain(),
           onViewResult: _navigateToResult,
           onStartRecording: _navigateToResult,
         );
-      case 5:
-        return ResultPage(onBack: _navigateToHome);
-      case 6:
-        return PoseDetectionPage(onBack: _navigateToHome);
+      case 4:
+        return ResultPage(onBack: () => _navigateToMain());
       default:
         return _buildMainPages();
     }
   }
 
   Widget _buildMainPages() {
-    return Scaffold(
-      body: IndexedStack(
-        index: _bottomNavIndex,
-        children: [
-          HomePage(
-            onNavigate: (_) {},
-            onPageSelected: _onPageSelected,
-            onPoseDetection: _navigateToPoseDetection,
-            onAiConsult: _navigateToChatList,
-          ),
-          const PlanPage(),
-          const ProgressPage(),
-          const KnowledgePage(),
-          ProfileCenterPage(onLogout: () {
-            setState(() {
-              _currentPage = 0;
-              _showBottomNav = true;
-              _bottomNavIndex = 0;
-            });
-          }),
-        ],
-      ),
+    return IndexedStack(
+      index: _bottomNavIndex,
+      children: [
+        const PlanPage(),
+        const ProgressPage(),
+        ChatListPage(
+          onOpenChat: (existing) => _navigateToChat(existing: existing),
+        ),
+        const KnowledgePage(),
+        ProfileCenterPage(onLogout: () {
+          setState(() {
+            _currentPage = 0;
+            _showBottomNav = true;
+            _bottomNavIndex = 2;
+          });
+        }),
+      ],
     );
   }
 }
