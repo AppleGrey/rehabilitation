@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'theme/app_theme.dart';
 import 'pages/training_page.dart';
 import 'pages/result_page.dart';
@@ -45,6 +46,9 @@ class _AppNavigatorState extends State<AppNavigator> {
   String? _rehabVideoTitle;
   ConversationRecord? _openRecord;
 
+  // 首页「双击退出」记录上次返回键时间
+  DateTime? _lastBackPress;
+
   void _navigateToMain({int? tabIndex}) {
     setState(() {
       _currentPage = 0;
@@ -90,16 +94,58 @@ class _AppNavigatorState extends State<AppNavigator> {
     });
   }
 
+  /// 处理硬件返回键：子页面返回上一页，非默认 Tab 切回「问诊」，首页双击退出。
+  void _handleBack() {
+    if (_currentPage != 0) {
+      // 子页面：沿用各页 onBack 的「上一页」语义
+      switch (_currentPage) {
+        case 1: // 问诊对话
+        case 2: // 康复视频
+          _navigateToChatList();
+          break;
+        default: // 3 训练 / 4 结果
+          _navigateToMain();
+      }
+      return;
+    }
+    // 主页面但不在默认「问诊」Tab：切回问诊
+    if (_bottomNavIndex != 2) {
+      setState(() => _bottomNavIndex = 2);
+      return;
+    }
+    // 真正首页：双击退出
+    final now = DateTime.now();
+    if (_lastBackPress != null &&
+        now.difference(_lastBackPress!) < const Duration(seconds: 2)) {
+      SystemNavigator.pop();
+      return;
+    }
+    _lastBackPress = now;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('再按一次退出应用'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: _buildCurrentPage(),
-      bottomNavigationBar: _showBottomNav
-          ? NavBar(
-              currentIndex: _bottomNavIndex,
-              onTap: (i) => setState(() => _bottomNavIndex = i),
-            )
-          : null,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        _handleBack();
+      },
+      child: Scaffold(
+        body: _buildCurrentPage(),
+        bottomNavigationBar: _showBottomNav
+            ? NavBar(
+                currentIndex: _bottomNavIndex,
+                onTap: (i) => setState(() => _bottomNavIndex = i),
+              )
+            : null,
+      ),
     );
   }
 

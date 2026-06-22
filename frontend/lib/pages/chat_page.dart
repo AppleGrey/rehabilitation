@@ -83,7 +83,11 @@ class _ChatPageState extends State<ChatPage> {
           summary: '',
         );
       }
-      if (mounted) setState(() => _isInitializing = false);
+      if (mounted) {
+        setState(() => _isInitializing = false);
+        // 恢复历史对话后默认停在底部
+        _scrollToBottom(animate: false);
+      }
     } else {
       // 新建会话
       try {
@@ -315,14 +319,18 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
-  void _scrollToBottom() {
+  void _scrollToBottom({bool animate = true}) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
+      if (!_scrollController.hasClients) return;
+      if (animate) {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent + 120,
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeOut,
         );
+      } else {
+        // 进入页面时瞬间定位到底部，避免从顶部滚下的突兀感
+        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
       }
     });
   }

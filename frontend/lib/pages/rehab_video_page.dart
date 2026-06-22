@@ -91,6 +91,7 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
   VideoPlayerController? _videoCtrl;
   bool _videoReady = false;
   String? _videoLoadError;
+  Offset? _pipPos; // 录制时演示小窗位置（null = 默认右上角，拖动后记住）
 
   // ── 摄像头 ───────────────────────────────────────────────────────────────
   CameraController? _camCtrl;
@@ -222,6 +223,16 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
       _phase = _Phase.countdown;
     });
 
+    // 演示小窗：静音 + 循环 + 从头播放，倒计时阶段即开始，方便录制时对照跟做。
+    // 静音可避免演示声音被摄像头麦克风录入用户视频。
+    final v = _videoCtrl;
+    if (v != null && _videoReady) {
+      v.setVolume(0);
+      v.setLooping(true);
+      v.seekTo(Duration.zero);
+      v.play();
+    }
+
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (t) async {
       if (_countdownValue > 1) {
         setState(() => _countdownValue--);
@@ -255,9 +266,9 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
 
     try {
       final xfile = await _camCtrl!.stopVideoRecording();
-      _pageDisposed = true;
       await _camCtrl!.dispose();
       _camCtrl = null;
+      _videoCtrl?.pause(); // 停止后台演示小窗播放
 
       await _uploadVideo(xfile.path);
     } catch (e) {
@@ -607,120 +618,188 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
   // ── 倒计时 ────────────────────────────────────────────────────────────────
 
   Widget _buildCountdown() {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        if (_camCtrl != null && _camCtrl!.value.isInitialized)
-          CameraPreview(_camCtrl!),
-        Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '$_countdownValue',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 120,
-                  fontWeight: FontWeight.bold,
-                  shadows: [Shadow(blurRadius: 8, color: Colors.black)],
+    return LayoutBuilder(
+      builder: (context, constraints) => Stack(
+        fit: StackFit.expand,
+        children: [
+          if (_camCtrl != null && _camCtrl!.value.isInitialized)
+            CameraPreview(_camCtrl!),
+          Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '$_countdownValue',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 120,
+                    fontWeight: FontWeight.bold,
+                    shadows: [Shadow(blurRadius: 8, color: Colors.black)],
+                  ),
                 ),
-              ),
-              const Text(
-                '准备开始录制…',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 18,
-                  shadows: [Shadow(blurRadius: 4, color: Colors.black)],
+                const Text(
+                  '准备开始录制…',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 18,
+                    shadows: [Shadow(blurRadius: 4, color: Colors.black)],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ],
+          _buildDemoPip(constraints.biggest),
+        ],
+      ),
     );
   }
 
   // ── 录制中 ────────────────────────────────────────────────────────────────
 
   Widget _buildRecording() {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        if (_camCtrl != null && _camCtrl!.value.isInitialized)
-          CameraPreview(_camCtrl!),
-        Positioned(
-          top: 16,
-          left: 0,
-          right: 0,
-          child: Center(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.red.withValues(alpha: 0.85),
-                borderRadius: BorderRadius.circular(20),
+    return LayoutBuilder(
+      builder: (context, constraints) => Stack(
+        fit: StackFit.expand,
+        children: [
+          if (_camCtrl != null && _camCtrl!.value.isInitialized)
+            CameraPreview(_camCtrl!),
+          Positioned(
+            top: 16,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.red.withValues(alpha: 0.85),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.fiber_manual_record, color: Colors.white, size: 14),
+                    SizedBox(width: 6),
+                    Text(
+                      '录制中',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              child: const Row(
+            ),
+          ),
+          Positioned(
+            left: 16,
+            right: 16,
+            bottom: 20,
+            child: SafeArea(
+              top: false,
+              child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.fiber_manual_record, color: Colors.white, size: 14),
-                  SizedBox(width: 6),
-                  Text(
-                    '录制中',
+                  const Text(
+                    '正在录制，请参照演示视频做动作\n完成后点击下方按钮',
+                    textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
+                      color: Colors.white70,
+                      fontSize: 13,
+                      shadows: [Shadow(blurRadius: 4, color: Colors.black)],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF4CAF50),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: _stopAndUpload,
+                      icon: const Icon(Icons.check_circle, size: 20),
+                      label: const Text(
+                        '训练完成',
+                        style:
+                            TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
           ),
-        ),
-        Positioned(
-          left: 16,
-          right: 16,
-          bottom: 20,
-          child: SafeArea(
-            top: false,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  '正在录制，请参照演示视频做动作\n完成后点击下方按钮',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 13,
-                    shadows: [Shadow(blurRadius: 4, color: Colors.black)],
+          _buildDemoPip(constraints.biggest),
+        ],
+      ),
+    );
+  }
+
+  // ── 演示视频小窗（录制 / 倒计时阶段叠加，可拖动） ────────────────────────
+
+  Widget _buildDemoPip(Size area) {
+    final v = _videoCtrl;
+    if (v == null || !_videoReady) return const SizedBox.shrink();
+
+    final aspect = v.value.aspectRatio > 0 ? v.value.aspectRatio : 16 / 9;
+    final pipW = area.width * 0.30;
+    final pipH = pipW / aspect;
+    final maxX = (area.width - pipW).clamp(0.0, double.infinity).toDouble();
+    final maxY = (area.height - pipH).clamp(0.0, double.infinity).toDouble();
+    final defaultX = (maxX - 16).clamp(0.0, maxX).toDouble();
+    final pos = _pipPos ?? Offset(defaultX, 16);
+
+    return Positioned(
+      left: pos.dx.clamp(0.0, maxX).toDouble(),
+      top: pos.dy.clamp(0.0, maxY).toDouble(),
+      child: GestureDetector(
+        onPanUpdate: (details) {
+          final cur = _pipPos ?? pos;
+          final nx = (cur.dx + details.delta.dx).clamp(0.0, maxX).toDouble();
+          final ny = (cur.dy + details.delta.dy).clamp(0.0, maxY).toDouble();
+          setState(() => _pipPos = Offset(nx, ny));
+        },
+        child: Container(
+          width: pipW,
+          height: pipH,
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white70, width: 2),
+            boxShadow: const [
+              BoxShadow(color: Colors.black54, blurRadius: 8, offset: Offset(0, 2)),
+            ],
+          ),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              VideoPlayer(v),
+              Positioned(
+                top: 4,
+                left: 4,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.55),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: const Text(
+                    '演示',
+                    style: TextStyle(color: Colors.white, fontSize: 11),
                   ),
                 ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF4CAF50),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    onPressed: _stopAndUpload,
-                    icon: const Icon(Icons.check_circle, size: 20),
-                    label: const Text(
-                      '训练完成',
-                      style:
-                          TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
-      ],
+      ),
     );
   }
 
