@@ -6,6 +6,7 @@
 """
 import base64
 import json
+import logging
 import os
 import shutil
 import subprocess
@@ -15,13 +16,17 @@ from pathlib import Path
 import requests
 from dotenv import load_dotenv
 
+from .config import (
+    DASHSCOPE_API_KEY,
+    DASHSCOPE_MODEL,
+    dashscope_chat_completions_url,
+)
+
 load_dotenv()
 
-# 与 preprocess_videos.py 保持一致
-ASSESSMENT_API_URL = (
-    "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
-)
-ASSESSMENT_MODEL = os.getenv("DASHSCOPE_MODEL", "qwen3.6-plus")
+logger = logging.getLogger(__name__)
+
+ASSESSMENT_API_URL = dashscope_chat_completions_url()
 
 # 避免系统代理导致 ProxyError / ConnectionReset
 for _k in (
@@ -55,12 +60,83 @@ ASSESSMENT_TEMPLATE = """\
 """
 
 MAX_UPLOAD_MB = 12
+# qwen3 等推理模型会把 token 耗在 reasoning_content；评估只需 JSON 正文
+ASSESSMENT_MAX_TOKENS = int(os.getenv("ASSESSMENT_MAX_TOKENS", "4096"))
+ASSESSMENT_ENABLE_THINKING = os.getenv(
+    "ASSESSMENT_ENABLE_THINKING", "false"
+).lower() in ("1", "true", "yes")
 
 
 def _requests_session() -> requests.Session:
     s = requests.Session()
     s.trust_env = False
     return s
+
+
+def _truncate_for_log(text: str, max_len: int = 2000) -> str:
+    if len(text) <= max_len:
+        return text
+    return f"{text[:max_len]}... (truncated, total {len(text)} chars)"
+
+
+def _sanitize_for_log(data: object) -> object:
+    """日志脱敏：截断长字符串，省略 base64 视频内容。"""
+    if isinstance(data, dict):
+        return {k: _sanitize_for_log(v) for k, v in data.items()}
+    if isinstance(data, list):
+        return [_sanitize_for_log(v) for v in data]
+    if isinstance(data, str):
+        if data.startswith("data:video/") and "base64," in data:
+            prefix, _, rest = data.partition("base64,")
+            return f"{prefix}base64,<{len(rest)} chars>"
+        if len(data) > 500:
+            return _truncate_for_log(data)
+        return data
+    return data
+
+
+def _extract_message_content(response_data: dict) -> tuple[str, str]:
+    """从 OpenAI 兼容响应中取出 assistant 正文与推理文本。返回 (content, reasoning_content)。"""
+    choices = response_data.get("choices")
+    if not choices:
+        raise ValueError("响应无 choices 或 choices 为空")
+
+    message = choices[0].get("message") or {}
+    content = message.get("content")
+    reasoning = message.get("reasoning_content") or ""
+
+    if isinstance(reasoning, str):
+        reasoning_text = reasoning
+    else:
+        reasoning_text = str(reasoning) if reasoning else ""
+
+    if content is None:
+        return "", reasoning_text
+    if isinstance(content, str):
+        return content, reasoning_text
+    if isinstance(content, list):
+        parts: list[str] = []
+        for block in content:
+            if isinstance(block, dict) and block.get("type") == "text":
+                parts.append(str(block.get("text", "")))
+            elif isinstance(block, dict):
+                parts.append(json.dumps(block, ensure_ascii=False))
+            else:
+                parts.append(str(block))
+        return "\n".join(parts), reasoning_text
+    return str(content), reasoning_text
+
+
+def _strip_json_fence(raw: str) -> str:
+    raw = raw.strip()
+    if not raw.startswith("```"):
+        return raw
+    lines = raw.split("\n")
+    if lines[0].startswith("```"):
+        lines = lines[1:]
+    if lines and lines[-1].strip().startswith("```"):
+        lines = lines[:-1]
+    return "\n".join(lines).strip()
 
 
 def _encode_video(path: Path) -> str:
@@ -237,7 +313,7 @@ def evaluate_motion(
     user_video_path: Path,
 ) -> dict:
     """调用 qwen3.6-plus 对标准视频和用户视频进行对比评估。"""
-    api_key = os.getenv("DASHSCOPE_API_KEY", "")
+    api_key = DASHSCOPE_API_KEY
     if not api_key:
         raise ValueError("DASHSCOPE_API_KEY 环境变量未设置")
 
@@ -250,6 +326,7 @@ def evaluate_motion(
         )
 
         upload_path = _compress_if_needed(concat_path)
+        upload_kb = upload_path.stat().st_size // 1024
 
         system_prompt = ASSESSMENT_TEMPLATE.format(
             standard_duration=f"{std_dur:.1f}",
@@ -261,36 +338,113 @@ def evaluate_motion(
             {"type": "video_url", "video_url": {"url": _encode_video(upload_path)}},
         ]
 
+        logger.info(
+            "[ASSESS-VLM] 请求 model=%s url=%s video_kb=%d std_dur=%.1fs total_dur=%.1fs",
+            DASHSCOPE_MODEL,
+            ASSESSMENT_API_URL,
+            upload_kb,
+            std_dur,
+            total_dur,
+        )
+
         session = _requests_session()
+        request_body = {
+            "model": DASHSCOPE_MODEL,
+            "messages": [
+                {"role": "system", "content": "你是专业的运动康复评估师。"},
+                {"role": "user", "content": content_parts},
+            ],
+            "max_tokens": ASSESSMENT_MAX_TOKENS,
+            "enable_thinking": ASSESSMENT_ENABLE_THINKING,
+        }
         resp = session.post(
             ASSESSMENT_API_URL,
-            json={
-                "model": ASSESSMENT_MODEL,
-                "messages": [
-                    {"role": "system", "content": "你是专业的运动康复评估师。"},
-                    {"role": "user", "content": content_parts},
-                ],
-                "max_tokens": 1024,
-            },
+            json=request_body,
             headers={
                 "Authorization": f"Bearer {api_key}",
                 "Content-Type": "application/json",
             },
             timeout=300,
         )
+        logger.info(
+            "[ASSESS-VLM] HTTP %s content-type=%s body_len=%d",
+            resp.status_code,
+            resp.headers.get("Content-Type", ""),
+            len(resp.content),
+        )
+
+        try:
+            response_data = resp.json()
+        except json.JSONDecodeError:
+            logger.error(
+                "[ASSESS-VLM] 响应非 JSON: %s",
+                _truncate_for_log(resp.text),
+            )
+            resp.raise_for_status()
+            raise
+
+        choice0 = (response_data.get("choices") or [{}])[0]
+        message = choice0.get("message") or {}
+        logger.info(
+            "[ASSESS-VLM] 响应摘要 finish_reason=%s usage=%s message_keys=%s",
+            choice0.get("finish_reason"),
+            response_data.get("usage"),
+            list(message.keys()),
+        )
+        logger.info(
+            "[ASSESS-VLM] 响应体: %s",
+            _truncate_for_log(
+                json.dumps(_sanitize_for_log(response_data), ensure_ascii=False),
+                4000,
+            ),
+        )
+
+        if resp.status_code >= 400 or response_data.get("error"):
+            logger.error(
+                "[ASSESS-VLM] API 错误: %s",
+                json.dumps(_sanitize_for_log(response_data), ensure_ascii=False),
+            )
         resp.raise_for_status()
 
-        raw = resp.json()["choices"][0]["message"]["content"]
-        raw = raw.strip()
-        if raw.startswith("```"):
-            lines = raw.split("\n")
-            if lines[0].startswith("```"):
-                lines = lines[1:]
-            if lines and lines[-1].strip().startswith("```"):
-                lines = lines[:-1]
-            raw = "\n".join(lines)
+        raw, reasoning = _extract_message_content(response_data)
+        content_field = message.get("content")
+        logger.info(
+            "[ASSESS-VLM] message.content 类型=%s 长度=%d reasoning_len=%d",
+            type(content_field).__name__,
+            len(raw),
+            len(reasoning),
+        )
+        if not raw.strip():
+            finish_reason = choice0.get("finish_reason")
+            logger.error(
+                "[ASSESS-VLM] content 为空 finish_reason=%s; reasoning 摘要: %s",
+                finish_reason,
+                _truncate_for_log(reasoning, 500),
+            )
+            hint = (
+                "推理 token 占满配额，正文未生成"
+                if finish_reason == "length"
+                else "模型未输出正文"
+            )
+            raise ValueError(
+                f"VLM 返回的 message.content 为空（{hint}）。"
+                f"可尝试增大 ASSESSMENT_MAX_TOKENS 或保持 ASSESSMENT_ENABLE_THINKING=false"
+            )
 
-        return json.loads(raw)
+        logger.info("[ASSESS-VLM] content 原文: %s", _truncate_for_log(raw))
+
+        parsed_raw = _strip_json_fence(raw)
+        try:
+            return json.loads(parsed_raw)
+        except json.JSONDecodeError as exc:
+            logger.error(
+                "[ASSESS-VLM] JSON 解析失败: %s; 待解析文本: %s",
+                exc,
+                _truncate_for_log(parsed_raw),
+            )
+            raise ValueError(
+                f"VLM 返回内容不是合法 JSON: {_truncate_for_log(parsed_raw, 500)}"
+            ) from exc
     finally:
         shutil.rmtree(tmp_dir, ignore_errors=True)
 

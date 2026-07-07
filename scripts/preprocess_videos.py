@@ -8,12 +8,24 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 import requests
+from dotenv import load_dotenv
+
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+load_dotenv(ROOT / ".env")
+
+from app.config import (  # noqa: E402
+    DASHSCOPE_API_KEY,
+    DASHSCOPE_BASE_URL,
+    DASHSCOPE_MODEL,
+)
 
 # ==================== 配置区域 ====================
 VIDEO_DIR = Path("assets/videos")
@@ -22,10 +34,10 @@ TMP_DIR = Path("data/tmp")
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 TMP_DIR.mkdir(parents=True, exist_ok=True)
 
-# qwen3.6-plus API 配置
-BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
-API_KEY = "sk-7362a73ae0cc4c4eb67dfc444095b51e"
-MODEL = "qwen3.6-plus"
+# qwen3.6-plus API 配置（与 app/config.py 一致，从环境变量加载）
+BASE_URL = DASHSCOPE_BASE_URL.rstrip("/")
+API_KEY = DASHSCOPE_API_KEY
+MODEL = DASHSCOPE_MODEL
 
 MAX_VIDEOS = 0  # 0 = 处理目录内全部视频；>0 时仅扫描排序后的前 N 个文件
 MAX_WORKERS = 20  # 并发处理视频数
