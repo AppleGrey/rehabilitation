@@ -1,15 +1,14 @@
-"""会话持久化 - 将 ConsultState 序列化存储到磁盘，服务重启后可恢复。"""
+"""会话持久化 - ConsultState 存入 PostgreSQL。"""
 from __future__ import annotations
 
 import json
 import logging
-from pathlib import Path
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from psycopg.types.json import Jsonb
 
+from .database import db_cursor
 logger = logging.getLogger(__name__)
-
-SESSIONS_DIR = Path(__file__).parent.parent / "data" / "sessions"
 
 
 def _msg_to_dict(msg) -> dict:
@@ -34,10 +33,7 @@ def _dict_to_msg(d: dict):
     return HumanMessage(content=c)
 
 
-def save_session(session_id: str, state: dict) -> None:
-    """将 ConsultState 序列化并写入 data/sessions/{session_id}.json。"""
-    SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
-    path = SESSIONS_DIR / f"{session_id}.json"
+def _serialize_state(state: dict) -> dict:
     serializable: dict = {}
     for k, v in state.items():
         if k == "messages":
@@ -48,21 +44,41 @@ def save_session(session_id: str, state: dict) -> None:
                 serializable[k] = v
             except (TypeError, ValueError):
                 serializable[k] = str(v)
+    return serializable
+
+
+def save_session(session_id: str, state: dict) -> None:
+    """将 ConsultState 写入 PostgreSQL sessions 表。"""
+    payload = _serialize_state(state)
     try:
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(serializable, f, ensure_ascii=False, indent=2)
+        with db_cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO sessions (session_id, state, created_at, updated_at)
+                VALUES (%s, %s, NOW(), NOW())
+                ON CONFLICT (session_id) DO UPDATE
+                SET state = EXCLUDED.state,
+                    updated_at = NOW()
+                """,
+                (session_id, Jsonb(payload)),
+            )
     except Exception:
         logger.exception("[SESSION] 保存失败: %s", session_id)
+        raise
 
 
 def load_session(session_id: str) -> dict | None:
-    """从磁盘加载 ConsultState，还原 LangChain 消息对象。"""
-    path = SESSIONS_DIR / f"{session_id}.json"
-    if not path.exists():
-        return None
+    """从 PostgreSQL 加载 ConsultState，还原 LangChain 消息对象。"""
     try:
-        with open(path, "r", encoding="utf-8") as f:
-            data = json.load(f)
+        with db_cursor(commit=False) as cur:
+            cur.execute(
+                "SELECT state FROM sessions WHERE session_id = %s",
+                (session_id,),
+            )
+            row = cur.fetchone()
+        if not row:
+            return None
+        data = dict(row["state"])
         if "messages" in data and isinstance(data["messages"], list):
             data["messages"] = [_dict_to_msg(m) for m in data["messages"]]
         return data

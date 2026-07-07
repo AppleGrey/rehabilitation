@@ -293,6 +293,12 @@ class MetadataStore:
             self._done.add(video_file.stem)
             self._done.add(video_file.name)
             save_metadata(self._metadata)
+            try:
+                from app.video_metadata import upsert_video
+
+                upsert_video(entry)
+            except Exception as e:
+                log(f"[WARN] 写入 PostgreSQL 失败（已保存 JSON）：{e}")
 
     def count(self) -> int:
         with _metadata_lock:

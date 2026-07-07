@@ -1,5 +1,5 @@
 """
-视频匹配算法（基于 metadata.json 索引 + 加权评分）。
+视频匹配算法（基于 PostgreSQL videos 表 + 加权评分）。
 
 匹配流程：
   第一层：硬过滤（必须满足）
@@ -20,7 +20,12 @@
     - 返回最佳匹配
 """
 import json
+import logging
 from pathlib import Path
+
+from .video_metadata import load_all_videos
+
+logger = logging.getLogger(__name__)
 
 METADATA_PATH = Path(__file__).parent.parent / "data" / "metadata" / "metadata.json"
 VIDEOS_DIR = Path(__file__).parent.parent / "assets" / "videos"
@@ -52,12 +57,15 @@ def _find_video_url(video_id: str) -> str:
 
 
 def _load_index() -> list[dict]:
-    """加载 metadata.json 视频索引，自动补全 url 字段。"""
-    if not METADATA_PATH.exists():
-        return []
-    with open(METADATA_PATH, "r", encoding="utf-8") as f:
-        data = json.load(f)
-    # 补全每个条目的 url 字段
+    """从 PostgreSQL 加载视频索引；库为空时回退 metadata.json。"""
+    data = load_all_videos()
+    if not data and METADATA_PATH.exists():
+        logger.warning(
+            "[MATCHING] videos 表为空，回退读取 %s", METADATA_PATH
+        )
+        with open(METADATA_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
     for item in data:
         if not item.get("url"):
             item["url"] = _find_video_url(item.get("video_id", ""))

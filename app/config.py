@@ -14,6 +14,17 @@ DASHSCOPE_BASE_URL: str = os.getenv(
 )
 DASHSCOPE_MODEL: str = os.getenv("DASHSCOPE_MODEL", "qwen3.6-plus")
 
+# PostgreSQL（默认本地无密码）
+DATABASE_URL: str = os.getenv(
+    "DATABASE_URL",
+    "postgresql://postgres@localhost:5432/rehabilitation",
+)
+# 建库时连接的管理库（通常为 postgres）
+DATABASE_ADMIN_URL: str = os.getenv(
+    "DATABASE_ADMIN_URL",
+    "postgresql://postgres@localhost:5432/postgres",
+)
+
 
 def dashscope_chat_completions_url() -> str:
     """百炼 OpenAI 兼容接口的 chat/completions 完整 URL。"""

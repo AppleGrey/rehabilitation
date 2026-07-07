@@ -66,7 +66,15 @@ from .questionnaire import build_questionnaire_report
 
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="康复AI后端", version="4.0.0")
+app = FastAPI(title="康复AI后端", version="4.1.0")
+
+
+@app.on_event("startup")
+def _on_startup() -> None:
+    from .database import init_schema
+
+    init_schema()
+    logger.info("[DB] PostgreSQL 已连接，表结构就绪")
 
 app.add_middleware(
     CORSMiddleware,
@@ -79,7 +87,7 @@ ASSETS_DIR = Path(__file__).parent.parent / "assets"
 ASSETS_DIR.mkdir(exist_ok=True)
 app.mount("/assets", StaticFiles(directory=str(ASSETS_DIR)), name="assets")
 
-# ── 内存会话缓存（同时持久化到磁盘） ──────────────────────────────────────────
+# ── 内存会话缓存（同时持久化到 PostgreSQL） ───────────────────────────────────
 _sessions: dict[str, ConsultState] = {}
 
 _NODE_MAP = {
