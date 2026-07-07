@@ -6,5 +6,5 @@
 /// - 真机：改为电脑局域网 IP，例如 `http://192.168.1.112:8000`
 const String kBackendBase = String.fromEnvironment(
   'BACKEND_BASE',
-  defaultValue: 'http://101.201.170.95:8080',
+  defaultValue: 'http://192.168.1.112:8000',
 );

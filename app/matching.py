@@ -59,8 +59,9 @@ def _load_index() -> list[dict]:
             data = json.load(f)
 
     for item in data:
-        if not item.get("url"):
-            item["url"] = _find_video_url(item.get("video_id", ""))
+        # 无论数据库/JSON中历史 url 是什么，都统一改为后端播放接口。
+        # 避免旧数据里残留 /assets/videos/*.mp4 导致绕过 MinIO。
+        item["url"] = _find_video_url(item.get("video_id", ""))
     return data
 
 
