@@ -8,7 +8,6 @@ from __future__ import annotations
 import logging
 import uuid
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Any, Literal
 
 from psycopg.types.json import Jsonb
@@ -16,8 +15,6 @@ from psycopg.types.json import Jsonb
 from .database import db_cursor
 
 logger = logging.getLogger(__name__)
-
-UPLOADS_DIR = Path(__file__).parent.parent / "data" / "uploads"
 
 TaskStatus = Literal["pending", "processing", "done", "error"]
 

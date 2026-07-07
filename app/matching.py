@@ -23,6 +23,7 @@ import json
 import logging
 from pathlib import Path
 
+from .storage import guess_video_key
 from .video_metadata import load_all_videos
 
 logger = logging.getLogger(__name__)
@@ -35,18 +36,9 @@ _VIDEO_EXTS = (".mp4", ".MP4", ".mov", ".MOV", ".m4v", ".M4V")
 DIFFICULTY_LIMIT = {"轻度": 5, "中度": 3, "重度": 2}
 
 
-def ensure_playable_mp4_path(video_id: str) -> Path | None:
-    """返回 assets/videos/ 下可播放的视频文件路径（优先 mp4）。"""
-    for ext in (".mp4", ".MP4"):
-        p = VIDEOS_DIR / f"{video_id}{ext}"
-        if p.exists() and p.stat().st_size > 1024:
-            return p
-    # 兜底返回其他格式（MOV 等）
-    for ext in (".mov", ".MOV", ".m4v", ".M4V"):
-        p = VIDEOS_DIR / f"{video_id}{ext}"
-        if p.exists() and p.stat().st_size > 1024:
-            return p
-    return None
+def ensure_playable_mp4_path(video_id: str) -> str | None:
+    """返回 MinIO 中可播放视频对象 key（兼容旧函数名）。"""
+    return guess_video_key(video_id)
 
 
 def _find_video_url(video_id: str) -> str:

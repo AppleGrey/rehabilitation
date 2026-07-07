@@ -17,6 +17,7 @@ from __future__ import annotations
 import json
 import logging
 import shutil
+import tempfile
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -29,7 +30,7 @@ logging.basicConfig(
 
 from fastapi import BackgroundTasks, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
@@ -61,8 +62,15 @@ from .matching import ensure_playable_mp4_path, get_video_list
 from .assessment import evaluate_motion
 from .config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, DEEPSEEK_MODEL
 from .sessions import load_session, save_session
-from .tasks import UPLOADS_DIR, create_task, load_task, update_task
+from .tasks import create_task, load_task, update_task
 from .questionnaire import build_questionnaire_report
+from .storage import (
+    UPLOAD_PREFIX,
+    download_to_path,
+    get_object_stream,
+    init_storage,
+    upload_bytes,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +82,7 @@ def _on_startup() -> None:
     from .database import init_schema
 
     init_schema()
+    init_storage()
     logger.info("[DB] PostgreSQL 已连接，表结构就绪")
 
 app.add_middleware(
@@ -306,15 +315,29 @@ def list_videos(
 
 @app.get("/api/videos/{video_id}/play")
 def play_video(video_id: str):
-    """返回视频文件供 Flutter video_player 播放。"""
-    path = ensure_playable_mp4_path(video_id)
-    if path is None or not path.exists():
+    """从 MinIO 读取视频并流式返回。"""
+    object_key = ensure_playable_mp4_path(video_id)
+    if object_key is None:
         raise HTTPException(
             status_code=404,
-            detail=f"视频 {video_id} 不存在，请将视频文件放入 assets/videos/",
+            detail=f"视频 {video_id} 不存在，请确认已上传到 MinIO",
         )
-    mime = "video/mp4" if path.suffix.lower() in (".mp4",) else "video/quicktime"
-    return FileResponse(path, media_type=mime, filename=f"{video_id}.mp4")
+    obj = get_object_stream(object_key)
+    mime = (
+        "video/mp4"
+        if object_key.lower().endswith(".mp4")
+        else "video/quicktime"
+    )
+
+    def _iter():
+        try:
+            for chunk in obj.stream(1024 * 1024):
+                yield chunk
+        finally:
+            obj.close()
+            obj.release_conn()
+
+    return StreamingResponse(_iter(), media_type=mime)
 
 
 # ── 评估任务（异步） ──────────────────────────────────────────────────────────
@@ -330,16 +353,21 @@ def _run_assessment(task_id: str) -> None:
 
     session_id = task["session_id"]
     standard_video_id = task["standard_video_id"]
-    user_video_path = Path(task["user_video_path"])
+    user_video_key = task["user_video_path"]
+    tmp_dir = Path(tempfile.mkdtemp(prefix=f"assess-{task_id}-"))
+    user_video_path = tmp_dir / "user_upload.mp4"
+    standard_video_path = tmp_dir / "standard.mp4"
 
     try:
-        # 找标准视频
-        standard_path = ensure_playable_mp4_path(standard_video_id)
-        if standard_path is None:
+        # 从 MinIO 下载标准视频与用户上传视频
+        standard_key = ensure_playable_mp4_path(standard_video_id)
+        if standard_key is None:
             raise FileNotFoundError(f"标准视频 {standard_video_id} 不存在")
+        download_to_path(standard_key, standard_video_path)
+        download_to_path(user_video_key, user_video_path)
 
         # VLM 评估
-        assessment = evaluate_motion(standard_path, user_video_path)
+        assessment = evaluate_motion(standard_video_path, user_video_path)
         logger.info("[TASK] VLM完成: task_id=%s overall=%s", task_id, assessment.get("overall_score"))
 
         # 获取对话历史（允许失败）
@@ -380,12 +408,7 @@ def _run_assessment(task_id: str) -> None:
         logger.exception("[TASK] 处理失败: task_id=%s", task_id)
         update_task(task_id, status="error", error=str(exc))
     finally:
-        # 清理上传文件
-        try:
-            if user_video_path.exists():
-                user_video_path.unlink()
-        except Exception:
-            pass
+        shutil.rmtree(tmp_dir, ignore_errors=True)
 
 
 @app.post("/api/assess/motion")
@@ -406,15 +429,13 @@ async def assess_motion(
             detail=f"标准视频 {standard_video_id} 不存在",
         )
 
-    # 保存上传的用户视频到持久目录（后台任务需要读取）
-    UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+    # 上传用户视频到 MinIO（后台任务再下载处理）
     suffix = Path(user_video.filename or "video.mp4").suffix or ".mp4"
     upload_id = str(uuid.uuid4())
-    save_path = UPLOADS_DIR / f"{upload_id}{suffix}"
+    object_key = f"{UPLOAD_PREFIX}/{upload_id}{suffix}"
 
     content = await user_video.read()
-    with open(save_path, "wb") as f:
-        f.write(content)
+    upload_bytes(object_key, content, content_type=user_video.content_type or "video/mp4")
 
     logger.info(
         "[ASSESS] 收到上传 session=%s standard=%s size=%dKB",
@@ -430,7 +451,7 @@ async def assess_motion(
             logger.warning("[ASSESS] session_id=%s 不存在，使用空会话兜底", session_id)
             _sessions[session_id] = _new_state()
 
-    task_id = create_task(session_id, standard_video_id, str(save_path))
+    task_id = create_task(session_id, standard_video_id, object_key)
     background_tasks.add_task(_run_assessment, task_id)
 
     logger.info("[ASSESS] 任务已创建 task_id=%s", task_id)

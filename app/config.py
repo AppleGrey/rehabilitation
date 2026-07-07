@@ -25,6 +25,17 @@ DATABASE_ADMIN_URL: str = os.getenv(
     "postgresql://postgres@localhost:5432/postgres",
 )
 
+# MinIO（对象存储）
+MINIO_ENDPOINT: str = os.getenv("MINIO_ENDPOINT", "localhost:9000")
+MINIO_ACCESS_KEY: str = os.getenv("MINIO_ACCESS_KEY", "minioadmin")
+MINIO_SECRET_KEY: str = os.getenv("MINIO_SECRET_KEY", "minioadmin")
+MINIO_BUCKET: str = os.getenv("MINIO_BUCKET", "rehabilitation-files")
+MINIO_SECURE: bool = os.getenv("MINIO_SECURE", "false").lower() in (
+    "1",
+    "true",
+    "yes",
+)
+
 
 def dashscope_chat_completions_url() -> str:
     """百炼 OpenAI 兼容接口的 chat/completions 完整 URL。"""
