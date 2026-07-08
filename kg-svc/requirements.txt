@@ -1,0 +1,22 @@
+# kg-svc 运行依赖（Python 3.11）
+# 关键：numpy 必须 <2，否则 graspologic 连带的 scipy 导入报 "No module named 'numpy.rec'"。
+numpy==1.26.4
+openai>=1.0
+nano-vectordb
+networkx
+tiktoken
+tenacity
+aiohttp
+pydantic
+python-dotenv
+configparser
+future
+pipmaster
+fastapi
+uvicorn[standard]
+
+# 说明：
+# 1) LightRAG 1.2.2 不走 pip，直接用仓库内 ../LightRAG-KF-NEW（kg.py 里 sys.path 引入），
+#    以确保与已构建图谱的存储格式完全一致。
+# 2) graspologic 由 LightRAG 首次导入 NetworkX 图存储时经 pipmaster 自动安装（体量较大），
+#    它要求 numpy<2；故上面固定 numpy==1.26.4。
