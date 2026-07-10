@@ -294,6 +294,91 @@ def health():
     return {"status": "ok"}
 
 
+# ── 策略树问诊（K1，新流程，与旧 /api/chat 8 节点并存，互不影响） ─────────────────
+from .followup import kg_client as _kg_client  # noqa: E402
+from .followup import persistence as _fp        # noqa: E402
+from .followup import planner as _planner       # noqa: E402
+from .followup.models import StrategySession    # noqa: E402
+
+# 策略问诊会话内存缓存（同时持久化到 consult_strategy_state）
+_strategy_sessions: dict[str, StrategySession] = {}
+
+
+def _get_strategy_session(sid: str) -> StrategySession | None:
+    if sid in _strategy_sessions:
+        return _strategy_sessions[sid]
+    loaded = _fp.load_strategy_state(sid)
+    if loaded:
+        _strategy_sessions[sid] = loaded
+        return loaded
+    return None
+
+
+def _sse(payload: dict) -> str:
+    return f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
+
+
+class ConsultRequest(BaseModel):
+    session_id: str
+    user_message: str
+
+
+@app.get("/api/ai/consult/new")
+def ai_consult_new():
+    """新建策略树问诊会话，返回 session_id 与开场事件。"""
+    sid = str(uuid.uuid4())
+    session, events = _planner.new_session(sid)
+    _strategy_sessions[sid] = session
+    return {"session_id": sid, "events": events}
+
+
+@app.post("/api/ai/consult")
+async def ai_consult(req: ConsultRequest):
+    """策略树问诊一轮对话（SSE）。事件类型：text / input_spec / progress / done。"""
+    import asyncio
+
+    session = _get_strategy_session(req.session_id)
+    if session is None:
+        raise HTTPException(status_code=404, detail="会话不存在，请先调用 /api/ai/consult/new")
+
+    # 拼一份对话文本供粗问阶段的种子抽取（简单累积用户输入）
+    conversation_text = req.user_message
+
+    async def event_stream():
+        loop = asyncio.get_running_loop()
+        try:
+            events = await loop.run_in_executor(
+                None, _planner.consult_turn, session, req.user_message, conversation_text
+            )
+            _strategy_sessions[req.session_id] = session
+            for ev in events:
+                yield _sse(ev)
+        except Exception as exc:  # noqa: BLE001
+            logger.exception("[AI-CONSULT] 处理失败")
+            yield _sse({"type": "error", "content": str(exc)})
+
+    return StreamingResponse(
+        event_stream(), media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+@app.get("/api/ai/session/{session_id}/strategy")
+def ai_strategy_snapshot(session_id: str):
+    """后台/调试：拉取该会话最新一条策略树快照（问诊策略面板用）。"""
+    snap = _fp.load_latest_snapshot(session_id)
+    if snap is None:
+        raise HTTPException(status_code=404, detail="暂无策略树快照")
+    return snap
+
+
+@app.get("/api/ai/kg/health")
+def ai_kg_health():
+    """探活 kg-svc（内网检索服务）。"""
+    info = _kg_client.health()
+    return {"kg_svc": "ok" if info else "unavailable", "detail": info}
+
+
 @app.get("/api/test/ping")
 def test_ping():
     return {
