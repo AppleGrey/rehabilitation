@@ -12,8 +12,10 @@ from __future__ import annotations
 import logging
 from typing import Any, Optional
 
-from . import catalog, extractor, kg_client, scoring, stopping, tree_builder
-from . import persistence
+from .policy import catalog, scoring, stopping
+from .llm import extractor, tree_builder
+from .clients import kg_client
+from .clients import persistence
 from . import settings as fset
 from .models import (
     Phase,

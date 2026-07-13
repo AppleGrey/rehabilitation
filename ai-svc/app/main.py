@@ -296,8 +296,8 @@ def health():
 
 
 # ── 策略树问诊（K1，新流程，与旧 /api/chat 8 节点并存，互不影响） ─────────────────
-from .followup import kg_client as _kg_client  # noqa: E402
-from .followup import persistence as _fp        # noqa: E402
+from .followup.clients import kg_client as _kg_client  # noqa: E402
+from .followup.clients import persistence as _fp        # noqa: E402
 from .followup import planner as _planner       # noqa: E402
 from .followup.models import StrategySession    # noqa: E402
 

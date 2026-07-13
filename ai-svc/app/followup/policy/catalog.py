@@ -7,7 +7,7 @@ S/D 槽的其余部分由 kg-svc + LLM-B 按病症动态补充；这里只放「
 """
 from __future__ import annotations
 
-from .models import (
+from ..models import (
     Priority,
     Seed,
     Slot,

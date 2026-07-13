@@ -10,7 +10,7 @@
 """
 from __future__ import annotations
 
-from .models import (
+from ..models import (
     AnswerType,
     Evidence,
     Hypothesis,
@@ -27,7 +27,7 @@ from .models import (
     StrategyTreeNode,
     TerminalType,
 )
-from . import scoring, stopping, validator
+from ..policy import scoring, stopping, validator
 
 
 def _build_example_session() -> StrategySession:

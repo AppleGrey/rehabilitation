@@ -10,8 +10,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional
 
-from . import settings as S
-from .models import (
+from .. import settings as S
+from ..models import (
     SlotCategory,
     SlotStatus,
     StrategySession,

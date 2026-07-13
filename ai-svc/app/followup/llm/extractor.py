@@ -13,8 +13,8 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from . import settings as S
-from .models import (
+from .. import settings as S
+from ..models import (
     Evidence,
     Hypothesis,
     HypothesisStatus,

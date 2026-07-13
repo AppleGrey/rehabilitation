@@ -10,9 +10,9 @@ import logging
 import uuid
 from typing import Optional
 
-from . import settings as S
-from . import validator
-from .models import (
+from .. import settings as S
+from ..policy import validator
+from ..models import (
     AnswerType,
     NodeType,
     RefreshReason,
@@ -25,7 +25,7 @@ from .models import (
     StrategyTreeNode,
     TerminalType,
 )
-from .stopping import needs_sp_backfill
+from ..policy.stopping import needs_sp_backfill
 from .util import call_json_llm, make_json_llm
 
 logger = logging.getLogger(__name__)

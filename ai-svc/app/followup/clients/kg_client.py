@@ -16,8 +16,8 @@ from typing import Literal, Optional
 
 import httpx
 
-from . import settings as S
-from .models import SlotStatus, StrategySession
+from .. import settings as S
+from ..models import SlotStatus, StrategySession
 
 logger = logging.getLogger(__name__)
 

@@ -8,9 +8,11 @@
 """
 from __future__ import annotations
 
-from . import extractor, kg_client, persistence, planner, tree_builder
-from .extractor import HypothesisDelta, PerceptFact, PerceptResult, RedFlag, SeedExtract
-from .models import (
+from ..llm import extractor, tree_builder
+from ..clients import kg_client, persistence
+from .. import planner
+from ..llm.extractor import HypothesisDelta, PerceptFact, PerceptResult, RedFlag, SeedExtract
+from ..models import (
     AnswerType, NodeType, StrategyTree, StrategyTreeEdge, StrategyTreeNode,
 )
 
@@ -132,7 +134,7 @@ def main() -> None:
     planner.consult_turn(session, "能练15分钟，家里有弹力带，空间够", "……")  # 训练偏好 P 槽
 
     print("5. 检查 S/P 是否逼近齐全")
-    from . import stopping
+    from ..policy import stopping
     miss_s = stopping.missing_safety_slots(session)
     miss_p = stopping.missing_plan_slots(session)
     print(f"    剩余 S={miss_s} P={miss_p}")

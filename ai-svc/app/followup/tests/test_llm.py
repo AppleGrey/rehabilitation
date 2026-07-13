@@ -7,8 +7,9 @@
 """
 from __future__ import annotations
 
-from . import extractor, kg_client, tree_builder, util
-from .models import (
+from ..llm import extractor, tree_builder, util
+from ..clients import kg_client
+from ..models import (
     Hypothesis, Seed, Slot, SlotCategory, SlotStatus, StrategySession,
 )
 
@@ -96,7 +97,7 @@ def test_tree_parse_and_validate() -> None:
     tree = tree_builder._to_tree(fake_tree, k=3, refresh_reason="initial_tree_build")
     _check(tree is not None and tree.node("q_lock").is_question(), "解析出 question 节点")
     # 该问题有出边但只覆盖“经常有”，其余 option 未覆盖 → 校验应报错
-    from . import validator
+    from ..policy import validator
     res = validator.validate_tree(tree, sess, selected_node_id="q_lock")
     _check(not res.ok and any("未覆盖" in e for e in res.errors), "出边未穷尽 options 被校验器抓出")
 
