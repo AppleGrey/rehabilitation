@@ -6,7 +6,8 @@ import 'package:http/http.dart' as http;
 import '../config/api_config.dart';
 import '../theme/app_theme.dart';
 
-/// 本次问诊的「AI 个性化康复评估问卷」填写报告
+/// 「问诊过程与结果」：读取策略树最新快照，展示临床方向、已采集信息、安全排查与进度。
+/// （替代原「AI 个性化康复评估问卷」页；数据源 /api/ai/session/{id}/strategy）
 class ConsultReportPage extends StatefulWidget {
   final String sessionId;
 
@@ -17,30 +18,34 @@ class ConsultReportPage extends StatefulWidget {
 }
 
 class _ConsultReportPageState extends State<ConsultReportPage> {
-  Map<String, dynamic>? _report;
+  Map<String, dynamic>? _snap;
   String? _error;
   bool _loading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadReport();
+    _load();
   }
 
-  Future<void> _loadReport() async {
+  Future<void> _load() async {
     setState(() {
       _loading = true;
       _error = null;
     });
     try {
       final resp = await http
-          .get(Uri.parse(
-              '$kBackendBase/api/session/${widget.sessionId}/report'))
+          .get(Uri.parse('$kBackendBase/api/ai/session/${widget.sessionId}/strategy'))
           .timeout(const Duration(seconds: 15));
       if (!mounted) return;
       if (resp.statusCode == 200) {
         setState(() {
-          _report = jsonDecode(resp.body) as Map<String, dynamic>;
+          _snap = jsonDecode(resp.body) as Map<String, dynamic>;
+          _loading = false;
+        });
+      } else if (resp.statusCode == 404) {
+        setState(() {
+          _error = '本次问诊还没有生成策略快照（可能仍在粗问阶段，多聊几轮后再看）。';
           _loading = false;
         });
       } else {
@@ -61,22 +66,16 @@ class _ConsultReportPageState extends State<ConsultReportPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.bgPrimary,
+      backgroundColor: AppTheme.bgSecondary,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0.5,
-        title: const Text(
-          '问诊记录',
-          style: TextStyle(
-            fontSize: 17,
-            fontWeight: FontWeight.w600,
-            color: AppTheme.textPrimary,
-          ),
-        ),
+        title: const Text('问诊过程与结果',
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, color: AppTheme.textSecondary),
-            onPressed: _loading ? null : _loadReport,
+            onPressed: _loading ? null : _load,
             tooltip: '刷新',
           ),
         ],
@@ -86,9 +85,7 @@ class _ConsultReportPageState extends State<ConsultReportPage> {
   }
 
   Widget _buildBody() {
-    if (_loading) {
-      return const Center(child: CircularProgressIndicator());
-    }
+    if (_loading) return const Center(child: CircularProgressIndicator());
     if (_error != null) {
       return Center(
         child: Padding(
@@ -96,243 +93,212 @@ class _ConsultReportPageState extends State<ConsultReportPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(_error!, textAlign: TextAlign.center),
+              Text(_error!, textAlign: TextAlign.center, style: const TextStyle(color: AppTheme.textSecondary, height: 1.5)),
               const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: _loadReport,
-                child: const Text('重试'),
-              ),
+              ElevatedButton(onPressed: _load, child: const Text('重试')),
             ],
           ),
         ),
       );
     }
 
-    final report = _report!;
-    final progress = (report['progress'] as num?)?.toDouble() ?? 0.0;
-    final filled = report['filled_count'] as int? ?? 0;
-    final total = report['total_count'] as int? ?? 0;
-    final stepLabel = report['current_step_label'] as String? ?? '';
-    final isDone = report['is_consultation_done'] == true;
-    final sections = report['sections'] as List<dynamic>? ?? [];
+    final snap = _snap!;
+    final slots = (snap['slots'] as List<dynamic>? ?? []).cast<Map<String, dynamic>>();
+    final hyps = (snap['hypotheses'] as List<dynamic>? ?? [])
+        .cast<Map<String, dynamic>>()
+        .where((h) => (h['status'] ?? 'active') == 'active')
+        .toList()
+      ..sort((a, b) => ((b['confidence'] as num?) ?? 0).compareTo((a['confidence'] as num?) ?? 0));
+
+    final safety = slots.where((s) => s['category'] == 'S').toList();
+    final plan = slots.where((s) => s['category'] == 'P').toList();
+    final diff = slots.where((s) => s['category'] == 'D').toList();
+
+    final known = slots.where((s) => s['status'] == 'known').length;
+    final total = slots.isEmpty ? 1 : slots.length;
 
     return RefreshIndicator(
-      onRefresh: _loadReport,
+      onRefresh: _load,
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
         children: [
-          _buildProgressCard(progress, filled, total, stepLabel, isDone),
+          _headerCard(snap, known, total),
           const SizedBox(height: 12),
+          if (hyps.isNotEmpty) _impressionCard(hyps),
+          if (safety.isNotEmpty) _slotCard('安全排查（红旗/禁忌）', Icons.health_and_safety_outlined, AppTheme.error, safety),
+          if (plan.isNotEmpty) _slotCard('方案必填信息', Icons.tune, AppTheme.warning, plan),
+          if (diff.isNotEmpty) _slotCard('鉴别追问', Icons.alt_route, AppTheme.primary, diff),
+          const SizedBox(height: 8),
           const Text(
-            '问诊过程中，系统会根据您的回答自动填写下方问卷。'
-            '尚未采集的条目显示为「—」。',
-            style: TextStyle(fontSize: 12, color: AppTheme.textTertiary, height: 1.5),
+            '说明：以上「临床方向」为系统内部用于决定追问方向的候选，并非医学诊断；如症状加重或有疑虑请及时线下就医。',
+            style: TextStyle(fontSize: 11.5, color: AppTheme.textTertiary, height: 1.5),
           ),
-          const SizedBox(height: 16),
-          ...sections.map((s) => _buildSection(s as Map<String, dynamic>)),
         ],
       ),
     );
   }
 
-  Widget _buildProgressCard(
-    double progress,
-    int filled,
-    int total,
-    String stepLabel,
-    bool isDone,
-  ) {
-    final pct = (progress * 100).round();
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+  Widget _headerCard(Map<String, dynamic> snap, int known, int total) {
+    final turn = snap['turn_no'] ?? 0;
+    final phase = snap['phase'] as String? ?? '';
+    final pct = known / total;
+    final phaseLabel = phase == 'tree' ? '按策略树追问' : (phase == 'warmup' ? '粗问了解需求' : phase);
+    return _card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const Icon(Icons.assignment, color: AppTheme.primary, size: 22),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  _report?['title'] as String? ?? 'AI 个性化康复评估问卷',
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.textPrimary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
+          Row(children: [
+            const Icon(Icons.timeline, color: AppTheme.primary, size: 22),
+            const SizedBox(width: 8),
+            const Expanded(
+              child: Text('问诊进度',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(color: AppTheme.primaryLight, borderRadius: BorderRadius.circular(8)),
+              child: Text('第 $turn 轮',
+                  style: const TextStyle(fontSize: 11, color: AppTheme.primaryDark, fontWeight: FontWeight.w600)),
+            ),
+          ]),
+          const SizedBox(height: 12),
           ClipRRect(
             borderRadius: BorderRadius.circular(6),
             child: LinearProgressIndicator(
-              value: progress.clamp(0.0, 1.0),
+              value: pct.clamp(0.0, 1.0),
               minHeight: 8,
-              backgroundColor: AppTheme.bgPrimary,
+              backgroundColor: AppTheme.bgTertiary,
               valueColor: const AlwaysStoppedAnimation(AppTheme.primary),
             ),
           ),
           const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '已填写 $filled / $total 项（$pct%）',
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: AppTheme.textSecondary,
-                ),
-              ),
-              if (isDone)
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF4CAF50).withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Text(
-                    '已完成',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Color(0xFF4CAF50),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          if (stepLabel.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Text(
-              '当前问诊阶段：$stepLabel',
-              style: const TextStyle(fontSize: 12, color: AppTheme.textTertiary),
-            ),
-          ],
+          Text('已采集 $known / $total 项关键信息 · 当前阶段：$phaseLabel',
+              style: const TextStyle(fontSize: 12.5, color: AppTheme.textSecondary)),
         ],
       ),
     );
   }
 
-  Widget _buildSection(Map<String, dynamic> section) {
-    final title = section['title'] as String? ?? '';
-    final note = section['note'] as String?;
-    final items = section['items'] as List<dynamic>? ?? [];
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(14, 14, 14, 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textPrimary,
+  Widget _impressionCard(List<Map<String, dynamic>> hyps) {
+    return _card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: const [
+            Icon(Icons.psychology_outlined, color: AppTheme.primary, size: 20),
+            SizedBox(width: 8),
+            Text('临床方向（内部参考）',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+          ]),
+          const SizedBox(height: 12),
+          ...hyps.map((h) {
+            final conf = ((h['confidence'] as num?) ?? 0).toDouble();
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 5),
+              child: Row(children: [
+                Expanded(
+                  flex: 5,
+                  child: Text(h['name'] as String? ?? '',
+                      style: const TextStyle(fontSize: 13.5, color: AppTheme.textPrimary),
+                      maxLines: 2, overflow: TextOverflow.ellipsis),
+                ),
+                Expanded(
+                  flex: 4,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: conf.clamp(0.0, 1.0),
+                      minHeight: 7,
+                      backgroundColor: AppTheme.bgTertiary,
+                      valueColor: const AlwaysStoppedAnimation(AppTheme.primary),
                     ),
                   ),
-                  if (note != null) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      note,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: AppTheme.textTertiary,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const Divider(height: 1),
-            ...items.map((raw) {
-              final item = raw as Map<String, dynamic>;
-              return _buildItemRow(item);
-            }),
-          ],
-        ),
+                ),
+                const SizedBox(width: 8),
+                Text(conf.toStringAsFixed(2),
+                    style: const TextStyle(fontSize: 12, color: AppTheme.textTertiary)),
+              ]),
+            );
+          }),
+        ],
       ),
     );
   }
 
-  Widget _buildItemRow(Map<String, dynamic> item) {
-    final label = item['label'] as String? ?? '';
-    final display = item['display'] as String? ?? '—';
-    final filled = item['filled'] == true;
+  Widget _slotCard(String title, IconData icon, Color color, List<Map<String, dynamic>> slots) {
+    return _card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Icon(icon, color: color, size: 20),
+            const SizedBox(width: 8),
+            Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+          ]),
+          const SizedBox(height: 6),
+          ...slots.map(_slotRow),
+        ],
+      ),
+    );
+  }
 
+  Widget _slotRow(Map<String, dynamic> s) {
+    final status = s['status'] as String? ?? 'missing';
+    final title = s['title'] as String? ?? s['slot_id'] as String? ?? '';
+    final value = s['value'];
+    final known = status == 'known';
+    final unknown = status == 'unknown';
+    final icon = known
+        ? Icons.check_circle
+        : (unknown ? Icons.help_outline : Icons.radio_button_unchecked);
+    final iconColor = known
+        ? AppTheme.success
+        : (unknown ? AppTheme.textTertiary : AppTheme.textTertiary);
+    final valStr = known && value != null
+        ? (value is List ? value.join('、') : value.toString())
+        : (unknown ? '用户表示不确定' : '待采集');
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: const EdgeInsets.symmetric(vertical: 7),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            filled ? Icons.check_circle : Icons.radio_button_unchecked,
-            size: 18,
-            color: filled ? const Color(0xFF4CAF50) : AppTheme.textTertiary,
-          ),
+          Icon(icon, size: 18, color: iconColor),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: filled
-                        ? AppTheme.textPrimary
-                        : AppTheme.textSecondary,
-                    fontWeight:
-                        filled ? FontWeight.w500 : FontWeight.normal,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  display,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: filled
-                        ? AppTheme.textPrimary
-                        : AppTheme.textTertiary,
-                    height: 1.4,
-                  ),
-                ),
+                Text(title,
+                    style: TextStyle(
+                        fontSize: 13,
+                        color: known ? AppTheme.textPrimary : AppTheme.textSecondary,
+                        fontWeight: known ? FontWeight.w500 : FontWeight.normal)),
+                const SizedBox(height: 2),
+                Text(valStr,
+                    style: TextStyle(
+                        fontSize: 13.5,
+                        color: known ? AppTheme.textPrimary : AppTheme.textTertiary,
+                        height: 1.4)),
               ],
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _card({required Widget child}) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, 2)),
+        ],
+      ),
+      child: child,
     );
   }
 }

@@ -28,6 +28,40 @@ logger = logging.getLogger(__name__)
 
 _DISCLAIMER = "（温馨提示：以上为康复自助建议，如症状加重或有疑虑请及时线下就医。）"
 
+_UNCERTAIN = ("不确定", "说不清", "不知道", "没注意", "记不清", "不清楚")
+_NEGATIVE = ("没有", "无", "都没有", "否", "不")
+_AFFIRM = ("是", "有", "会", "经常", "明显", "剧烈", "严重", "持续", "困难")
+
+
+def _apply_answer_to_prev_question(
+    session: StrategySession, prev_node_id: Optional[str], answer: str
+) -> bool:
+    """
+    把用户对「上一问」的回答确定性地写入该问题的 target_slots（不单靠 LLM-A 再推 slot_id，
+    避免同一安全问题反复追问）。返回 True 表示这是一个红旗题且回答为「肯定/危险」→ 应转诊。
+    """
+    if not prev_node_id or session.tree is None:
+        return False
+    node = session.tree.node(prev_node_id)
+    if node is None or not node.is_question():
+        return False
+    a = (answer or "").strip()
+    uncertain = any(k in a for k in _UNCERTAIN)
+    for sid in node.target_slots:
+        slot = session.slot(sid)
+        if slot is None or slot.status == SlotStatus.KNOWN.value:
+            continue
+        if uncertain:
+            slot.status = SlotStatus.UNKNOWN.value
+        else:
+            slot.status = SlotStatus.KNOWN.value
+            slot.value = a
+    if node.intent in ("red_flag", "contraindication") and not uncertain:
+        neg = any(k in a for k in _NEGATIVE)
+        aff = any(k in a for k in _AFFIRM)
+        return aff and not neg
+    return False
+
 
 # ─────────────────── SSE 事件构造 ───────────────────
 
@@ -142,6 +176,8 @@ def _tree_turn(session: StrategySession, user_message: str) -> list[dict]:
     before_top = [h.hyp_id for h in session.top_hypotheses(fset.MAX_CANDIDATES)]
     percept = extractor.perceive(session, user_message, kg)
     applied = extractor.apply_facts(session, percept.facts)
+    # 确定性兜底：把回答直接落到「上一问」的目标槽，避免安全题被反复追问
+    rf_hit = _apply_answer_to_prev_question(session, prev_node_id, user_message)
     catalog.derive_slots(session)
     extractor.update_hypotheses(session, percept.hypothesis_deltas)
     after_top = [h.hyp_id for h in session.top_hypotheses(fset.MAX_CANDIDATES)]
@@ -150,7 +186,7 @@ def _tree_turn(session: StrategySession, user_message: str) -> list[dict]:
     _record_answer_event(session, prev_node_id, user_message, applied)
 
     # 2) 安全 & 停止（确定性代码）
-    if percept.red_flag.hit:
+    if percept.red_flag.hit or rf_hit:
         return _refer(session, "根据你的描述，建议先到医院做进一步检查，暂缓自助训练。原因：" +
                       (percept.red_flag.reason or "出现需优先排除的风险信号"))
     stop = stopping.should_stop(session, red_flag_hit=False)

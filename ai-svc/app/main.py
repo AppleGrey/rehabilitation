@@ -31,6 +31,7 @@ logging.basicConfig(
 from fastapi import BackgroundTasks, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
@@ -82,9 +83,17 @@ app = FastAPI(title="康复AI后端", version="4.1.0")
 def _on_startup() -> None:
     from .core.database import init_schema
 
-    init_schema()
-    init_storage()
-    logger.info("[DB] PostgreSQL 已连接，表结构就绪")
+    # 各依赖独立容错：某项不可用不应阻止整个服务启动（K1 问诊只强依赖 DB 落库，
+    # 且落库已在各处 try/except 兜底；MinIO 仅动作评估用到）。
+    try:
+        init_schema()
+        logger.info("[DB] PostgreSQL 已连接，表结构就绪")
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("[DB] 初始化失败（问诊将退化为内存态，不落库）：%s", exc)
+    try:
+        init_storage()
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("[MINIO] 初始化失败（动作评估相关功能不可用）：%s", exc)
 
 app.add_middleware(
     CORSMiddleware,
@@ -378,6 +387,48 @@ def ai_kg_health():
     """探活 kg-svc（内网检索服务）。"""
     info = _kg_client.health()
     return {"kg_svc": "ok" if info else "unavailable", "detail": info}
+
+
+def _impression_of(snap: dict) -> list[dict]:
+    """从快照 hypotheses(jsonb) 取 Top-2 印象（name+confidence）。"""
+    hyps = snap.get("hypotheses") or []
+    if not isinstance(hyps, list):
+        return []
+    active = [h for h in hyps if isinstance(h, dict) and h.get("status", "active") == "active"]
+    active.sort(key=lambda h: h.get("confidence", 0), reverse=True)
+    return [{"name": h.get("name"), "confidence": round(h.get("confidence", 0), 2)} for h in active[:2]]
+
+
+@app.get("/api/ai/consult/sessions")
+def ai_consult_sessions(limit: int = 30):
+    """后台可视化：最近有策略树快照的问诊会话列表。"""
+    rows = _fp.list_recent_sessions(limit=limit)
+    out = []
+    for r in rows:
+        out.append({
+            "session_id": str(r.get("session_id")),
+            "turn_no": r.get("turn_no"),
+            "phase": r.get("phase"),
+            "strategy_source": r.get("strategy_source"),
+            "impression": _impression_of(r),
+            "created_at": r.get("created_at").isoformat() if r.get("created_at") else None,
+        })
+    return {"sessions": out}
+
+
+@app.get("/api/ai/session/{session_id}/strategy/history")
+def ai_strategy_history(session_id: str):
+    """后台可视化：该会话按轮次的全部策略树快照（时间线）。"""
+    return {"session_id": session_id, "snapshots": _fp.list_snapshots(session_id)}
+
+
+@app.get("/api/ai/strategy-viz")
+def ai_strategy_viz():
+    """策略树可视化后台网页（无鉴权，内网/调试用）。"""
+    html = Path(__file__).parent / "static" / "strategy.html"
+    if not html.exists():
+        raise HTTPException(status_code=404, detail="strategy.html 缺失")
+    return FileResponse(html, media_type="text/html; charset=utf-8")
 
 
 @app.get("/api/test/ping")

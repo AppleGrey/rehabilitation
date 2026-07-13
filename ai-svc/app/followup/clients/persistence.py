@@ -140,6 +140,44 @@ def load_latest_snapshot(session_id: str) -> Optional[dict]:
         return None
 
 
+def list_snapshots(session_id: str) -> list[dict]:
+    """某会话按轮次的全部快照（时间线/回放用）。"""
+    try:
+        with db_cursor(commit=False) as cur:
+            cur.execute(
+                """
+                SELECT * FROM consult_strategy_snapshots
+                WHERE session_id = %s ORDER BY turn_no ASC
+                """,
+                (session_id,),
+            )
+            return [dict(r) for r in cur.fetchall()]
+    except Exception:
+        logger.exception("[FOLLOWUP] 读取快照列表失败 session=%s", session_id)
+        return []
+
+
+def list_recent_sessions(limit: int = 30) -> list[dict]:
+    """后台可视化：最近有策略树快照的会话（每会话取最新一轮）。"""
+    try:
+        with db_cursor(commit=False) as cur:
+            cur.execute(
+                """
+                SELECT * FROM (
+                    SELECT DISTINCT ON (session_id)
+                        session_id, turn_no, phase, strategy_source, hypotheses, created_at
+                    FROM consult_strategy_snapshots
+                    ORDER BY session_id, turn_no DESC
+                ) t ORDER BY created_at DESC LIMIT %s
+                """,
+                (limit,),
+            )
+            return [dict(r) for r in cur.fetchall()]
+    except Exception:
+        logger.exception("[FOLLOWUP] 读取会话列表失败")
+        return []
+
+
 # ─────────────────── 会话实时状态（StrategySession 全量）───────────────────
 
 def save_strategy_state(session: StrategySession) -> None:

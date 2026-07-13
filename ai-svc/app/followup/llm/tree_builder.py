@@ -30,29 +30,33 @@ from .util import call_json_llm, make_json_llm
 
 logger = logging.getLogger(__name__)
 
+MAX_QUESTIONS_HINT = 4  # 提示 LLM 单次最多生成几个候选问题
+
 
 _SYSTEM = (
     "你是康复问诊的『规划器』。根据【主诉种子】【已知事实】【候选假设】【缺失信息槽】【图谱要点】，"
-    "生成一棵『从当前节点往后最多 K 层』的问诊策略树，并以 JSON 输出。规则：\n"
-    "1) 每个 question 节点只针对 1~2 个信息槽；answer_type 为 single_choice 时 options 必须穷尽回答空间"
-    "且含『不确定』。\n"
-    "2) 红旗/安全问题优先级最高；危险回答的分支必须指向 type=terminal 且 terminal_type=refer。\n"
-    "3) 不对用户下诊断；question_text 用通俗中文、单句、不堆术语。\n"
-    "4) 每个节点给 ask_reason；从【图谱要点】里引用支撑的片段线索到 kg_sources（无则空数组）。\n"
-    "5) 只输出 JSON，形如 {\"tree_nodes\":[...],\"tree_edges\":[...],\"selected_question_id\":\"...\"}；"
-    "节点字段：node_id,type(question/branch/action/terminal),parent_id,target_slots,intent,"
-    "question_text,answer_type,options,discriminates,ask_reason,required,sensitive,kg_sources；"
-    "边字段：from,to,when,covers。\n"
-    "K = {k}"
-)
+    "生成接下来 2~4 个『候选追问问题』，以 JSON 输出。务必简单、可解析。规则：\n"
+    "1) 只用 type=\"question\" 和 type=\"terminal\" 两种节点，不要用 branch/action。\n"
+    "2) 每个 question 针对 1 个缺失信息槽（优先安全槽 S 与方案必填槽 P）；answer_type 用 "
+    "\"single_choice\"，options 覆盖回答空间且必须含『不确定』。\n"
+    "3) 若某问题是红旗/安全排查，可加一个 type=\"terminal\"、terminal_type=\"refer\" 节点，"
+    "并用一条边从该问题连到它（when 填危险的那个选项）。其余问题不需要边（各自独立）。\n"
+    "4) 不对用户下诊断；question_text 用通俗中文、单句、不堆术语；每个问题给 ask_reason。\n"
+    "5) 只输出 JSON：{\"tree_nodes\":[...],\"tree_edges\":[...],\"selected_question_id\":\"最该先问的问题id\"}。\n"
+    "   question 节点字段：node_id, type, target_slots(数组，用【缺失信息槽】给的 slot_id), intent"
+    "(red_flag/differential/function/stage/contraindication/plan_constraint), question_text, "
+    "answer_type, options(数组), ask_reason。\n"
+    "   terminal 节点字段：node_id, type:\"terminal\", terminal_type:\"refer\", rationale。\n"
+    "   边字段：from, to, when。最多 %d 个问题。\n"
+) % MAX_QUESTIONS_HINT
 
 _USER_TMPL = (
     "【主诉种子】\n{seed}\n\n"
     "【已知事实】\n{known}\n\n"
     "【候选假设(含支持/反对)】\n{hyps}\n\n"
-    "【缺失信息槽(优先追问)】\n{slots}\n\n"
+    "【缺失信息槽(优先追问，用其 slot_id 作为 target_slots)】\n{slots}\n\n"
     "【图谱要点】\n{kg_context}\n\n"
-    "请输出 K={k} 层策略树 JSON。"
+    "请输出候选追问问题的 JSON。"
 )
 
 
@@ -95,7 +99,8 @@ def build_tree(
     """
     k = session.k
     llm = make_json_llm(temperature=0.2, max_tokens=1800)
-    system = _SYSTEM.format(k=k)
+    # 注意：_SYSTEM 含字面 JSON 花括号，不能用 str.format（会把 {"tree_nodes"} 当字段）；用 replace。
+    system = _SYSTEM.replace("{k}", str(k))
     user = _USER_TMPL.format(
         seed=_seed_text(session), known=_known_text(session), hyps=_hyp_text(session),
         slots=_slot_text(session), kg_context=(kg_context[:2500] if kg_context else "（无）"), k=k,
@@ -118,25 +123,49 @@ def build_tree(
 
 
 def _to_tree(data: dict, k: int, refresh_reason: str) -> Optional[StrategyTree]:
-    """把 LLM 输出的 dict 解析成 StrategyTree（逐节点/边容错，坏的丢弃）。"""
+    """
+    把 LLM 输出的 dict 解析成 StrategyTree，尽量修复而非丢弃：
+    - question 缺 answer_type 时按有无 options 补 single_choice/free_text；
+    - 剔除端点不存在的悬空边（该 question 退化为合法的前沿节点）；
+    - selected_question_id 缺失/无效时回退到第一个 question。
+    """
     raw_nodes = data.get("tree_nodes") or data.get("nodes") or []
     raw_edges = data.get("tree_edges") or data.get("edges") or []
+
     nodes: list[StrategyTreeNode] = []
     for rn in raw_nodes:
+        if not isinstance(rn, dict):
+            continue
+        if rn.get("type") == "question":
+            if not rn.get("question_text"):
+                continue  # 无问句无法展示，跳过
+            if not rn.get("answer_type"):
+                rn["answer_type"] = "single_choice" if rn.get("options") else "free_text"
         try:
             nodes.append(StrategyTreeNode.model_validate(rn))
         except Exception as exc:  # noqa: BLE001
-            logger.debug("[LLM-B] 丢弃坏节点 %s: %s", rn.get("node_id") if isinstance(rn, dict) else rn, exc)
+            logger.debug("[LLM-B] 丢弃坏节点 %s: %s", rn.get("node_id"), exc)
+
+    if not any(n.is_question() for n in nodes):
+        return None
+    node_ids = {n.node_id for n in nodes}
+
     edges: list[StrategyTreeEdge] = []
     for re_ in raw_edges:
         try:
-            edges.append(StrategyTreeEdge.model_validate(re_))
+            e = StrategyTreeEdge.model_validate(re_)
         except Exception:  # noqa: BLE001
             logger.debug("[LLM-B] 丢弃坏边 %s", re_)
-    if not any(n.is_question() for n in nodes):
-        return None
+            continue
+        if e.from_ in node_ids and e.to in node_ids:  # 剔除悬空边（修复而非报错）
+            edges.append(e)
+
     sel = data.get("selected_question_id")
-    current = data.get("current_tree_node_id") or sel
+    if sel not in node_ids:
+        sel = next((n.node_id for n in nodes if n.is_question()), None)
+    current = data.get("current_tree_node_id")
+    if current not in node_ids:
+        current = sel
     return StrategyTree(
         tree_id=data.get("tree_id") or f"tree_{uuid.uuid4().hex[:8]}",
         horizon_k=k, current_tree_node_id=current, refresh_reason=refresh_reason,

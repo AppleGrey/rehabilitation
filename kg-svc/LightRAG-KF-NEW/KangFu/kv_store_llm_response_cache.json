@@ -516,6 +516,60 @@
       "embedding_min": null,
       "embedding_max": null,
       "original_prompt": "A 60-year-old patient sustained a knee injury from a fall and underwent surgery. How should they perform postoperative rehabilitation exercises?"
+    },
+    "901953842e3c3d86d4842ff150fd413e": {
+      "return": "{\"high_level_keywords\": [\"\\u819d\\u76d6\\u8bc4\\u4f30\", \"\\u7ea2\\u65d7\\u5f81\", \"\\u7981\\u5fcc\", \"\\u9274\\u522b\\u8bca\\u65ad\", \"\\u4e34\\u5e8a\\u68c0\\u67e5\"], \"low_level_keywords\": [\"\\u819d\\u5173\\u8282\", \"\\u8bc4\\u4f30\\u8981\\u70b9\", \"\\u7ea2\\u65d7\\u5f81\\u8c61\", \"\\u7981\\u5fcc\\u75c7\", \"\\u9274\\u522b\\u70b9\", \"\\u4e2d\\u6587\"]}",
+      "cache_type": "keywords",
+      "embedding": null,
+      "embedding_shape": null,
+      "embedding_min": null,
+      "embedding_max": null,
+      "original_prompt": "膝盖 评估要点 红旗 禁忌 鉴别点（中文作答）"
+    },
+    "7fdf40e052b054388c67590d50b70fa1": {
+      "return": "{\"high_level_keywords\": [\"\\u819d\\u5173\\u8282\\u9aa8\\u5173\\u8282\\u708e\", \"\\u9acc\\u80a1\\u5173\\u8282\\u75bc\\u75db\\u7efc\\u5408\\u5f81\", \"\\u534a\\u6708\\u677f\\u635f\\u4f24\", \"\\u8bc4\\u4f30\\u8981\\u70b9\", \"\\u7ea2\\u65d7\\u5f81\", \"\\u7981\\u5fcc\", \"\\u9274\\u522b\\u8bca\\u65ad\"], \"low_level_keywords\": [\"\\u819d\\u76d6\", \"\\u5173\\u8282\\u75bc\\u75db\", \"\\u5173\\u8282\\u80bf\\u80c0\", \"\\u5f39\\u54cd\", \"\\u4ea4\\u9501\\u611f\", \"\\u9acc\\u9aa8\\u6469\\u64e6\", \"\\u5173\\u8282\\u79ef\\u6db2\", \"X\\u7ebf\", \"MRI\", \"\\u819d\\u5173\\u8282\\u4e0d\\u7a33\\u5b9a\", \"Kellgren-Lawrence\\u5206\\u7ea7\"]}",
+      "cache_type": "keywords",
+      "embedding": null,
+      "embedding_shape": null,
+      "embedding_min": null,
+      "embedding_max": null,
+      "original_prompt": "膝盖膝关节骨关节炎 髌股关节疼痛综合征 半月板损伤 评估要点 红旗 禁忌 鉴别点（中文作答）"
+    },
+    "f09f9d37251bd555b5d9c4f00043be0c": {
+      "return": "{\"high_level_keywords\": [\"\\u8bc4\\u4f30\\u8981\\u70b9\", \"\\u7ea2\\u65d7\\u5f81\", \"\\u7981\\u5fcc\", \"\\u9274\\u522b\\u70b9\"], \"low_level_keywords\": [\"\\u8170\", \"\\u8bca\\u65ad\\u6807\\u51c6\", \"\\u5371\\u9669\\u4fe1\\u53f7\", \"\\u6cbb\\u7597\\u7981\\u5fcc\", \"\\u9274\\u522b\\u8bca\\u65ad\"]}",
+      "cache_type": "keywords",
+      "embedding": null,
+      "embedding_shape": null,
+      "embedding_min": null,
+      "embedding_max": null,
+      "original_prompt": "腰 评估要点 红旗 禁忌 鉴别点（中文作答）"
+    },
+    "dfcce58028d504d4718f0d7b51daec68": {
+      "return": "{\"high_level_keywords\": [\"\\u8170\\u75db\\u8bc4\\u4f30\", \"\\u6162\\u6027\\u975e\\u7279\\u5f02\\u6027\\u8170\\u75db\", \"\\u8170\\u808c\\u52b3\\u635f\", \"\\u8170\\u690e\\u95f4\\u76d8\\u7a81\\u51fa\\u75c7\", \"\\u4e34\\u5e8a\\u9274\\u522b\\u8bca\\u65ad\", \"\\u7ea2\\u65d7\\u5f81\", \"\\u7981\\u5fcc\\u75c7\"], \"low_level_keywords\": [\"\\u8bc4\\u4f30\\u8981\\u70b9\", \"\\u9274\\u522b\\u70b9\", \"\\u7ea2\\u65d7\\u5f81\", \"\\u7981\\u5fcc\", \"\\u8170\\u808c\\u52b3\\u635f\\u75c7\\u72b6\", \"\\u8170\\u690e\\u95f4\\u76d8\\u7a81\\u51fa\\u75c7\\u4f53\\u5f81\", \"\\u795e\\u7ecf\\u6839\\u53d7\\u538b\", \"\\u690e\\u95f4\\u76d8\\u9000\\u53d8\", \"\\u808c\\u8089\\u7b4b\\u819c\\u635f\\u4f24\"]}",
+      "cache_type": "keywords",
+      "embedding": null,
+      "embedding_shape": null,
+      "embedding_min": null,
+      "embedding_max": null,
+      "original_prompt": "腰慢性非特异性腰痛 腰肌劳损 腰椎间盘突出症 评估要点 红旗 禁忌 鉴别点（中文作答）"
+    },
+    "3c4f37481282c1cb66df1398790e0643": {
+      "return": "{\"high_level_keywords\": [\"\\u80a9\\u9888\\u8bc4\\u4f30\", \"\\u7ea2\\u65d7\\u5f81\\u8c61\", \"\\u7981\\u5fcc\\u75c7\", \"\\u9274\\u522b\\u8bca\\u65ad\"], \"low_level_keywords\": [\"\\u80a9\\u9888\\u75bc\\u75db\", \"\\u9888\\u690e\\u75c5\", \"\\u795e\\u7ecf\\u6839\\u538b\\u8feb\", \"\\u690e\\u52a8\\u8109\\u4f9b\\u8840\\u4e0d\\u8db3\", \"\\u808c\\u8089\\u52b3\\u635f\", \"\\u5173\\u8282\\u6d3b\\u52a8\\u5ea6\", \"\\u808c\\u529b\\u6d4b\\u8bd5\", \"\\u611f\\u89c9\\u5f02\\u5e38\", \"\\u75c5\\u7406\\u53cd\\u5c04\", \"\\u5f71\\u50cf\\u5b66\\u68c0\\u67e5\"]}",
+      "cache_type": "keywords",
+      "embedding": null,
+      "embedding_shape": null,
+      "embedding_min": null,
+      "embedding_max": null,
+      "original_prompt": "肩颈 评估要点 红旗 禁忌 鉴别点（中文作答）"
+    },
+    "0cbfeaaa5be8976f0da85c243895268a": {
+      "return": "{\"high_level_keywords\": [\"\\u80a9\\u9888\\u808c\\u8089\\u52b3\\u635f\", \"\\u4e0d\\u826f\\u59ff\\u52bf\", \"\\u9888\\u690e\\u5c0f\\u5173\\u8282\\u529f\\u80fd\\u7d0a\\u4e71\", \"\\u5eb7\\u590d\\u8bc4\\u4f30\", \"\\u7ea2\\u65d7\\u5f81\", \"\\u7981\\u5fcc\\u75c7\", \"\\u9274\\u522b\\u8bca\\u65ad\"], \"low_level_keywords\": [\"\\u9888\\u80a9\\u90e8\\u75bc\\u75db\", \"\\u8bc4\\u4f30\\u8981\\u70b9\", \"\\u59ff\\u52bf\\u8bc4\\u4f30\", \"\\u5c0f\\u5173\\u8282\\u6d3b\\u52a8\\u5ea6\", \"\\u795e\\u7ecf\\u6839\\u538b\\u8feb\", \"\\u7729\\u6655\", \"\\u808c\\u8089\\u75c9\\u631b\", \"\\u5f71\\u50cf\\u5b66\\u68c0\\u67e5\"]}",
+      "cache_type": "keywords",
+      "embedding": null,
+      "embedding_shape": null,
+      "embedding_min": null,
+      "embedding_max": null,
+      "original_prompt": "肩颈颈肩部肌肉劳损 不良姿势相关性疼痛 颈椎小关节功能紊乱 评估要点 红旗 禁忌 鉴别点（中文作答）"
     }
   },
   "global": {

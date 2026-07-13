@@ -57,16 +57,17 @@ def validate_tree(
         if e.to not in node_ids:
             res.fail(f"悬空边（终点不存在）: {e.from_} -> {e.to}")
 
-    # ── ③ 每个 question 节点的出边必须穷尽 options ──
-    #    例外：无出边的 question 是「前瞻边界的前沿节点」（懒展开，子层尚未生成，
-    #    隐式指向 need_more_info），不要求覆盖 —— 见设计 §2.2 懒展开 / §5.6。
+    # ── ③ 每个 question 节点的出边覆盖性 ──
+    #    · 无出边：前沿节点（懒展开，子层未生成，隐式 need_more_info），合法。
+    #    · 出边只指向 terminal（如红旗题→refer）：未覆盖的选项隐式「继续」，合法（仅告警）。
+    #    · 出边指向其它 question（真正的分支链）：必须穷尽 options，否则会走到悬空分支 → 报错。
+    #    见设计 §2.2 懒展开 / §5.6。
     for q in tree.question_nodes():
         out = tree.out_edges(q.node_id)
         if not out:
-            continue  # 前沿问题：本轮不展开其分支，合法
+            continue
         opts = set(q.options)
         if not opts:
-            # boolean / scale / free_text 允许无显式 options
             if q.answer_type in ("single_choice", "multi_choice"):
                 res.fail(f"选择题 {q.node_id} 缺 options")
             continue
@@ -76,8 +77,14 @@ def validate_tree(
                 w.strip() for w in e.when.split("|") if w.strip()
             )
         missing_opts = opts - covered
-        if missing_opts:
+        leads_to_question = any(
+            (tree.node(e.to) is not None and not tree.node(e.to).is_terminal()) for e in out
+        )
+        if missing_opts and leads_to_question:
             res.fail(f"问题 {q.node_id} 分支未覆盖回答: {sorted(missing_opts)}")
+        elif missing_opts:
+            res.warnings.append(
+                f"问题 {q.node_id} 未覆盖 {sorted(missing_opts)}（视为继续追问，合法）")
         # 单选题应含「不确定」兜底
         if q.answer_type == "single_choice" and not any(
             o in ("不确定", "说不清", "不知道") for o in q.options
@@ -119,12 +126,11 @@ def validate_tree(
             for bad in _OVERMEDICAL:
                 if bad in text:
                     res.fail(f"问句含过度医疗建议「{bad}」: {sel_id}")
-            # ② 去重
+            # ② 去重：只禁止重复追问【已确认(known)】的槽；
+            #    asked 但仍 missing 的槽允许再问（可能换个问法），由打分的 repetition 项降权即可。
             for sid in sel.target_slots:
-                if sid in session.asked_slot_ids:
-                    res.fail(f"所选问题重复追问已问过的槽: {sid}")
                 slot = session.slot(sid)
                 if slot and slot.status == SlotStatus.KNOWN.value:
-                    res.warnings.append(f"所选问题目标槽已 known: {sid}")
+                    res.fail(f"所选问题重复追问已确认的槽: {sid}")
 
     return res

@@ -89,17 +89,38 @@ def test_tree_parse_and_validate() -> None:
              "discriminates": ["半月板"], "required": True},
             {"node_id": "t_refer", "type": "terminal", "parent_id": "q_lock",
              "terminal_type": "refer", "rationale": "频繁交锁转诊"},
+            {"node_id": "q_swell", "type": "question", "target_slots": ["knee_swelling"],
+             "intent": "red_flag", "question_text": "膝盖肿吗？",
+             "answer_type": "single_choice", "options": ["没有", "轻微", "明显", "不确定"]},
         ],
         "tree_edges": [
+            # 危险选项→refer（terminal）：其余选项隐式继续，合法（仅告警）
             {"from": "q_lock", "to": "t_refer", "when": "经常有", "covers": ["经常有"]},
         ],
     }
     tree = tree_builder._to_tree(fake_tree, k=3, refresh_reason="initial_tree_build")
     _check(tree is not None and tree.node("q_lock").is_question(), "解析出 question 节点")
-    # 该问题有出边但只覆盖“经常有”，其余 option 未覆盖 → 校验应报错
     from ..policy import validator
+    # 红旗题只把危险选项路由到 terminal，其余隐式继续 → 合法（不因未覆盖而 fail）
     res = validator.validate_tree(tree, sess, selected_node_id="q_lock")
-    _check(not res.ok and any("未覆盖" in e for e in res.errors), "出边未穷尽 options 被校验器抓出")
+    _check(res.ok, f"红旗题→refer 的部分覆盖合法（errors={res.errors}）")
+
+    # 但分支到另一个 question 却留缺口 → 应报错
+    bad = tree_builder._to_tree(fake_tree, k=3, refresh_reason="x")
+    bad.edges.append(
+        tree_builder.StrategyTreeEdge(**{"from": "q_lock"}, to="q_swell",
+                                      when="偶尔有", covers=["偶尔有"]))
+    res_bad = validator.validate_tree(bad, sess, selected_node_id="q_lock")
+    _check(not res_bad.ok and any("未覆盖" in e for e in res_bad.errors),
+           "分支到 question 却留缺口被抓出")
+
+    # 悬空边被 _to_tree 修复（剔除），不再残留
+    dangling = tree_builder._to_tree({
+        "tree_nodes": fake_tree["tree_nodes"],
+        "tree_edges": [{"from": "q_lock", "to": "ghost", "when": "x"}],
+        "selected_question_id": "q_lock",
+    }, 3, "x")
+    _check(len(dangling.edges) == 0, "端点不存在的悬空边被 _to_tree 剔除")
 
     # 坏 JSON（无 question）→ 解析返回 None
     _check(tree_builder._to_tree({"tree_nodes": []}, 3, "x") is None, "无 question 节点 → None")

@@ -8,7 +8,7 @@ import 'pages/progress_page.dart';
 import 'pages/knowledge_page.dart';
 import 'pages/profile_center_page.dart';
 import 'pages/chat_list_page.dart';
-import 'pages/chat_page.dart';
+import 'pages/consult_page.dart';
 import 'pages/rehab_video_page.dart';
 import 'widgets/nav_bar.dart';
 
@@ -71,6 +71,8 @@ class _AppNavigatorState extends State<AppNavigator> {
     });
   }
 
+  // 保留：K2 问诊→方案打通后，由结果卡片跳转康复视频页
+  // ignore: unused_element
   void _navigateToRehabVideo({
     String? videoUrl,
     String? videoId,
@@ -154,16 +156,10 @@ class _AppNavigatorState extends State<AppNavigator> {
       case 0:
         return _buildMainPages();
       case 1:
-        return ChatPage(
+        return ConsultPage(
           key: ValueKey(_openRecord?.sessionId ?? 'new'),
           onBack: _navigateToChatList,
           existingRecord: _openRecord,
-          onVideoSelected: (url, videoId, sessionId) => _navigateToRehabVideo(
-            videoUrl: url,
-            videoId: videoId,
-            sessionId: sessionId,
-            videoTitle: '康复训练演示',
-          ),
         );
       case 2:
         return RehabVideoPage(
