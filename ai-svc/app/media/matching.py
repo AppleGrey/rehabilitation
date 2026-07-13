@@ -23,13 +23,14 @@ import json
 import logging
 from pathlib import Path
 
+from ..core.config import DATA_DIR, ASSETS_DIR
 from .storage import guess_video_key
 from .video_metadata import load_all_videos
 
 logger = logging.getLogger(__name__)
 
-METADATA_PATH = Path(__file__).parent.parent / "data" / "metadata" / "metadata.json"
-VIDEOS_DIR = Path(__file__).parent.parent / "assets" / "videos"
+METADATA_PATH = DATA_DIR / "metadata" / "metadata.json"
+VIDEOS_DIR = ASSETS_DIR / "videos"
 _VIDEO_EXTS = (".mp4", ".MP4", ".mov", ".MOV", ".m4v", ".M4V")
 
 # 根据疼痛程度限制最大难度

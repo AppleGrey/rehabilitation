@@ -36,3 +36,8 @@ docs/
 scripts/
 index.html
 README.md
+
+# 其他服务与大文件不进 ai-svc 构建上下文（context 为仓库根）
+kg-svc/
+*.tar
+SPEC.md

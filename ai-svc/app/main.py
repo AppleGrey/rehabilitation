@@ -36,7 +36,7 @@ from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel
 
-from .graph import (
+from .consult.graph import (
     gap_fill_node,
     greeting_node,
     pain_focus_node,
@@ -46,7 +46,7 @@ from .graph import (
     specific_node,
     stage_node as stage_node_func,
 )
-from .state import (
+from .consult.state import (
     STEP_DONE,
     STEP_GAP_FILL,
     STEP_GREETING,
@@ -58,13 +58,14 @@ from .state import (
     STEP_STAGE,
     ConsultState,
 )
-from .matching import ensure_playable_mp4_path, get_video_list
-from .assessment import evaluate_motion
-from .config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, DEEPSEEK_MODEL
-from .sessions import load_session, save_session
-from .tasks import create_task, load_task, update_task
-from .questionnaire import build_questionnaire_report
-from .storage import (
+from .media.matching import ensure_playable_mp4_path, get_video_list
+from .assessment.assessment import evaluate_motion
+from .core.config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, DEEPSEEK_MODEL
+from .core.config import ASSETS_DIR as _ASSETS_DIR
+from .consult.sessions import load_session, save_session
+from .assessment.tasks import create_task, load_task, update_task
+from .consult.questionnaire import build_questionnaire_report
+from .media.storage import (
     UPLOAD_PREFIX,
     download_to_path,
     get_object_stream,
@@ -79,7 +80,7 @@ app = FastAPI(title="康复AI后端", version="4.1.0")
 
 @app.on_event("startup")
 def _on_startup() -> None:
-    from .database import init_schema
+    from .core.database import init_schema
 
     init_schema()
     init_storage()
@@ -92,8 +93,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-ASSETS_DIR = Path(__file__).parent.parent / "assets"
-ASSETS_DIR.mkdir(exist_ok=True)
+ASSETS_DIR = _ASSETS_DIR
+ASSETS_DIR.mkdir(parents=True, exist_ok=True)
 app.mount("/assets", StaticFiles(directory=str(ASSETS_DIR)), name="assets")
 
 # ── 内存会话缓存（同时持久化到 PostgreSQL） ───────────────────────────────────

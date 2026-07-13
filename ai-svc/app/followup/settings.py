@@ -52,7 +52,7 @@ MAX_BRANCHES: int = _i("FOLLOWUP_MAX_BRANCHES", 4)
 
 # ── kg-svc 检索服务（§6.4）──
 # 服务地址在 app/config.py 统一维护（与 MINIO/DATABASE 等并列），此处只放调参。
-from ..config import KG_SVC_URL  # noqa: E402  (re-export for followup 内部使用)
+from ..core.config import KG_SVC_URL  # noqa: E402  (re-export for followup 内部使用)
 
 KG_TIMEOUT_S: float = _f("KG_TIMEOUT_S", 4.0)
 KG_TOP_K_LOCAL: int = _i("KG_TOP_K_LOCAL", 12)

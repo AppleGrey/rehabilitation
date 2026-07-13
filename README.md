@@ -3,21 +3,21 @@
 ## 快速启动
 
 ```bash
-cd backend
+cd ai-svc
 
-# 1. 安装依赖
+# 1. 安装依赖（推荐用 conda 环境 rehabilitation）
 pip install -r requirements.txt
 
-# 2. 配置 API Key
-copy .env.example .env
+# 2. 配置 API Key（.env 在仓库根目录）
+copy ..\.env.example ..\.env
 # 用编辑器打开 .env，填入 DEEPSEEK_API_KEY
 
-# 3. 把视频文件放到 assets/ 目录
-copy <你的路径>\IMG_4176.MOV assets\IMG_4176.MOV
-
-# 4. 启动服务（默认 8000 端口）
+# 3. 启动服务（默认 8000 端口）
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
+
+> 目录约定：`ai-svc/`（本服务，Python 包 `app`）、`kg-svc/`（知识图谱检索）、`frontend/`（Flutter）。
+> `data/`、`assets/`、`logs/` 在仓库根，由 `app/core/config.py` 统一解析（容器内用环境变量 `APP_BASE_DIR=/app` 覆盖）。
 
 ## LangGraph 节点说明
 

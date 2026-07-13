@@ -18,7 +18,7 @@ from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, System
 from langchain_openai import ChatOpenAI
 from langgraph.graph import END, StateGraph
 
-from .config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, DEEPSEEK_MODEL
+from ..core.config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, DEEPSEEK_MODEL
 from .prompts import (
     GAP_FILL_SYSTEM,
     GREETING_SYSTEM,
@@ -43,8 +43,8 @@ from .state import (
     STEP_STAGE,
     ConsultState,
 )
-from .llm_request_log import append_llm_trace
-from .matching import match_videos
+from ..core.llm_request_log import append_llm_trace
+from ..media.matching import match_videos
 
 # ── LLM 实例（DeepSeek 兼容 OpenAI 接口） ────────────────────────────────────
 _llm = ChatOpenAI(

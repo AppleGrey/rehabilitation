@@ -18,10 +18,10 @@ import requests
 from dotenv import load_dotenv
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "ai-svc"))
 load_dotenv(ROOT / ".env")
 
-from app.config import (  # noqa: E402
+from app.core.config import (  # noqa: E402
     DASHSCOPE_API_KEY,
     DASHSCOPE_BASE_URL,
     DASHSCOPE_MODEL,
@@ -294,7 +294,7 @@ class MetadataStore:
             self._done.add(video_file.name)
             save_metadata(self._metadata)
             try:
-                from app.video_metadata import upsert_video
+                from app.media.video_metadata import upsert_video
 
                 upsert_video(entry)
             except Exception as e:

@@ -9,7 +9,7 @@ from typing import Iterable
 from minio import Minio
 from minio.error import S3Error
 
-from .config import (
+from ..core.config import (
     MINIO_ACCESS_KEY,
     MINIO_BUCKET,
     MINIO_ENDPOINT,

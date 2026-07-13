@@ -12,11 +12,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "ai-svc"))
 
 from psycopg.types.json import Jsonb
 
-from app.database import db_cursor, init_schema
+from app.core.database import db_cursor, init_schema
 
 SESSIONS_DIR = ROOT / "data" / "sessions"
 TASKS_DIR = ROOT / "data" / "tasks"
@@ -105,7 +105,7 @@ def migrate_videos() -> int:
     if not isinstance(items, list) or not items:
         return 0
 
-    from app.video_metadata import upsert_videos_batch
+    from app.media.video_metadata import upsert_videos_batch
 
     count = upsert_videos_batch(items)
     print(f"  共导入 {count} 条视频元数据")

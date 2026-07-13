@@ -11,7 +11,7 @@ from typing import Any, Optional
 
 from psycopg.types.json import Jsonb
 
-from ..database import db_cursor
+from ..core.database import db_cursor
 from .models import StrategySession
 
 logger = logging.getLogger(__name__)

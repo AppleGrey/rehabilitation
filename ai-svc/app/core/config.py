@@ -1,7 +1,19 @@
 import os
+from pathlib import Path
+
 from dotenv import load_dotenv
 
 load_dotenv()
+
+# ── 路径锚点 ─────────────────────────────────────────────────────────────────
+# 统一在此解析 data/assets/logs，避免各模块用脆弱的 Path(__file__).parent.parent。
+# 布局：本包在 <BASE>/app/core/config.py；data/assets/logs 位于 <BASE> 的上一级（本地=仓库根）
+# 或与 app 同级（容器 /app）。容器用 APP_BASE_DIR=/app 覆盖即可。
+_APP_DIR = Path(__file__).resolve().parents[1]          # .../ai-svc/app  或  /app/app
+BASE_DIR = Path(os.getenv("APP_BASE_DIR", str(_APP_DIR.parent.parent)))  # 本地=仓库根；容器=/app
+DATA_DIR = Path(os.getenv("DATA_DIR", str(BASE_DIR / "data")))
+ASSETS_DIR = Path(os.getenv("ASSETS_DIR", str(BASE_DIR / "assets")))
+LOGS_DIR = Path(os.getenv("LOGS_DIR", str(BASE_DIR / "logs")))
 
 DEEPSEEK_API_KEY: str = os.getenv("DEEPSEEK_API_KEY", "")
 DEEPSEEK_BASE_URL: str = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1")

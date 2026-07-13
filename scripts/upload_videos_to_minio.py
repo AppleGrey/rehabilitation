@@ -13,9 +13,9 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "ai-svc"))
 
-from app.storage import init_storage, object_exists, upload_file, video_object_key  # noqa: E402
+from app.media.storage import init_storage, object_exists, upload_file, video_object_key  # noqa: E402
 
 VIDEO_DIR = ROOT / "assets" / "videos"
 VIDEO_EXTS = {".mp4", ".MP4", ".mov", ".MOV", ".m4v", ".M4V"}

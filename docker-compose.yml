@@ -1,6 +1,8 @@
 services:
   backend:
-    build: .
+    build:
+      context: .
+      dockerfile: ai-svc/Dockerfile
     image: rehabilitation-backend:latest
     container_name: rehabilitation-backend
     ports:

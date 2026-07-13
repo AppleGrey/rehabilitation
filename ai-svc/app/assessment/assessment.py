@@ -16,7 +16,7 @@ from pathlib import Path
 import requests
 from dotenv import load_dotenv
 
-from .config import (
+from ..core.config import (
     DASHSCOPE_API_KEY,
     DASHSCOPE_MODEL,
     dashscope_chat_completions_url,

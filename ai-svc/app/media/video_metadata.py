@@ -6,7 +6,7 @@ from typing import Any
 
 from psycopg.types.json import Jsonb
 
-from .database import db_cursor
+from ..core.database import db_cursor
 
 logger = logging.getLogger(__name__)
 

@@ -12,9 +12,9 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "ai-svc"))
 
-from app.database import init_schema  # noqa: E402
+from app.core.database import init_schema  # noqa: E402
 
 
 def main() -> int:

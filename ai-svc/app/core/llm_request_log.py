@@ -20,10 +20,12 @@ from typing import Any, Sequence
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 
+from .config import LOGS_DIR
+
 _LOCK = threading.Lock()
 
-# 项目根目录 = app 的父目录
-_LOG_DIR = Path(__file__).resolve().parent.parent / "logs"
+# 日志目录由 core.config 统一解析（本地=仓库根/logs；容器可用 LOGS_DIR 环境变量覆盖）
+_LOG_DIR = LOGS_DIR
 _LOG_FILE = _LOG_DIR / "llm_openai_io.jsonl"
 
 
