@@ -45,7 +45,7 @@ _SEED_SCRIPT: list[SeedExtract] = [
 _seed_i = {"n": 0}
 
 
-def _fake_extract_seed(session, conversation_text):
+def _fake_extract_seed(session, conversation_text, trace=None):
     res = _SEED_SCRIPT[min(_seed_i["n"], len(_SEED_SCRIPT) - 1)]
     _seed_i["n"] += 1
     s = session.seed
@@ -56,7 +56,7 @@ def _fake_extract_seed(session, conversation_text):
     return res
 
 
-def _fake_build_tree(session, kg_context="", *, refresh_reason="initial_tree_build"):
+def _fake_build_tree(session, kg_context="", *, refresh_reason="initial_tree_build", trace=None):
     """建一棵：交锁红旗题（必问）→ 转诊 / 继续。"""
     nodes = [
         StrategyTreeNode(node_id="q_lock", type=NodeType.QUESTION, depth=0, status="planned",
@@ -98,7 +98,7 @@ def _fake_perceive_factory():
     ]
     it = {"n": 0}
 
-    def _fake(session, user_message, kg_context=""):
+    def _fake(session, user_message, kg_context="", trace=None):
         r = scripts[min(it["n"], len(scripts) - 1)]
         it["n"] += 1
         return r

@@ -73,10 +73,14 @@ CREATE TABLE IF NOT EXISTS consult_strategy_snapshots (
     tree_nodes JSONB DEFAULT '[]'::jsonb,
     tree_edges JSONB DEFAULT '[]'::jsonb,
     kg_sources JSONB DEFAULT '[]'::jsonb,
+    trace JSONB DEFAULT '[]'::jsonb,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     -- 幂等键：同一会话同一轮只保留一条（断线重连/重试不重复追加）
     UNIQUE (session_id, turn_no)
 );
+
+-- 兼容已存在的旧表：补上 trace 列
+ALTER TABLE consult_strategy_snapshots ADD COLUMN IF NOT EXISTS trace JSONB DEFAULT '[]'::jsonb;
 
 CREATE INDEX IF NOT EXISTS idx_strategy_snapshots_session
     ON consult_strategy_snapshots (session_id, turn_no);

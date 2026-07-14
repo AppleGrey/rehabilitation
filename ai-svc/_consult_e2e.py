@@ -19,7 +19,12 @@ _storage.init_storage = lambda: None
 
 from app.followup.clients import persistence as _p
 _p.save_strategy_state = lambda s: None
-_p.save_snapshot = lambda s, **k: "snap-x"
+_CAP = {"traces": []}
+def _cap_snap(s, **k):
+    if k.get("trace"):
+        _CAP["traces"].append(k["trace"])
+    return "snap-x"
+_p.save_snapshot = _cap_snap
 _p.save_question_event = lambda s, **k: None
 
 from app.followup.clients import kg_client as _kg
@@ -104,6 +109,21 @@ def main() -> None:
         assert r.status_code == 200
 
         outcome = done.get("outcome") if done else "（未在 10 轮内收敛）"
+        # 打印每轮 trace 的事件种类，验证「AI 原文 + KG 查询 + 行为」被记录
+        if _CAP["traces"]:
+            print("\n4) 各轮 trace 事件种类（后台可见的 AI 行为）:")
+            for i, tr in enumerate(_CAP["traces"], 1):
+                kinds = [e.get("t") for e in tr]
+                print(f"   轮{i}: {kinds}")
+            # 展示一条 KG 与一条 LLM-B 原文样例
+            for tr in _CAP["traces"]:
+                for e in tr:
+                    if e.get("t") == "kg":
+                        print(f"   样例[KG]  q={e['query'][:44]!r} mode={e['mode']} degraded={e['degraded']}")
+                        break
+                else:
+                    continue
+                break
         print(f"\n[OK] consult SSE 端到端联调通过 ✅  收敛结果: {outcome}")
 
 

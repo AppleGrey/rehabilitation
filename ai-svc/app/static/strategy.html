@@ -4,11 +4,10 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>问诊策略树 · 可视化后台</title>
-<!-- vis-network：轻量图可视化（CDN，内网调试用） -->
 <script src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js"></script>
 <style>
   :root { --bg:#0f1420; --panel:#171e2e; --line:#26324a; --fg:#e6ebf5; --muted:#93a1bd;
-          --primary:#00a68c; --red:#ff5c6c; --blue:#4c8bff; --green:#37c26a; --gray:#6b7688; --yellow:#f5b02e; }
+          --primary:#00a68c; --red:#ff5c6c; --blue:#4c8bff; --green:#37c26a; --gray:#6b7688; --yellow:#f5b02e; --purple:#8a5cff; }
   * { box-sizing:border-box; }
   body { margin:0; font-family:-apple-system,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;
          background:var(--bg); color:var(--fg); height:100vh; display:flex; flex-direction:column; }
@@ -16,14 +15,12 @@
            display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
   header h1 { font-size:16px; margin:0; font-weight:600; }
   header .sub { color:var(--muted); font-size:12px; }
-  select, button, input { background:#0d1626; color:var(--fg); border:1px solid var(--line);
-           border-radius:8px; padding:7px 10px; font-size:13px; }
-  button { cursor:pointer; }
-  button:hover { border-color:var(--primary); }
+  select, button { background:#0d1626; color:var(--fg); border:1px solid var(--line); border-radius:8px; padding:7px 10px; font-size:13px; }
+  button { cursor:pointer; } button:hover { border-color:var(--primary); }
   .badge { font-size:11px; padding:2px 8px; border-radius:10px; background:#0d1626; border:1px solid var(--line); color:var(--muted); }
   main { flex:1; display:flex; min-height:0; }
-  #graph { flex:1; min-width:0; background:radial-gradient(circle at 50% 30%, #14203a 0%, var(--bg) 70%); }
-  aside { width:340px; border-left:1px solid var(--line); background:var(--panel); overflow-y:auto; padding:14px; }
+  #graph { flex:1; min-width:0; background:radial-gradient(circle at 50% 20%, #14203a 0%, var(--bg) 70%); }
+  aside { width:380px; border-left:1px solid var(--line); background:var(--panel); overflow-y:auto; padding:14px; }
   .card { background:#0d1626; border:1px solid var(--line); border-radius:10px; padding:12px; margin-bottom:12px; }
   .card h3 { margin:0 0 8px; font-size:13px; color:var(--muted); font-weight:600; letter-spacing:.03em; }
   .hyp { display:flex; align-items:center; gap:8px; margin:6px 0; font-size:13px; }
@@ -37,14 +34,25 @@
   .legend { display:flex; gap:12px; flex-wrap:wrap; font-size:11px; color:var(--muted); padding:8px 18px; background:var(--panel); border-top:1px solid var(--line); }
   .legend span { display:inline-flex; align-items:center; gap:5px; }
   .dot { width:10px; height:10px; border-radius:50%; display:inline-block; }
-  .empty { color:var(--muted); font-size:13px; padding:20px; text-align:center; }
-  .qtext { font-size:13px; color:var(--fg); margin-top:6px; line-height:1.5; }
-  code { color:var(--muted); font-size:11px; }
+  .empty { color:var(--muted); font-size:13px; padding:16px; text-align:center; }
+  /* trace */
+  .tr { border:1px solid var(--line); border-radius:8px; margin:6px 0; overflow:hidden; }
+  .tr > summary { cursor:pointer; padding:7px 10px; font-size:12.5px; list-style:none; display:flex; gap:8px; align-items:center; }
+  .tr > summary::-webkit-details-marker { display:none; }
+  .tr .kind { font-size:10px; padding:1px 6px; border-radius:6px; border:1px solid var(--line); flex:0 0 auto; }
+  .k-kg{color:var(--green);border-color:#1f4a34;} .k-llm_a{color:var(--blue);border-color:#264062;}
+  .k-llm_b{color:var(--purple);border-color:#3a2a5a;} .k-seed{color:var(--yellow);border-color:#5a4a1f;}
+  .k-decision{color:var(--muted);} .k-pick{color:var(--primary);border-color:#1f4a44;}
+  .tr pre { margin:0; padding:8px 10px; background:#0a1120; border-top:1px solid var(--line);
+            font-size:11px; color:var(--muted); white-space:pre-wrap; word-break:break-all; max-height:220px; overflow:auto; }
+  .turnbtn { display:inline-block; margin:3px 4px 0 0; padding:3px 9px; font-size:12px; border-radius:8px;
+             background:#0d1626; border:1px solid var(--line); cursor:pointer; }
+  .turnbtn.active { border-color:var(--primary); color:var(--primary); }
 </style>
 </head>
 <body>
 <header>
-  <h1>问诊策略树 <span class="sub">Strategy Tree Viz · 内网调试</span></h1>
+  <h1>问诊策略树 <span class="sub">整段问诊 · 策略/行为可视化 · 内网调试</span></h1>
   <select id="sessionSel" style="min-width:260px"></select>
   <button id="refreshBtn">刷新会话</button>
   <button id="reloadBtn">重载当前</button>
@@ -54,37 +62,42 @@
   <div id="graph"></div>
   <aside>
     <div class="card">
-      <h3>临床印象（内部候选，非诊断）</h3>
-      <div id="hyps"><div class="empty">选择一个会话</div></div>
+      <h3>问诊轮次（点节点或按钮看该轮 AI 行为）</h3>
+      <div id="turns"><div class="empty">选择一个会话</div></div>
     </div>
     <div class="card">
-      <h3>信息槽（S 安全 / P 方案必填 / D 鉴别）</h3>
+      <h3>本轮 AI 行为（原文 / 知识图谱查询 / 决策）</h3>
+      <div id="trace"><div class="empty">—</div></div>
+    </div>
+    <div class="card">
+      <h3>临床印象（最新，内部候选，非诊断）</h3>
+      <div id="hyps"><div class="empty">—</div></div>
+    </div>
+    <div class="card">
+      <h3>信息槽（S 安全 / P 必填 / D 鉴别，最新）</h3>
       <div id="slots"></div>
-    </div>
-    <div class="card">
-      <h3>当前所选问题</h3>
-      <div id="selq" class="qtext">—</div>
     </div>
   </aside>
 </main>
 <div class="legend">
+  <span><i class="dot" style="background:#00a68c"></i>已问(路径)</span>
   <span><i class="dot" style="background:#ff5c6c"></i>红旗/安全</span>
-  <span><i class="dot" style="background:#4c8bff"></i>鉴别/问题</span>
-  <span><i class="dot" style="background:#f5b02e"></i>方案必填</span>
-  <span><i class="dot" style="background:#00a68c"></i>当前所选</span>
-  <span><i class="dot" style="background:#6b7688"></i>终止/边界</span>
-  <span><code>拖拽平移 · 滚轮缩放</code></span>
+  <span><i class="dot" style="background:#4c8bff"></i>鉴别/功能</span>
+  <span><i class="dot" style="background:#6b7688"></i>候选(未选)</span>
+  <span><i class="dot" style="background:#f5b02e"></i>结论/终止</span>
+  <span style="color:#6b7688">拖拽平移 · 滚轮缩放</span>
 </div>
 
 <script>
 const $ = (id) => document.getElementById(id);
 let network = null;
+let SNAPS = [];
+let SESSION = null;
 
 async function loadSessions() {
   const sel = $('sessionSel');
   try {
-    const r = await fetch('/api/ai/consult/sessions');
-    const data = await r.json();
+    const data = await (await fetch('/api/ai/consult/sessions')).json();
     const list = data.sessions || [];
     sel.innerHTML = '';
     if (!list.length) { sel.innerHTML = '<option>（暂无会话，先在 App 里问诊几轮）</option>'; return; }
@@ -95,99 +108,135 @@ async function loadSessions() {
       opt.textContent = `第${s.turn_no}轮 · ${imp} · ${s.session_id.slice(0,8)}`;
       sel.appendChild(opt);
     }
-    loadSnapshot(sel.value);
-  } catch (e) {
-    sel.innerHTML = '<option>加载会话失败</option>';
-  }
+    loadSession(sel.value);
+  } catch (e) { sel.innerHTML = '<option>加载会话失败</option>'; }
 }
 
-function nodeStyle(n) {
-  const type = n.type, intent = n.intent, term = n.terminal_type;
-  let color = '#4c8bff', shape = 'box';
-  if (type === 'terminal') { shape = 'hexagon'; color = term === 'refer' ? '#ff5c6c' : '#6b7688'; }
-  else if (type === 'question') {
-    if (intent === 'red_flag' || intent === 'contraindication') color = '#ff5c6c';
-    else if (intent === 'plan_constraint') color = '#f5b02e';
-    else color = '#4c8bff';
-  } else if (type === 'branch') { shape = 'diamond'; color = '#8a5cff'; }
-  else if (type === 'action') { shape = 'dot'; color = '#6b7688'; }
-  return { color, shape };
+function intentColor(intent, type, term) {
+  if (type === 'terminal') return term === 'refer' ? '#ff5c6c' : '#f5b02e';
+  if (intent === 'red_flag' || intent === 'contraindication') return '#ff5c6c';
+  return '#4c8bff';
 }
+function shortText(t, n) { t = t || ''; return t.length > n ? t.slice(0, n) + '…' : t; }
 
-function labelOf(n) {
-  if (n.type === 'question') {
-    const t = n.question_text || n.node_id;
-    return (t.length > 26 ? t.slice(0,26)+'…' : t);
-  }
-  if (n.type === 'terminal') return '⛔ ' + (n.terminal_type || 'terminal');
-  return n.node_id;
-}
-
-function renderGraph(snap) {
-  const nodes = (snap.tree_nodes || []).map(n => {
-    const st = nodeStyle(n);
-    const selected = n.node_id === snap.selected_question_id;
-    return {
-      id: n.node_id,
-      label: labelOf(n),
-      shape: st.shape,
-      color: {
-        background: selected ? '#00a68c' : '#101a2e',
-        border: selected ? '#00e0bd' : st.color,
-        highlight: { background:'#16233d', border: st.color },
-      },
-      borderWidth: selected ? 3 : 1.5,
-      font: { color:'#e6ebf5', size:13, multi:false },
-      _raw: n,
-    };
+/** 把整段问诊的所有轮次快照聚合成一棵树：已问问题构成主干，未选候选/终止挂在各轮下。 */
+function buildAggregate(snaps) {
+  const nodes = [], edges = [];
+  let prevSpine = null;
+  snaps.forEach((s, idx) => {
+    const turn = s.turn_no;
+    const tnodes = s.tree_nodes || [];
+    const selId = s.selected_question_id;
+    const sel = tnodes.find(n => n.node_id === selId);
+    const spineId = `t${turn}`;
+    // 主干：本轮实际问出的问题（粗问阶段可能没有 tree，用 phase 兜底标签）
+    const label = sel ? `T${turn}｜${shortText(sel.question_text, 22)}`
+                      : `T${turn}｜${s.phase === 'warmup' ? '粗问了解' : '（无问题）'}`;
+    const col = sel ? intentColor(sel.intent, 'question') : '#00a68c';
+    nodes.push({
+      id: spineId, label,
+      shape: 'box', level: idx,
+      color: { background:'#0f2233', border: col, highlight:{background:'#16233d',border:col} },
+      borderWidth: 2, font: { color:'#e6ebf5', size:13 }, _turn: idx,
+    });
+    if (prevSpine) edges.push({ from: prevSpine, to: spineId, arrows:'to',
+      color:{color:'#00a68c'}, smooth:{type:'cubicBezier',forceDirection:'vertical',roundness:0.5} });
+    prevSpine = spineId;
+    // 候选（未选中的问题）挂在本轮下面
+    tnodes.filter(n => n.type === 'question' && n.node_id !== selId).forEach((n,i) => {
+      const cid = `${spineId}_${n.node_id}_${i}`;
+      nodes.push({ id: cid, label: shortText(n.question_text, 20), shape:'box', level: idx + 0.5,
+        color:{ background:'#0d1626', border:'#3a4560' }, font:{ color:'#8ea0be', size:11 },
+        _detail: n });
+      edges.push({ from: spineId, to: cid, dashes:true, color:{color:'#33405c'},
+        smooth:{type:'cubicBezier',forceDirection:'vertical',roundness:0.4} });
+    });
+    // 终止节点（refer 等）
+    tnodes.filter(n => n.type === 'terminal').forEach((n,i) => {
+      const cid = `${spineId}_term_${i}`;
+      nodes.push({ id: cid, label: `⛔ ${n.terminal_type||'terminal'}`, shape:'hexagon', level: idx + 0.5,
+        color:{ background:'#2a1520', border:'#ff5c6c' }, font:{ color:'#ffb3ba', size:11 }, _detail:n });
+      edges.push({ from: spineId, to: cid, dashes:true, color:{color:'#5a2730'} });
+    });
   });
-  const edges = (snap.tree_edges || []).map(e => ({
-    from: e.from, to: e.to,
-    label: e.when || '',
-    font: { color:'#93a1bd', size:11, strokeWidth:0, background:'#0f1420' },
-    arrows: 'to', color:{ color:'#3a4a68', highlight:'#00a68c' },
-    smooth: { type:'cubicBezier', forceDirection:'vertical', roundness:0.5 },
-  }));
-  const container = $('graph');
+  // 结论节点（末轮 top 印象）
+  const last = snaps[snaps.length - 1];
+  if (last && prevSpine) {
+    const hyps = (last.hypotheses||[]).filter(h=>(h.status||'active')==='active')
+        .sort((a,b)=>(b.confidence||0)-(a.confidence||0));
+    const top = hyps[0];
+    nodes.push({ id:'conclusion', label:`结论方向\n${top? shortText(top.name,16)+' '+(top.confidence||0).toFixed(2):'—'}`,
+      shape:'box', level: snaps.length,
+      color:{ background:'#3a2f12', border:'#f5b02e' }, font:{color:'#ffe0a3',size:12} });
+    edges.push({ from: prevSpine, to:'conclusion', arrows:'to', color:{color:'#f5b02e'} });
+  }
+  return { nodes, edges };
+}
+
+function renderGraph(snaps) {
+  const { nodes, edges } = buildAggregate(snaps);
   const data = { nodes: new vis.DataSet(nodes), edges: new vis.DataSet(edges) };
   const options = {
-    layout: { hierarchical: { enabled:true, direction:'UD', sortMethod:'directed', levelSeparation:110, nodeSpacing:150 } },
-    physics: false,
-    interaction: { hover:true, dragNodes:true, zoomView:true, dragView:true },
-    nodes: { shadow:{enabled:true, size:8, color:'rgba(0,0,0,0.4)'} },
+    layout: { hierarchical: { enabled:true, direction:'UD', sortMethod:'directed', levelSeparation:95, nodeSpacing:170 } },
+    physics: false, interaction: { hover:true, dragNodes:true, zoomView:true, dragView:true },
+    nodes: { shadow:{enabled:true,size:8,color:'rgba(0,0,0,0.4)'} },
   };
   if (network) network.destroy();
-  network = new vis.Network(container, data, options);
+  network = new vis.Network($('graph'), data, options);
   network.on('click', (p) => {
-    if (p.nodes.length) {
-      const n = data.nodes.get(p.nodes[0])._raw;
-      $('selq').innerHTML = renderNodeDetail(n);
-    }
+    if (!p.nodes.length) return;
+    const n = data.nodes.get(p.nodes[0]);
+    if (n && n._turn != null) selectTurn(n._turn);
   });
 }
 
-function renderNodeDetail(n) {
-  if (!n) return '—';
-  let s = `<b>${n.type}</b> · <code>${n.node_id}</code><br/>`;
-  if (n.question_text) s += `<div class="qtext">${n.question_text}</div>`;
-  if (n.options && n.options.length) s += `<div style="margin-top:4px;color:#93a1bd">选项：${n.options.join(' / ')}</div>`;
-  if (n.ask_reason) s += `<div style="margin-top:4px;color:#93a1bd">追问理由：${n.ask_reason}</div>`;
-  if (n.score != null) s += `<div style="margin-top:4px;color:#93a1bd">分数：${n.score}</div>`;
-  if (n.terminal_type) s += `<div style="margin-top:4px">终止：${n.terminal_type} — ${n.rationale||''}</div>`;
-  return s;
+function renderTurns(snaps) {
+  $('turns').innerHTML = snaps.map((s, i) =>
+    `<span class="turnbtn" data-i="${i}">T${s.turn_no}${s.phase==='warmup'?'·粗问':''}</span>`).join('');
+  $('turns').querySelectorAll('.turnbtn').forEach(b =>
+    b.addEventListener('click', () => selectTurn(+b.dataset.i)));
+}
+
+function selectTurn(i) {
+  $('turns').querySelectorAll('.turnbtn').forEach((b,j) => b.classList.toggle('active', j===i));
+  renderTrace(SNAPS[i]);
+}
+
+function renderTrace(snap) {
+  const box = $('trace');
+  const tr = (snap && snap.trace) || [];
+  if (!tr.length) { box.innerHTML = '<div class="empty">该轮无 trace（可能是旧数据）</div>'; return; }
+  box.innerHTML = tr.map(ev => {
+    const kind = ev.t || '?';
+    let head = ev.action || kind, body = '';
+    if (kind === 'kg') { head = `🔎 ${ev.action}`;
+      body = `query: ${ev.query}\nmode: ${ev.mode} · top_k: ${ev.top_k} · 返回 ${ev.chars} 字` +
+             (ev.degraded ? ' · [降级:kg-svc不可用/空]' : '') + (ev.error?('\nerror: '+ev.error):''); }
+    else if (kind === 'llm_a') { head = `🧠 ${ev.action}`;
+      body = 'facts: ' + JSON.stringify(ev.facts) + '\ndeltas: ' + JSON.stringify(ev.hypothesis_deltas) +
+             '\nred_flag: ' + JSON.stringify(ev.red_flag) + '\n\n[原文]\n' + (ev.raw||''); }
+    else if (kind === 'llm_b') { head = `🌳 ${ev.action}`;
+      body = `ok=${ev.ok} 问题数=${ev.n_questions??''}` + (ev.errors&&ev.errors.length?('\nerrors: '+JSON.stringify(ev.errors)):'') +
+             '\n\n[原文]\n' + (ev.raw||''); }
+    else if (kind === 'seed') { head = `📝 ${ev.action}`;
+      body = 'seed: ' + JSON.stringify(ev.seed) + '\n\n[原文]\n' + (ev.raw||''); }
+    else if (kind === 'decision') { head = `⚙️ ${ev.action}`;
+      body = `stop=${ev.stop} rebuild=${ev.rebuild} reason=${ev.reason}\ndeviated=${ev.deviated} candidate_shift=${ev.candidate_shift} horizon_exhausted=${ev.horizon_exhausted}`; }
+    else if (kind === 'pick') { head = `✅ ${ev.action}`;
+      body = `问题: ${ev.question}\nintent=${ev.intent} score=${ev.score}\ntarget_slots=${JSON.stringify(ev.target_slots)}\nbreakdown=${JSON.stringify(ev.breakdown)}`; }
+    return `<details class="tr"><summary><span class="kind k-${kind}">${kind}</span>${head}</summary><pre>${(body||'').replace(/</g,'&lt;')}</pre></details>`;
+  }).join('');
 }
 
 function renderHyps(snap) {
   const box = $('hyps');
   const hyps = (snap.hypotheses || []).filter(h => (h.status||'active')==='active')
       .sort((a,b)=>(b.confidence||0)-(a.confidence||0));
-  if (!hyps.length) { box.innerHTML = '<div class="empty">暂无候选</div>'; return; }
-  box.innerHTML = hyps.map(h => `
-    <div class="hyp">
-      <span style="flex:0 0 auto;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${h.name}</span>
+  box.innerHTML = hyps.length ? hyps.map(h => `
+    <div class="hyp"><span style="flex:0 0 auto;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${h.name}</span>
       <span class="bar"><i style="width:${Math.round((h.confidence||0)*100)}%"></i></span>
-      <span style="flex:0 0 auto;color:#93a1bd">${(h.confidence||0).toFixed(2)}</span>
-    </div>`).join('');
+      <span style="color:#93a1bd">${(h.confidence||0).toFixed(2)}</span></div>`).join('')
+    : '<div class="empty">暂无候选</div>';
 }
 
 function renderSlots(snap) {
@@ -198,34 +247,31 @@ function renderSlots(snap) {
   slots.sort((a,b)=>(order[a.category]??9)-(order[b.category]??9));
   box.innerHTML = slots.map(s => {
     const val = s.status==='known' ? (typeof s.value==='object'? JSON.stringify(s.value): s.value) : '';
-    return `<div class="slot">
-      <span class="tag ${s.category}">${s.category}</span>
+    return `<div class="slot"><span class="tag ${s.category}">${s.category}</span>
       <span style="flex:1">${s.title || s.slot_id}</span>
-      <span class="st-${s.status}">${s.status}${val!==''&&val!=null?(' · '+val):''}</span>
-    </div>`;
+      <span class="st-${s.status}">${s.status}${val!==''&&val!=null?(' · '+val):''}</span></div>`;
   }).join('');
 }
 
-async function loadSnapshot(sid) {
+async function loadSession(sid) {
   if (!sid) return;
+  SESSION = sid;
   try {
-    const r = await fetch(`/api/ai/session/${sid}/strategy`);
-    if (!r.ok) { $('meta').textContent = '无快照'; return; }
-    const snap = await r.json();
-    $('meta').textContent = `第 ${snap.turn_no} 轮 · ${snap.phase||''} · ${snap.strategy_source||''} · k=${snap.horizon_k||''}`;
-    renderGraph(snap);
-    renderHyps(snap);
-    renderSlots(snap);
-    const sel = (snap.tree_nodes||[]).find(n => n.node_id === snap.selected_question_id);
-    $('selq').innerHTML = renderNodeDetail(sel);
-  } catch (e) {
-    $('meta').textContent = '加载失败：' + e;
-  }
+    const data = await (await fetch(`/api/ai/session/${sid}/strategy/history`)).json();
+    SNAPS = data.snapshots || [];
+    if (!SNAPS.length) { $('meta').textContent = '无快照'; return; }
+    const last = SNAPS[SNAPS.length - 1];
+    $('meta').textContent = `共 ${SNAPS.length} 轮 · 末轮 ${last.phase||''} · ${last.strategy_source||''}`;
+    renderGraph(SNAPS);
+    renderTurns(SNAPS);
+    renderHyps(last); renderSlots(last);
+    selectTurn(SNAPS.length - 1);
+  } catch (e) { $('meta').textContent = '加载失败：' + e; }
 }
 
-$('sessionSel').addEventListener('change', e => loadSnapshot(e.target.value));
+$('sessionSel').addEventListener('change', e => loadSession(e.target.value));
 $('refreshBtn').addEventListener('click', loadSessions);
-$('reloadBtn').addEventListener('click', () => loadSnapshot($('sessionSel').value));
+$('reloadBtn').addEventListener('click', () => loadSession(SESSION));
 loadSessions();
 </script>
 </body>

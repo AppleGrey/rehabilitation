@@ -35,19 +35,24 @@ MAX_QUESTIONS_HINT = 4  # 提示 LLM 单次最多生成几个候选问题
 
 _SYSTEM = (
     "你是康复问诊的『规划器』。根据【主诉种子】【已知事实】【候选假设】【缺失信息槽】【图谱要点】，"
-    "生成接下来 2~4 个『候选追问问题』，以 JSON 输出。务必简单、可解析。规则：\n"
+    "生成接下来 2~4 个『候选追问问题』，以 JSON 输出。务必简单、可解析、循序渐进。规则：\n"
     "1) 只用 type=\"question\" 和 type=\"terminal\" 两种节点，不要用 branch/action。\n"
-    "2) 每个 question 针对 1 个缺失信息槽（优先安全槽 S 与方案必填槽 P）；answer_type 用 "
-    "\"single_choice\"，options 覆盖回答空间且必须含『不确定』。\n"
-    "3) 若某问题是红旗/安全排查，可加一个 type=\"terminal\"、terminal_type=\"refer\" 节点，"
-    "并用一条边从该问题连到它（when 填危险的那个选项）。其余问题不需要边（各自独立）。\n"
-    "4) 不对用户下诊断；question_text 用通俗中文、单句、不堆术语；每个问题给 ask_reason。\n"
-    "5) 只输出 JSON：{\"tree_nodes\":[...],\"tree_edges\":[...],\"selected_question_id\":\"最该先问的问题id\"}。\n"
-    "   question 节点字段：node_id, type, target_slots(数组，用【缺失信息槽】给的 slot_id), intent"
+    "2) **循序渐进**：优先了解症状细节与功能影响——比如哪些动作诱发、具体位置、活动是否受限、"
+    "加重/缓解因素、起病与变化。先把这些问清楚，再按需要做安全排查。\n"
+    "3) **安全排查要与主诉部位相关、逐步进行，不要一上来就问危险信号**：只有当主诉涉及腰背/脊柱/"
+    "下肢神经症状时，才考虑询问大小便控制、会阴麻木等马尾相关问题；单纯关节（膝/肩/踝/肘等）疼痛"
+    "不要问大小便。一次最多 1 个红旗问题，且通常不放在最前面。\n"
+    "4) 每个 question 针对 1 个信息槽（用【缺失信息槽】给的 slot_id；若要问新的临床点，可自拟一个"
+    "语义化的 slot_id，如 knee_pain_site、stair_pain）；answer_type 用 \"single_choice\"，"
+    "options 覆盖回答空间且含『不确定』。\n"
+    "5) 若某问题确属红旗/安全排查，intent 填 red_flag，可加一个 terminal(refer) 并用一条边从该问题"
+    "连到它（when 填危险选项）；其余问题各自独立，无需边。\n"
+    "6) 不对用户下诊断；question_text 用通俗中文、单句、不堆术语；每个问题给 ask_reason。\n"
+    "7) 只输出 JSON：{\"tree_nodes\":[...],\"tree_edges\":[...],\"selected_question_id\":\"最该先问的问题id\"}。\n"
+    "   question 字段：node_id, type, target_slots(数组), intent"
     "(red_flag/differential/function/stage/contraindication/plan_constraint), question_text, "
-    "answer_type, options(数组), ask_reason。\n"
-    "   terminal 节点字段：node_id, type:\"terminal\", terminal_type:\"refer\", rationale。\n"
-    "   边字段：from, to, when。最多 %d 个问题。\n"
+    "answer_type, options(数组), ask_reason。terminal 字段：node_id, type:\"terminal\", "
+    "terminal_type:\"refer\", rationale。边字段：from, to, when。最多 %d 个问题。\n"
 ) % MAX_QUESTIONS_HINT
 
 _USER_TMPL = (
@@ -93,9 +98,11 @@ def _slot_text(session: StrategySession) -> str:
 def build_tree(
     session: StrategySession, kg_context: str = "",
     *, refresh_reason: str = RefreshReason.INITIAL_TREE_BUILD.value,
+    trace: Optional[list] = None,
 ) -> StrategyTree:
     """
     调 LLM-B 建 k 层树；校验不过重试一次；仍不过走 fallback 最小安全树。
+    trace: 若传入，记录 LLM-B 原文与每次尝试的结果（供后台展示 AI 行为）。
     """
     k = session.k
     llm = make_json_llm(temperature=0.2, max_tokens=1800)
@@ -111,14 +118,24 @@ def build_tree(
         tree = _to_tree(data, k, refresh_reason) if data else None
         if tree is None:
             logger.warning("[LLM-B] 第%d次解析失败", attempt)
+            if trace is not None:
+                trace.append({"t": "llm_b", "action": f"建树(LLM-B) 第{attempt}次·解析失败",
+                              "raw": (raw or "")[:2000], "ok": False})
             continue
         res = validator.validate_tree(tree, session, selected_node_id=tree.selected_question_id)
+        if trace is not None:
+            trace.append({"t": "llm_b", "action": f"建树(LLM-B) 第{attempt}次",
+                          "raw": (raw or "")[:2000], "ok": res.ok,
+                          "errors": res.errors,
+                          "n_questions": len(tree.question_nodes())})
         if res.ok:
             session.strategy_source = "tree"
             return tree
         logger.warning("[LLM-B] 第%d次校验未过：%s", attempt, res.errors)
 
     logger.warning("[LLM-B] 两次均失败，走 fallback 最小安全树")
+    if trace is not None:
+        trace.append({"t": "llm_b", "action": "建树失败 → fallback 最小安全树", "ok": False})
     return fallback_tree(session)
 
 

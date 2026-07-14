@@ -113,12 +113,13 @@ def ready_for_plan(session: StrategySession) -> bool:
 
 def needs_sp_backfill(session: StrategySession) -> list[str]:
     """
-    返回「应当强插必问题」的槽 id（缺失的 S/P）。§2.3 硬不变式：
-    树若在 S/P 未满足时想收敛，规划器强制插入这些槽的必问题（required=True）。
+    返回「应当强插必问题」的槽 id。只强制**方案必填槽 P**（如疼痛评分）置顶；
+    安全槽 S 不再一律前置——改由 LLM 按主诉相关地提出、并靠打分保证优先级，
+    从而循序渐进、不会「膝盖疼一上来就问大小便」。ready_for_plan 仍要求 S 清零。
     """
-    return missing_safety_slots(session) + [
+    return [
         s.slot_id for s in session.slots_of(SlotCategory.P)
-        if s.status == SlotStatus.MISSING.value  # unknown 不强插（已尽力）
+        if s.status == SlotStatus.MISSING.value
     ]
 
 

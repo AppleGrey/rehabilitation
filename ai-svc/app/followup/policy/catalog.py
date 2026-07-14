@@ -14,36 +14,34 @@ from ..models import (
     SlotCategory,
     SlotStatus,
     StrategySession,
+    StrategyTreeNode,
 )
 
 
 def default_plan_slots() -> list[Slot]:
-    """方案必填槽 P（视频匹配硬门槛，缺一不可 ready_for_plan）。"""
+    """
+    临床必填槽 P（问诊要收敛到的最小集）。只保留与病情判断相关的：部位、疼痛评分、康复阶段。
+    训练偏好（时长/场地/器械）不在问诊里问 —— 那是训练前的设置项，避免打断临床问诊。
+    """
     return [
         Slot(slot_id="target_joint", title="康复部位", category=SlotCategory.P,
              priority=Priority.P0, required_for=["video_match"]),
-        Slot(slot_id="pain_score", title="疼痛评分(0-10)", category=SlotCategory.P,
+        Slot(slot_id="pain_score", title="疼痛程度(0-10)", category=SlotCategory.P,
              required_for=["video_match"]),
         Slot(slot_id="rehab_stage", title="康复阶段", category=SlotCategory.P,
-             required_for=["video_match"]),
-        Slot(slot_id="max_duration_minutes", title="单次训练时长", category=SlotCategory.P,
-             required_for=["video_match"]),
-        Slot(slot_id="space_limited", title="场地是否受限", category=SlotCategory.P,
-             required_for=["video_match"]),
-        Slot(slot_id="available_equipment", title="可用器械", category=SlotCategory.P,
              required_for=["video_match"]),
     ]
 
 
 def default_safety_slots() -> list[Slot]:
-    """基线安全槽 S（即便 kg-svc 无召回也必须覆盖的红旗）。"""
+    """
+    通用红旗槽（保留定义，但不再默认注入）。安全排查改由 LLM 按主诉/部位相关地提出
+    （见 planner 的动态槽注册），避免「膝盖疼却一上来问大小便」这类不相关追问。
+    """
     return [
-        Slot(slot_id="redflag_neuro", title="神经/马尾红旗",
+        Slot(slot_id="redflag_general", title="严重危险信号",
              category=SlotCategory.S, priority=Priority.P0, required_for=["red_flag"],
-             ask_reason="麻木、明显无力或大小便控制异常需立即就医"),
-        Slot(slot_id="redflag_severe", title="严重外伤/静息剧痛红旗",
-             category=SlotCategory.S, priority=Priority.P0, required_for=["red_flag"],
-             ask_reason="明显外伤畸形、发热红肿或夜间静息剧痛需先排除"),
+             ask_reason="排除需立即就医的明显危险信号"),
     ]
 
 
@@ -70,11 +68,12 @@ def _infer_rehab_stage(onset: str | None) -> str | None:
 
 def init_tree_slots(session: StrategySession) -> None:
     """
-    进入按树问诊阶段时，装配 P + S 槽，并用 seed 预填已知项（减少重复追问）。
+    进入按树问诊阶段时，装配临床必填 P 槽，并用 seed 预填已知项（减少重复追问）。
+    不再注入通用红旗 S 槽 —— 安全排查由 LLM 按部位相关地动态提出。
     幂等：已存在的 slot_id 不重复添加。
     """
     existing = {s.slot_id for s in session.slots}
-    for slot in default_plan_slots() + default_safety_slots():
+    for slot in default_plan_slots():
         if slot.slot_id not in existing:
             session.slots.append(slot)
 
@@ -120,3 +119,28 @@ def _set_known(session: StrategySession, slot_id: str, value) -> None:
     if slot is not None:
         slot.status = SlotStatus.KNOWN.value
         slot.value = value
+
+
+def ensure_slot_for_question(session: StrategySession, node: StrategyTreeNode) -> None:
+    """
+    把某个（将要展示的）问题的 target_slots 注册进会话槽表：
+    红旗/禁忌意图 → 安全槽 S，其余 → 鉴别槽 D。这样 LLM 提出的临床问题也能被
+    打分/停止/回填统一追踪（问题 2/4 的关键：让问诊由 LLM 的临床问题驱动，而非写死槽）。
+    幂等：已存在的 slot_id 不重复添加。
+    """
+    existing = {s.slot_id for s in session.slots}
+    for sid in node.target_slots:
+        if not sid or sid in existing:
+            continue
+        is_safety = node.intent in ("red_flag", "contraindication")
+        session.slots.append(Slot(
+            slot_id=sid,
+            title=(node.question_text or sid)[:24],
+            category=SlotCategory.S if is_safety else SlotCategory.D,
+            status=SlotStatus.MISSING,
+            priority=Priority.P1,
+            required_for=["red_flag"] if is_safety else ["differential"],
+            discriminates=node.discriminates,
+            ask_reason=node.ask_reason,
+        ))
+        existing.add(sid)

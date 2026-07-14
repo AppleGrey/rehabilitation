@@ -131,16 +131,19 @@ def consult_turn(session: StrategySession, user_message: str, conversation_text:
 # ─────────────────── 粗问阶段 ───────────────────
 
 def _warmup_turn(session: StrategySession, user_message: str, conversation_text: str) -> list[dict]:
-    res = extractor.extract_seed(session, conversation_text)
+    trace: list = []
+    res = extractor.extract_seed(session, conversation_text, trace=trace)
 
     if session.seed.quick_redflag:
-        return _refer(session, "你描述的情况可能需要尽快线下就医评估，建议先到医院检查，暂不进行自助训练。")
+        return _refer(session, "你描述的情况可能需要尽快线下就医评估，建议先到医院检查，暂不进行自助训练。",
+                      trace=trace)
 
     if session.seed.ready_to_build():
         return _enter_tree_phase(session)
 
-    # 信息还不够，继续粗问
+    # 信息还不够，继续粗问（留痕本轮粗问，便于后台看到问诊全过程）
     q = res.next_question or _warmup_fallback_question(session)
+    persistence.save_snapshot(session, trace=trace)
     return [_ev_text(q), _ev_input("free_text", []), _ev_progress(session)]
 
 
@@ -156,13 +159,14 @@ def _warmup_fallback_question(session: StrategySession) -> str:
 
 
 def _enter_tree_phase(session: StrategySession) -> list[dict]:
-    """粗问达标 → 装配 P/S 槽 → 检索 → 建首棵树 → 提第一个树问题。"""
+    """粗问达标 → 装配 P 槽 → 检索 → 建首棵树 → 提第一个树问题。"""
     session.phase = Phase.TREE.value
     catalog.init_tree_slots(session)
-    kg = kg_client.retrieve(session, "followup_points")
-    session.tree = tree_builder.build_tree(session, kg)
+    trace: list = []
+    kg = kg_client.retrieve(session, "followup_points", trace=trace)
+    session.tree = tree_builder.build_tree(session, kg, trace=trace)
     session.current_tree_node_id = session.tree.selected_question_id
-    return _select_and_ask(session, kg_context_used=kg, prev_answer=None)
+    return _select_and_ask(session, kg_context_used=kg, prev_answer=None, trace=trace)
 
 
 # ─────────────────── 按树问诊阶段（§3.3）───────────────────
@@ -170,11 +174,12 @@ def _enter_tree_phase(session: StrategySession) -> list[dict]:
 def _tree_turn(session: StrategySession, user_message: str) -> list[dict]:
     tree = session.tree
     prev_node_id = session.current_tree_node_id
+    trace: list = []
 
     # 1) 感知更新（LLM-A）：抽事实 + 更新信念
-    kg = kg_client.retrieve(session, "followup_points")  # 命中缓存则不发请求
+    kg = kg_client.retrieve(session, "followup_points", trace=trace)  # 命中缓存则不发请求
     before_top = [h.hyp_id for h in session.top_hypotheses(fset.MAX_CANDIDATES)]
-    percept = extractor.perceive(session, user_message, kg)
+    percept = extractor.perceive(session, user_message, kg, trace=trace)
     applied = extractor.apply_facts(session, percept.facts)
     # 确定性兜底：把回答直接落到「上一问」的目标槽，避免安全题被反复追问
     rf_hit = _apply_answer_to_prev_question(session, prev_node_id, user_message)
@@ -188,12 +193,12 @@ def _tree_turn(session: StrategySession, user_message: str) -> list[dict]:
     # 2) 安全 & 停止（确定性代码）
     if percept.red_flag.hit or rf_hit:
         return _refer(session, "根据你的描述，建议先到医院做进一步检查，暂缓自助训练。原因：" +
-                      (percept.red_flag.reason or "出现需优先排除的风险信号"))
+                      (percept.red_flag.reason or "出现需优先排除的风险信号"), trace=trace)
     stop = stopping.should_stop(session, red_flag_hit=False)
     if stop.outcome == "ready_for_plan":
-        return _to_plan(session)
+        return _to_plan(session, trace=trace)
     if stop.outcome == "best_effort_impression":
-        return _best_effort(session, stop.reason or "")
+        return _best_effort(session, stop.reason or "", trace=trace)
 
     # 3) 沿分支前进 or 重建
     nxt, deviated = (None, False)
@@ -205,27 +210,31 @@ def _tree_turn(session: StrategySession, user_message: str) -> list[dict]:
         session, answer_deviated=deviated, new_redflag=False,
         candidate_shift=candidate_shift, horizon_exhausted=horizon_exhausted,
     )
+    trace.append({"t": "decision", "action": "确定性决策", "stop": stop.outcome,
+                  "rebuild": rebuild, "reason": reason, "deviated": deviated,
+                  "candidate_shift": candidate_shift, "horizon_exhausted": horizon_exhausted})
 
     if tree is None or rebuild:
-        kg2 = kg_client.retrieve(session, "followup_points")
+        kg2 = kg_client.retrieve(session, "followup_points", trace=trace)
         session.tree = tree_builder.build_tree(
-            session, kg2, refresh_reason=reason or "initial_tree_build")
+            session, kg2, refresh_reason=reason or "initial_tree_build", trace=trace)
         session.current_tree_node_id = session.tree.selected_question_id
-        return _select_and_ask(session, kg_context_used=kg2, prev_answer=user_message)
+        return _select_and_ask(session, kg_context_used=kg2, prev_answer=user_message, trace=trace)
 
     # 沿树前进一格
     session.current_tree_node_id = nxt or prev_node_id
-    return _select_and_ask(session, kg_context_used=kg, prev_answer=user_message)
+    return _select_and_ask(session, kg_context_used=kg, prev_answer=user_message, trace=trace)
 
 
 # ─────────────────── 选点 + 提问（执行器）───────────────────
 
-def _select_and_ask(session: StrategySession, *, kg_context_used: str, prev_answer: Optional[str]) -> list[dict]:
+def _select_and_ask(session: StrategySession, *, kg_context_used: str,
+                    prev_answer: Optional[str], trace: Optional[list] = None) -> list[dict]:
     tree = session.tree
     if tree is None:
-        return _safe_fallback(session)
+        return _safe_fallback(session, trace=trace)
 
-    # S/P 缺口 → 标记必问题（硬不变式，绕过信息增益）
+    # P 缺口 → 标记必问题（绕过信息增益）；安全槽不再一律置顶（循序渐进）
     for n in tree.question_nodes():
         stopping.mark_backfill_required(n, session)
 
@@ -233,20 +242,28 @@ def _select_and_ask(session: StrategySession, *, kg_context_used: str, prev_answ
     if node is None:
         # 树里没有可问的了：若 S/P 已齐可出方案，否则兜底
         if stopping.ready_for_plan(session):
-            return _to_plan(session)
-        return _safe_fallback(session)
+            return _to_plan(session, trace=trace)
+        return _safe_fallback(session, trace=trace)
 
     node.status = "active"
     tree.selected_question_id = node.node_id
     session.current_tree_node_id = node.node_id
+    # 注册该问题的目标槽（红旗→S / 其余→D），使 LLM 的临床问题被统一追踪
+    catalog.ensure_slot_for_question(session, node)
     # 标记该问题目标槽为已问（去重）
     for sid in node.target_slots:
         if sid not in session.asked_slot_ids:
             session.asked_slot_ids.append(sid)
 
+    if trace is not None:
+        trace.append({"t": "pick", "action": "选定当前问题", "node": node.node_id,
+                      "question": node.question_text, "intent": node.intent,
+                      "target_slots": node.target_slots, "score": node.score,
+                      "breakdown": node.score_breakdown})
+
     # 落库：快照 + 本轮所选问题事件
     kg_srcs = list({c for c in (node.kg_sources or [])})
-    snap_id = persistence.save_snapshot(session, kg_sources=kg_srcs)
+    snap_id = persistence.save_snapshot(session, kg_sources=kg_srcs, trace=trace)
     persistence.save_question_event(
         session, snapshot_id=snap_id, question_id=node.node_id, tree_node_id=node.node_id,
         question_text=node.question_text, target_slots=node.target_slots,
@@ -264,36 +281,36 @@ def _select_and_ask(session: StrategySession, *, kg_context_used: str, prev_answ
 
 # ─────────────────── 终止分支 ───────────────────
 
-def _to_plan(session: StrategySession) -> list[dict]:
+def _to_plan(session: StrategySession, *, trace: Optional[list] = None) -> list[dict]:
     tops = session.top_hypotheses(1)
     focus = tops[0].name if tops else "你的康复重点"
-    persistence.save_snapshot(session)
+    persistence.save_snapshot(session, trace=trace)
     summary = (f"信息已比较充分（临床方向：{focus}）。接下来我会据此为你安排合适的分阶段训练方案。")
     return [_ev_text(summary + _DISCLAIMER), _ev_done("ready_for_plan", session, summary=summary)]
 
 
-def _refer(session: StrategySession, reason: str) -> list[dict]:
-    persistence.save_snapshot(session)
+def _refer(session: StrategySession, reason: str, *, trace: Optional[list] = None) -> list[dict]:
+    persistence.save_snapshot(session, trace=trace)
     text = reason + "\n\n" + _DISCLAIMER
     return [_ev_text(text), _ev_done("refer", session, summary=reason)]
 
 
-def _best_effort(session: StrategySession, reason: str) -> list[dict]:
+def _best_effort(session: StrategySession, reason: str, *, trace: Optional[list] = None) -> list[dict]:
     tops = session.top_hypotheses(2)
     names = "、".join(h.name for h in tops) or "暂不明确"
-    persistence.save_snapshot(session)
+    persistence.save_snapshot(session, trace=trace)
     summary = (f"目前收集到的信息里，可能的方向是：{names}（尚不完全确定）。"
                f"我会先按较稳妥的思路给你安排，训练中如有变化随时告诉我。")
     return [_ev_text(summary + _DISCLAIMER),
             _ev_done("best_effort_impression", session, summary=summary)]
 
 
-def _safe_fallback(session: StrategySession) -> list[dict]:
+def _safe_fallback(session: StrategySession, *, trace: Optional[list] = None) -> list[dict]:
     """异常/无题可问时的安全兜底问题。"""
     session.tree = tree_builder.fallback_tree(session)
     node = session.tree.node(session.tree.selected_question_id)
     session.current_tree_node_id = node.node_id if node else None
-    persistence.save_snapshot(session)
+    persistence.save_snapshot(session, trace=trace)
     q = node.question_text if node else "关于你的情况，还有哪一点想让我了解的吗？"
     at = node.answer_type if node else "free_text"
     opts = node.options if node else []

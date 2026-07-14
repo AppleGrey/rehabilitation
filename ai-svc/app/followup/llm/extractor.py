@@ -105,7 +105,8 @@ def _hyp_text(session: StrategySession) -> str:
 
 # ─────────────────── 调用 + 解析 ───────────────────
 
-def perceive(session: StrategySession, user_message: str, kg_context: str = "") -> PerceptResult:
+def perceive(session: StrategySession, user_message: str, kg_context: str = "",
+             trace: Optional[list] = None) -> PerceptResult:
     """调用 LLM-A，返回结构化感知结果（解析失败返回空结果，由 planner 兜底）。"""
     llm = make_json_llm(temperature=0.2, max_tokens=1200)
     user = _USER_TMPL.format(
@@ -117,12 +118,22 @@ def perceive(session: StrategySession, user_message: str, kg_context: str = "") 
     data, raw = call_json_llm(llm, _SYSTEM, user)
     if data is None:
         logger.warning("[LLM-A] 解析失败，返回空感知：%s", raw[:200])
-        return PerceptResult()
-    try:
-        return PerceptResult.model_validate(data)
-    except Exception:  # noqa: BLE001
-        logger.warning("[LLM-A] schema 不符：%s", json.dumps(data, ensure_ascii=False)[:200])
-        return PerceptResult()
+        result = PerceptResult()
+    else:
+        try:
+            result = PerceptResult.model_validate(data)
+        except Exception:  # noqa: BLE001
+            logger.warning("[LLM-A] schema 不符：%s", json.dumps(data, ensure_ascii=False)[:200])
+            result = PerceptResult()
+    if trace is not None:
+        trace.append({
+            "t": "llm_a", "action": "感知更新(LLM-A：抽事实+更新信念)",
+            "raw": (raw or "")[:1500],
+            "facts": [f.model_dump() for f in result.facts],
+            "hypothesis_deltas": [d.model_dump() for d in result.hypothesis_deltas],
+            "red_flag": result.red_flag.model_dump(),
+        })
+    return result
 
 
 # ─────────────────── 确定性应用（代码，不信 LLM 绝对值）───────────────────
@@ -216,7 +227,8 @@ _SEED_SYSTEM = (
 )
 
 
-def extract_seed(session: StrategySession, conversation_text: str) -> SeedExtract:
+def extract_seed(session: StrategySession, conversation_text: str,
+                 trace: Optional[list] = None) -> SeedExtract:
     """
     从对话抽取/更新主诉种子（合并进 session.seed）。返回抽取结果（含建议的下一句粗问）。
     """
@@ -230,11 +242,12 @@ def extract_seed(session: StrategySession, conversation_text: str) -> SeedExtrac
     data, raw = call_json_llm(llm, _SEED_SYSTEM, user)
     if data is None:
         logger.warning("[SEED] 解析失败：%s", raw[:150])
-        return SeedExtract()
-    try:
-        res = SeedExtract.model_validate(data)
-    except Exception:  # noqa: BLE001
-        return SeedExtract()
+        res = SeedExtract()
+    else:
+        try:
+            res = SeedExtract.model_validate(data)
+        except Exception:  # noqa: BLE001
+            res = SeedExtract()
 
     # 合并进 session.seed（只补空，不覆盖已确认项）
     s = session.seed
@@ -244,4 +257,7 @@ def extract_seed(session: StrategySession, conversation_text: str) -> SeedExtrac
             setattr(s, field, val)
     if res.quick_redflag:
         s.quick_redflag = True
+    if trace is not None:
+        trace.append({"t": "seed", "action": "粗问抽取(LLM-A)", "raw": (raw or "")[:1200],
+                      "seed": res.model_dump()})
     return res

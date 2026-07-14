@@ -64,36 +64,47 @@ def build_query(session: StrategySession, purpose: Purpose) -> tuple[str, str, i
 
 
 def retrieve(
-    session: StrategySession, purpose: Purpose = "followup_points", *, use_cache: bool = True
+    session: StrategySession, purpose: Purpose = "followup_points",
+    *, use_cache: bool = True, trace: Optional[list] = None,
 ) -> str:
     """
     向 kg-svc 检索，返回权威上下文文本（失败返回空串）。命中缓存则不发请求。
+    trace: 若传入，记录本次检索行为（查询串/模式/命中缓存/字数/是否降级）供后台展示。
     """
     key = cache_key(session, purpose)
+    query, mode, top_k = build_query(session, purpose)
+
     if use_cache:
         hit = _CACHE.get(key)
         if hit and hit[0] > _now():
+            if trace is not None:
+                trace.append({"t": "kg", "action": "知识图谱检索(命中缓存)", "query": query,
+                              "mode": mode, "top_k": top_k, "cache_hit": True,
+                              "chars": len(hit[1]), "degraded": False})
             return hit[1]
 
-    query, mode, top_k = build_query(session, purpose)
     if not query:
         return ""
 
     url = f"{S.KG_SVC_URL.rstrip('/')}/kg/retrieve"
     payload = {"query": query, "mode": mode, "top_k": top_k, "only_need_context": True}
+    context, err = "", None
     try:
         with httpx.Client(timeout=S.KG_TIMEOUT_S) as client:
             resp = client.post(url, json=payload)
             resp.raise_for_status()
             data = resp.json()
         context = str(data.get("context") or "")
-        logger.info(
-            "[KG] %s mode=%s top_k=%d -> %d 字 %sms",
-            purpose, mode, top_k, len(context), data.get("elapsed_ms"),
-        )
+        logger.info("[KG] %s mode=%s top_k=%d -> %d 字 %sms",
+                    purpose, mode, top_k, len(context), data.get("elapsed_ms"))
     except Exception as exc:  # noqa: BLE001
+        err = str(exc)
         logger.warning("[KG] 检索失败(%s)，走空上下文兜底：%s", url, exc)
-        return ""
+
+    if trace is not None:
+        trace.append({"t": "kg", "action": "知识图谱检索", "query": query, "mode": mode,
+                      "top_k": top_k, "cache_hit": False, "chars": len(context),
+                      "degraded": context == "", "error": err})
 
     if use_cache and context:
         _CACHE[key] = (_now() + _TTL_S, context)

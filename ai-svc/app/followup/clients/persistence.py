@@ -17,10 +17,14 @@ from ..models import StrategySession
 logger = logging.getLogger(__name__)
 
 
-def save_snapshot(session: StrategySession, *, kg_sources: Optional[list[str]] = None) -> Optional[str]:
+def save_snapshot(
+    session: StrategySession, *, kg_sources: Optional[list[str]] = None,
+    trace: Optional[list[dict]] = None,
+) -> Optional[str]:
     """
     写入/更新一条策略树快照（幂等 on session_id+turn_no）。返回 snapshot id。
     tree 为空（粗问阶段）时也可留痕，便于回放完整问诊路径。
+    trace: 本轮 AI 行为留痕（KG 检索、LLM 原文与解析、决策），供后台展示。
     """
     tree = session.tree
     tree_nodes = [n.model_dump(by_alias=True) for n in tree.nodes] if tree else []
@@ -35,8 +39,9 @@ def save_snapshot(session: StrategySession, *, kg_sources: Optional[list[str]] =
                 INSERT INTO consult_strategy_snapshots (
                     session_id, turn_no, phase, horizon_k, tree_id,
                     current_tree_node_id, selected_question_id, refresh_reason,
-                    strategy_source, hypotheses, slots, tree_nodes, tree_edges, kg_sources
-                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                    strategy_source, hypotheses, slots, tree_nodes, tree_edges,
+                    kg_sources, trace
+                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
                 ON CONFLICT (session_id, turn_no) DO UPDATE SET
                     phase = EXCLUDED.phase,
                     horizon_k = EXCLUDED.horizon_k,
@@ -49,7 +54,8 @@ def save_snapshot(session: StrategySession, *, kg_sources: Optional[list[str]] =
                     slots = EXCLUDED.slots,
                     tree_nodes = EXCLUDED.tree_nodes,
                     tree_edges = EXCLUDED.tree_edges,
-                    kg_sources = EXCLUDED.kg_sources
+                    kg_sources = EXCLUDED.kg_sources,
+                    trace = EXCLUDED.trace
                 RETURNING id
                 """,
                 (
@@ -67,6 +73,7 @@ def save_snapshot(session: StrategySession, *, kg_sources: Optional[list[str]] =
                     Jsonb(tree_nodes),
                     Jsonb(tree_edges),
                     Jsonb(kg_sources or []),
+                    Jsonb(trace or []),
                 ),
             )
             row = cur.fetchone()
