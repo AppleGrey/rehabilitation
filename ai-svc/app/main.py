@@ -4,13 +4,13 @@ FastAPI 入口（对话驱动完整版 v4.0）。
 提供：
   POST /api/chat                      - SSE 流式对话（链式执行 8 节点）
   GET  /api/session/new               - 新建对话会话
-  GET  /api/videos                    - 获取匹配视频列表
-  GET  /api/videos/{video_id}/play    - 播放视频（FileResponse）
   POST /api/assess/motion             - 提交动作评估任务（异步，立即返回 task_id）
   GET  /api/assess/status/{task_id}   - 查询评估任务状态 / 结果
   GET  /api/health                    - 健康检查
   GET  /api/test/ping                 - 连通性测试
-  静态文件 /assets/*                  - 视频文件服务
+  静态文件 /assets/*                  - 本地静态资源
+
+视频列表/播放已迁移至 core-svc（GET /api/videos、GET /api/videos/{id}/play）。
 """
 from __future__ import annotations
 
@@ -59,7 +59,7 @@ from .consult.state import (
     STEP_STAGE,
     ConsultState,
 )
-from .media.matching import ensure_playable_mp4_path, get_video_list
+from .media.matching import ensure_playable_mp4_path
 from .assessment.assessment import evaluate_motion
 from .core.config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, DEEPSEEK_MODEL
 from .core.config import ASSETS_DIR as _ASSETS_DIR
@@ -69,7 +69,6 @@ from .consult.questionnaire import build_questionnaire_report
 from .media.storage import (
     UPLOAD_PREFIX,
     download_to_path,
-    get_object_stream,
     init_storage,
     upload_bytes,
 )
@@ -439,42 +438,6 @@ def test_ping():
         "service": "rehabilitation-ai",
         "time_utc": datetime.now(timezone.utc).isoformat(),
     }
-
-
-@app.get("/api/videos")
-def list_videos(
-    target_joint: str | None = None,
-    severity: str | None = None,
-    limit: int = 20,
-):
-    return {"videos": get_video_list(target_joint, severity, limit)}
-
-
-@app.get("/api/videos/{video_id}/play")
-def play_video(video_id: str):
-    """从 MinIO 读取视频并流式返回。"""
-    object_key = ensure_playable_mp4_path(video_id)
-    if object_key is None:
-        raise HTTPException(
-            status_code=404,
-            detail=f"视频 {video_id} 不存在，请确认已上传到 MinIO",
-        )
-    obj = get_object_stream(object_key)
-    mime = (
-        "video/mp4"
-        if object_key.lower().endswith(".mp4")
-        else "video/quicktime"
-    )
-
-    def _iter():
-        try:
-            for chunk in obj.stream(1024 * 1024):
-                yield chunk
-        finally:
-            obj.close()
-            obj.release_conn()
-
-    return StreamingResponse(_iter(), media_type=mime)
 
 
 # ── 评估任务（异步） ──────────────────────────────────────────────────────────

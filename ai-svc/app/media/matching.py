@@ -43,7 +43,7 @@ def ensure_playable_mp4_path(video_id: str) -> str | None:
 
 
 def _find_video_url(video_id: str) -> str:
-    """返回前端可直接请求的播放 URL。"""
+    """返回相对播放路径（由 core-svc 提供 GET /api/videos/{id}/play）。"""
     if ensure_playable_mp4_path(video_id):
         return f"/api/videos/{video_id}/play"
     return ""

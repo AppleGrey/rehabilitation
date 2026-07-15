@@ -93,11 +93,6 @@ def download_to_path(object_key: str, local_path: Path) -> Path:
     return local_path
 
 
-def get_object_stream(object_key: str):
-    client = _get_client()
-    return client.get_object(MINIO_BUCKET, object_key)
-
-
 def guess_video_key(video_id: str) -> str | None:
     for ext in (".mp4", ".MP4", ".mov", ".MOV", ".m4v", ".M4V"):
         key = video_object_key(f"{video_id}{ext}")

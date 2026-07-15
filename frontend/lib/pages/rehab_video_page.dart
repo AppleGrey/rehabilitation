@@ -152,10 +152,10 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
   // ── 初始化演示视频 ────────────────────────────────────────────────────────
 
   Future<void> _initVideo() async {
-    // 始终优先走后端播放接口，避免历史缓存里旧的 /assets/videos URL。
+    // 始终优先走 core-svc 播放接口，避免历史缓存里旧的 /assets/videos URL。
     var url = widget.videoId != null
-        ? '$kBackendBase/api/videos/${widget.videoId}/play'
-        : widget.videoUrl;
+        ? resolveBackendUrl('/api/videos/${widget.videoId}/play')
+        : (widget.videoUrl != null ? resolveBackendUrl(widget.videoUrl!) : null);
     if (url == null) {
       setState(() {
         _phase = _Phase.watching;

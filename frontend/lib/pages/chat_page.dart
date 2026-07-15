@@ -255,7 +255,7 @@ class _ChatPageState extends State<ChatPage> {
                 final summary = event['summary'] as String?;
                 if (url != null && vid != null) {
                   _recommendation = _VideoRecommendation(
-                    url: '$kBackendBase$url',
+                    url: resolveBackendUrl(url),
                     videoId: vid,
                     summary: summary ?? '',
                   );
@@ -286,7 +286,7 @@ class _ChatPageState extends State<ChatPage> {
                 final summary = event['summary'] as String?;
                 if (url != null && vid != null) {
                   _recommendation = _VideoRecommendation(
-                    url: '$kBackendBase$url',
+                    url: resolveBackendUrl(url),
                     videoId: vid,
                     summary: summary ?? '',
                   );
