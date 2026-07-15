@@ -132,7 +132,8 @@ def test_fallback_tree() -> None:
     fb = tree_builder.fallback_tree(sess)
     _check(sess.strategy_source == "fallback_template", "标记 fallback_template 留痕")
     q = fb.node(fb.selected_question_id)
-    _check(q.required and q.target_slots == ["knee_locking"], "优先补缺失的 S 槽（交锁）")
+    # 现在 needs_sp_backfill 只回填缺失的 P 槽（安全槽不再前置），故 fallback 兜底问 P 槽
+    _check(q.required and q.target_slots == ["available_equipment"], "fallback 兜底补缺失的 P 槽")
     nxt, deviated = tree_builder.advance_along_branch(fb, q.node_id, "是")
     _check(not deviated, "fallback 前沿节点无预设分支，不算偏离")
 
@@ -148,6 +149,60 @@ def test_kg_query_build() -> None:
     _check(key.startswith("followup_points|右膝|"), f"缓存键含用途+部位+候选：{key}")
 
 
+def test_hypothesis_driven() -> None:
+    print("7. 假设驱动：候选 seed + 鉴别题信息增益胜出")
+    from ..policy import scoring
+    from ..models import (
+        AnswerType, NodeType, Slot, SlotCategory, StrategySession,
+        StrategyTree, StrategyTreeNode,
+    )
+    # seed 候选并归一化
+    sess = StrategySession(session_id="00000000-0000-0000-0000-0000000000cc")
+    tree_builder.seed_hypotheses_if_empty(sess, {"hypotheses": [
+        {"name": "颈部肌肉劳损", "confidence": 0.6},
+        {"name": "姿势不良", "confidence": 0.4}]})
+    _check(len(sess.active_hypotheses()) == 2, "seed 出 2 个候选")
+    _check(abs(sum(h.confidence for h in sess.hypotheses) - 1.0) < 1e-6, "候选置信归一化")
+
+    # 鉴别题 vs 必填槽题：鉴别题应胜出，且 ig>0
+    qd = StrategyTreeNode(node_id="qd", type=NodeType.QUESTION, intent="differential",
+        question_text="疼在后颈还是两侧？", answer_type=AnswerType.SINGLE_CHOICE,
+        options=["后颈", "两侧", "不确定"], discriminates=["颈部肌肉劳损", "姿势不良"],
+        option_leanings={"后颈": "颈部肌肉劳损", "两侧": "姿势不良"})
+    qp = StrategyTreeNode(node_id="qp", type=NodeType.QUESTION, intent="plan_constraint",
+        target_slots=["pain_score"], question_text="疼痛几分？",
+        answer_type=AnswerType.SINGLE_CHOICE, options=["0-3", "4-6", "7-10", "不确定"])
+    sess.slots = [Slot(slot_id="pain_score", title="疼痛评分", category=SlotCategory.P)]
+    tree = StrategyTree(tree_id="t", nodes=[qd, qp], edges=[], selected_question_id="qd")
+    pick = scoring.pick_current_node(tree, sess)
+    _check(pick is not None and pick.node_id == "qd",
+           f"鉴别题胜出（实际={pick.node_id if pick else None} bd={qd.score_breakdown}）")
+    _check(qd.score_breakdown.get("ig", 0) > 0, f"鉴别题 ig>0（={qd.score_breakdown.get('ig')}）")
+    _check(qd.score > qp.score, "鉴别题总分 > 必填槽题")
+
+
+def test_schema_tolerance() -> None:
+    print("8. LLM 输出容错：字符串 target_slots + null option_leanings")
+    data = {
+        "hypotheses": [{"name": "颈部肌肉劳损", "confidence": 0.5}],
+        "tree_nodes": [{
+            "node_id": "q1", "type": "question",
+            "target_slots": "neck_rotation_trigger",  # 字符串（本应数组）
+            "intent": "differential", "question_text": "转头时更酸吗？",
+            "answer_type": "single_choice", "options": ["会", "不会", "不确定"],
+            "discriminates": ["颈部肌肉劳损", "颈椎小关节紊乱"],
+            "option_leanings": {"会": "颈椎小关节紊乱", "不会": "颈部肌肉劳损", "不确定": None},  # null 值
+        }],
+        "tree_edges": [], "selected_question_id": "q1",
+    }
+    tree = tree_builder._to_tree(data, k=3, refresh_reason="initial_tree_build")
+    _check(tree is not None, "含 str/null 偏差的输出仍能解析（不再整棵丢弃）")
+    q = tree.node("q1")
+    _check(q.target_slots == ["neck_rotation_trigger"], "字符串 target_slots 被包成数组")
+    _check("不确定" not in q.option_leanings and q.option_leanings.get("会") == "颈椎小关节紊乱",
+           "null 的 option_leanings 被过滤")
+
+
 def main() -> None:
     test_json_parse()
     test_extractor_apply()
@@ -155,6 +210,8 @@ def main() -> None:
     test_tree_parse_and_validate()
     test_fallback_tree()
     test_kg_query_build()
+    test_hypothesis_driven()
+    test_schema_tolerance()
     print("\n[OK] 增量2 离线冒烟全部通过 ✅")
 
 

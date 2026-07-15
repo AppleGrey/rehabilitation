@@ -53,17 +53,32 @@ def _discriminativeness(node: StrategyTreeNode, session: StrategySession) -> flo
 
 def _relevance(node: StrategyTreeNode, session: StrategySession) -> float:
     """
-    该问题的 target_slots 对当前 top 假设有多相关 ∈ [0,1]。
-    取两路信号的较大者，避免因自由文本措辞不一致而误判为 0：
-      - 结构化（主）：目标槽的 discriminates 命中 top 候选，或 required_for 含 differential/plan；
-      - 文本（辅）：槽标题/ID 出现在 top 假设的 missing_facts 里。
+    该问题与当前 top 假设的相关度 ∈ [0,1]。
+    主信号：**节点自身的 discriminates 命中 top 候选**（LLM-B 直接产出，不依赖槽是否已注册）；
+    次信号：intent 为 differential/function/stage 的问题给基础相关度；
+    再退回槽/文本信号。这样鉴别问题的信息增益不会因为槽尚未注册而误判为 0。
     """
     tops = session.top_hypotheses(2)
-    if not tops or not node.target_slots:
+    if not tops:
         return 0.0
     top_names = {h.name for h in tops}
 
-    structured = 0.0
+    # 主：节点 discriminates 直接命中 top 候选
+    if node.discriminates and (
+        set(node.discriminates) & top_names
+        or any(any(d in n or n in d for n in top_names) for d in node.discriminates)
+    ):
+        return 1.0
+    # 次：鉴别/功能/分期类问题给一个基础相关度
+    if node.intent in ("differential", "function", "stage"):
+        base = 0.5
+    else:
+        base = 0.0
+
+    if not node.target_slots:
+        return base
+
+    structured = base
     for sid in node.target_slots:
         slot = session.slot(sid)
         if not slot:

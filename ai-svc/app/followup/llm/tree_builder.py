@@ -14,6 +14,7 @@ from .. import settings as S
 from ..policy import validator
 from ..models import (
     AnswerType,
+    Hypothesis,
     NodeType,
     RefreshReason,
     Slot,
@@ -34,34 +35,33 @@ MAX_QUESTIONS_HINT = 4  # 提示 LLM 单次最多生成几个候选问题
 
 
 _SYSTEM = (
-    "你是康复问诊的『规划器』。根据【主诉种子】【已知事实】【候选假设】【缺失信息槽】【图谱要点】，"
-    "生成接下来 2~4 个『候选追问问题』，以 JSON 输出。务必简单、可解析、循序渐进。规则：\n"
-    "1) 只用 type=\"question\" 和 type=\"terminal\" 两种节点，不要用 branch/action。\n"
-    "2) **循序渐进**：优先了解症状细节与功能影响——比如哪些动作诱发、具体位置、活动是否受限、"
-    "加重/缓解因素、起病与变化。先把这些问清楚，再按需要做安全排查。\n"
-    "3) **安全排查要与主诉部位相关、逐步进行，不要一上来就问危险信号**：只有当主诉涉及腰背/脊柱/"
-    "下肢神经症状时，才考虑询问大小便控制、会阴麻木等马尾相关问题；单纯关节（膝/肩/踝/肘等）疼痛"
-    "不要问大小便。一次最多 1 个红旗问题，且通常不放在最前面。\n"
-    "4) 每个 question 针对 1 个信息槽（用【缺失信息槽】给的 slot_id；若要问新的临床点，可自拟一个"
-    "语义化的 slot_id，如 knee_pain_site、stair_pain）；answer_type 用 \"single_choice\"，"
-    "options 覆盖回答空间且含『不确定』。\n"
-    "5) 若某问题确属红旗/安全排查，intent 填 red_flag，可加一个 terminal(refer) 并用一条边从该问题"
-    "连到它（when 填危险选项）；其余问题各自独立，无需边。\n"
-    "6) 不对用户下诊断；question_text 用通俗中文、单句、不堆术语；每个问题给 ask_reason。\n"
-    "7) 只输出 JSON：{\"tree_nodes\":[...],\"tree_edges\":[...],\"selected_question_id\":\"最该先问的问题id\"}。\n"
-    "   question 字段：node_id, type, target_slots(数组), intent"
-    "(red_flag/differential/function/stage/contraindication/plan_constraint), question_text, "
-    "answer_type, options(数组), ask_reason。terminal 字段：node_id, type:\"terminal\", "
-    "terminal_type:\"refer\", rationale。边字段：from, to, when。最多 %d 个问题。\n"
+    "你是康复问诊的『规划器』，采用**鉴别式问诊**：先想清楚用户可能是哪几种情况，再问"
+    "「最能把它们区分开」的问题。根据【主诉种子】【已知事实】【候选假设】【图谱要点】，输出 JSON。规则：\n"
+    "1) 先给出/更新 2~3 个**候选情况**（hypotheses）：name + confidence(0~1，和≈1) + 一句 rationale。\n"
+    "2) 再生成 2~4 个**鉴别问题**，每个问题的目的就是区分某两个候选：\n"
+    "   - discriminates: 列出它能区分的候选 name；\n"
+    "   - option_leanings: 每个选项倾向哪个候选，如 {\"低头加重\":\"姿势不良\",\"转头卡\":\"小关节紊乱\"}；\n"
+    "   - intent 多为 differential/function/stage；question_text 通俗单句、不堆术语、不下诊断。\n"
+    "3) **循序渐进、部位相关的安全排查**：只有涉及腰背/脊柱/下肢神经时才问大小便/马尾类；单纯关节"
+    "（膝/肩/踝/颈等）不要问大小便。若确有相关红旗，intent=red_flag 并可加 terminal(refer) + 一条 when 边。\n"
+    "4) 若【缺失必填槽】里还有未采集项（如 pain_score 疼痛评分），可放一个候选问题(intent=plan_constraint)，"
+    "但它**优先级低于鉴别问题**，等候选大致区分后再补。\n"
+    "5) selected_question_id = **最能劈开当前领先两名候选**的那个问题。\n"
+    "6) 只用 type=\"question\"/\"terminal\"，不要 branch/action。answer_type 用 single_choice，options 含『不确定』。\n"
+    "7) 只输出 JSON：{\"hypotheses\":[...],\"tree_nodes\":[...],\"tree_edges\":[...],\"selected_question_id\":\"...\"}。\n"
+    "   question 字段：node_id,type,target_slots(自拟语义化 slot_id 如 neck_pain_trigger),intent,"
+    "question_text,answer_type,options,discriminates,option_leanings,ask_reason。\n"
+    "   terminal 字段：node_id,type:\"terminal\",terminal_type:\"refer\",rationale。边：from,to,when。\n"
+    "   最多 %d 个问题。\n"
 ) % MAX_QUESTIONS_HINT
 
 _USER_TMPL = (
     "【主诉种子】\n{seed}\n\n"
     "【已知事实】\n{known}\n\n"
-    "【候选假设(含支持/反对)】\n{hyps}\n\n"
-    "【缺失信息槽(优先追问，用其 slot_id 作为 target_slots)】\n{slots}\n\n"
+    "【当前候选假设(若为空请你首次提出)】\n{hyps}\n\n"
+    "【缺失必填槽】\n{slots}\n\n"
     "【图谱要点】\n{kg_context}\n\n"
-    "请输出候选追问问题的 JSON。"
+    "请输出鉴别式问诊的 JSON（候选 + 鉴别问题）。"
 )
 
 
@@ -105,7 +105,8 @@ def build_tree(
     trace: 若传入，记录 LLM-B 原文与每次尝试的结果（供后台展示 AI 行为）。
     """
     k = session.k
-    llm = make_json_llm(temperature=0.2, max_tokens=1800)
+    # 假设+鉴别问题+option_leanings 输出较长，给足 token 避免 JSON 被截断导致解析失败。
+    llm = make_json_llm(temperature=0.2, max_tokens=3000)
     # 注意：_SYSTEM 含字面 JSON 花括号，不能用 str.format（会把 {"tree_nodes"} 当字段）；用 replace。
     system = _SYSTEM.replace("{k}", str(k))
     user = _USER_TMPL.format(
@@ -130,6 +131,7 @@ def build_tree(
                           "n_questions": len(tree.question_nodes())})
         if res.ok:
             session.strategy_source = "tree"
+            seed_hypotheses_if_empty(session, data)  # 首次建树时用候选 seed 会话假设
             return tree
         logger.warning("[LLM-B] 第%d次校验未过：%s", attempt, res.errors)
 
@@ -137,6 +139,32 @@ def build_tree(
     if trace is not None:
         trace.append({"t": "llm_b", "action": "建树失败 → fallback 最小安全树", "ok": False})
     return fallback_tree(session)
+
+
+def seed_hypotheses_if_empty(session: StrategySession, data: dict) -> None:
+    """
+    会话还没有候选假设时，用 LLM-B 输出的 hypotheses 播种（归一化置信）。
+    之后由 LLM-A(perceive) 逐轮更新。这样第一棵树就同时确立了「候选 + 鉴别问题」，
+    scoring 的信息增益也能立刻用上候选名。
+    """
+    if len([h for h in session.hypotheses if h.status == "active"]) >= 2:
+        return
+    raw = data.get("hypotheses") or []
+    seeded = []
+    for i, h in enumerate(raw):
+        if not isinstance(h, dict) or not h.get("name"):
+            continue
+        seeded.append(Hypothesis(
+            hyp_id=h.get("hyp_id") or f"H{i+1}",
+            name=h["name"],
+            confidence=float(h.get("confidence", 0) or 0),
+        ))
+    if not seeded:
+        return
+    total = sum(h.confidence for h in seeded) or 1.0
+    for h in seeded:
+        h.confidence = round(h.confidence / total, 4)
+    session.hypotheses = seeded
 
 
 def _to_tree(data: dict, k: int, refresh_reason: str) -> Optional[StrategyTree]:
@@ -183,6 +211,10 @@ def _to_tree(data: dict, k: int, refresh_reason: str) -> Optional[StrategyTree]:
     current = data.get("current_tree_node_id")
     if current not in node_ids:
         current = sel
+    # 防御：refresh_reason 必须是合法枚举值，否则回退默认（避免脏值导致整棵树构造失败）
+    valid_reasons = {r.value for r in RefreshReason}
+    if refresh_reason not in valid_reasons:
+        refresh_reason = RefreshReason.INITIAL_TREE_BUILD.value
     return StrategyTree(
         tree_id=data.get("tree_id") or f"tree_{uuid.uuid4().hex[:8]}",
         horizon_k=k, current_tree_node_id=current, refresh_reason=refresh_reason,
@@ -202,13 +234,14 @@ def fallback_tree(session: StrategySession) -> StrategyTree:
     target = session.slot(backfill[0]) if backfill else None
 
     if target is not None:
+        qtext, opts = _fallback_question(target)
         q = StrategyTreeNode(
             node_id=f"q_fallback_{target.slot_id}", type=NodeType.QUESTION, depth=0, status="active",
             target_slots=[target.slot_id],
             intent="red_flag" if target.category == SlotCategory.S.value else "plan_constraint",
-            question_text=_fallback_question_text(target),
-            answer_type=AnswerType.SINGLE_CHOICE, options=["是", "否", "不确定"],
-            required=True, ask_reason=target.ask_reason or "补齐安全/方案必填信息",
+            question_text=qtext,
+            answer_type=AnswerType.SINGLE_CHOICE, options=opts,
+            required=True, ask_reason=target.ask_reason or "补齐方案必填信息",
         )
     else:
         q = StrategyTreeNode(
@@ -227,10 +260,20 @@ def fallback_tree(session: StrategySession) -> StrategyTree:
     )
 
 
-def _fallback_question_text(slot: Slot) -> str:
-    if slot.title:
-        return f"想再确认一下关于「{slot.title}」的情况，方便简单说一下吗？"
-    return "想再确认一个信息，方便简单说一下吗？"
+# 兜底问题的措辞与选项（按已知槽给贴合的选项，避免"疼痛评分"配成是/否）
+_FALLBACK_QA: dict[str, tuple[str, list[str]]] = {
+    "pain_score": ("现在的不适，如果0是完全不痛、10是最痛，大概几分？",
+                   ["0-3分（轻）", "4-6分（中）", "7-10分（重）", "不确定"]),
+    "rehab_stage": ("这个情况大概持续多久了？",
+                    ["几天内", "1~3周", "超过1个月", "不确定"]),
+}
+
+
+def _fallback_question(slot: Slot) -> tuple[str, list[str]]:
+    if slot.slot_id in _FALLBACK_QA:
+        return _FALLBACK_QA[slot.slot_id]
+    title = slot.title or "这个情况"
+    return (f"想再确认一下关于「{title}」的情况，方便简单说一下吗？", ["是", "否", "不确定"])
 
 
 # ─────────────────── 沿分支前进（§5.7）───────────────────

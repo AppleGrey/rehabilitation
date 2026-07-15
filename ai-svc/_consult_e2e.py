@@ -77,7 +77,7 @@ def main() -> None:
         assert any(e["type"] == "text" for e in ev0)
         last_spec = next((e for e in ev0 if e["type"] == "input_spec"), None)
 
-        first = "我右膝盖疼，三周了，下蹲和上下楼都疼，没受过伤"
+        first = "我脖子有点酸，最近一周吧，天天低头看电脑手机"
         done = None
         for i in range(1, 11):
             msg = first if i == 1 else _pick_answer(last_spec)
@@ -111,19 +111,13 @@ def main() -> None:
         outcome = done.get("outcome") if done else "（未在 10 轮内收敛）"
         # 打印每轮 trace 的事件种类，验证「AI 原文 + KG 查询 + 行为」被记录
         if _CAP["traces"]:
-            print("\n4) 各轮 trace 事件种类（后台可见的 AI 行为）:")
+            print("\n4) 各轮 trace 事件种类 + 假设/选题（验证鉴别式）:")
             for i, tr in enumerate(_CAP["traces"], 1):
                 kinds = [e.get("t") for e in tr]
-                print(f"   轮{i}: {kinds}")
-            # 展示一条 KG 与一条 LLM-B 原文样例
-            for tr in _CAP["traces"]:
-                for e in tr:
-                    if e.get("t") == "kg":
-                        print(f"   样例[KG]  q={e['query'][:44]!r} mode={e['mode']} degraded={e['degraded']}")
-                        break
-                else:
-                    continue
-                break
+                pick = next((e for e in tr if e.get("t") == "pick"), None)
+                bd = pick.get("breakdown") if pick else {}
+                print(f"   轮{i}: {kinds}"
+                      + (f" | 选题ig={bd.get('ig')} intent={pick.get('intent')}" if pick else ""))
         print(f"\n[OK] consult SSE 端到端联调通过 ✅  收敛结果: {outcome}")
 
 

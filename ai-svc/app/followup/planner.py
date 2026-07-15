@@ -234,10 +234,8 @@ def _select_and_ask(session: StrategySession, *, kg_context_used: str,
     if tree is None:
         return _safe_fallback(session, trace=trace)
 
-    # P 缺口 → 标记必问题（绕过信息增益）；安全槽不再一律置顶（循序渐进）
-    for n in tree.question_nodes():
-        stopping.mark_backfill_required(n, session)
-
+    # 鉴别式：由打分（信息增益）选最能区分候选的问题；必填槽靠 plan_impact 在鉴别问完后自然补，
+    # 不再把 P 槽强制置顶（否则会抢在鉴别问题前面）。
     node = scoring.pick_current_node(tree, session)
     if node is None:
         # 树里没有可问的了：若 S/P 已齐可出方案，否则兜底

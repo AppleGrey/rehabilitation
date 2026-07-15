@@ -66,6 +66,10 @@
       <div id="turns"><div class="empty">选择一个会话</div></div>
     </div>
     <div class="card">
+      <h3>本轮鉴别方向（这题在区分哪些候选 · 答案导向）</h3>
+      <div id="discrim"><div class="empty">—</div></div>
+    </div>
+    <div class="card">
       <h3>本轮 AI 行为（原文 / 知识图谱查询 / 决策）</h3>
       <div id="trace"><div class="empty">—</div></div>
     </div>
@@ -200,6 +204,29 @@ function renderTurns(snaps) {
 function selectTurn(i) {
   $('turns').querySelectorAll('.turnbtn').forEach((b,j) => b.classList.toggle('active', j===i));
   renderTrace(SNAPS[i]);
+  renderDiscrim(SNAPS[i]);
+}
+
+function renderDiscrim(snap) {
+  const box = $('discrim');
+  const nodes = snap.tree_nodes || [];
+  const sel = nodes.find(n => n.node_id === snap.selected_question_id);
+  if (!sel || sel.type !== 'question') { box.innerHTML = '<div class="empty">本轮无鉴别问题（粗问/收束）</div>'; return; }
+  let html = `<div class="qtext" style="margin-bottom:8px">${sel.question_text||''}</div>`;
+  const disc = sel.discriminates || [];
+  html += `<div style="font-size:12px;color:#93a1bd;margin-bottom:6px">意图：${sel.intent||'-'}｜区分候选：${disc.length? disc.join(' / ') : '（未标注）'}</div>`;
+  const lean = sel.option_leanings || {};
+  const keys = Object.keys(lean);
+  if (keys.length) {
+    html += `<div style="font-size:12px;color:#93a1bd;margin-bottom:4px">答案 → 倾向病症：</div>`;
+    html += keys.map(k =>
+      `<div class="slot"><span style="flex:0 0 auto;color:#e6ebf5">${k}</span>
+       <span style="color:#6b7688">→</span>
+       <span style="flex:1;color:#4c8bff">${lean[k]}</span></div>`).join('');
+  } else {
+    html += `<div style="font-size:12px;color:#6b7688">（该题未提供答案→病症映射）</div>`;
+  }
+  box.innerHTML = html;
 }
 
 function renderTrace(snap) {

@@ -13,7 +13,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import Any, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 # ─────────────────────────── 枚举 ───────────────────────────
@@ -156,6 +156,9 @@ class StrategyTreeNode(_Model):
     answer_type: Optional[AnswerType] = None
     options: list[str] = Field(default_factory=list)
     discriminates: list[str] = Field(default_factory=list)
+    # 答案→候选病症 的倾向映射（如 {"低头加重":"姿势不良","转头加重":"小关节紊乱"}）：
+    # 用于「不同回答导向不同病症线」的可视化与信念更新提示；可空。
+    option_leanings: dict[str, str] = Field(default_factory=dict)
     ask_reason: str = ""
     required: bool = False          # S/P 缺口的「必问题」，绕过信息增益打分
     sensitive: bool = False         # 敏感题（降权 + 措辞更软）
@@ -194,6 +197,25 @@ class StrategyTreeNode(_Model):
 
     def is_terminal(self) -> bool:
         return self.type == NodeType.TERMINAL.value
+
+    # ── 对 LLM 输出的常见轻微偏差做容错（修复而非丢弃）──
+    @field_validator("target_slots", "discriminates", "options", mode="before")
+    @classmethod
+    def _wrap_to_list(cls, v):
+        """LLM 有时把本该是数组的字段写成单个字符串 → 包成 [str]；None → []。"""
+        if v is None:
+            return []
+        if isinstance(v, str):
+            return [v] if v else []
+        return v
+
+    @field_validator("option_leanings", mode="before")
+    @classmethod
+    def _clean_leanings(cls, v):
+        """LLM 常给 {"不确定": null} 这类 null 值；dict[str,str] 不接受 None → 过滤并字符串化。"""
+        if not isinstance(v, dict):
+            return {}
+        return {str(k): str(val) for k, val in v.items() if val not in (None, "")}
 
 
 class StrategyTreeEdge(_Model):

@@ -39,14 +39,14 @@ MAX_HYPOTHESES: int = _i("FOLLOWUP_MAX_HYP", 3)     # Top-≤3 候选
 HYP_DROP_BELOW: float = _f("FOLLOWUP_HYP_DROP", 0.08)  # 置信低于此淘汰
 
 # ── 打分权重（§5.5）──
-# 安全不再压倒一切：降低 W_SAFETY、提高 W_IG，让「了解症状细节」的功能/鉴别问题在
-# 无急性红旗线索时可以先问，实现循序渐进（红旗仍有较高权重，会在前几轮被问到）。
+# 鉴别式问诊：信息增益(区分候选)是主导；必填槽(plan_impact)次要，等候选大致区分后再补；
+# conf_gap 对所有候选是常数、不影响选择，权重压到很低仅作轻微偏置。
 W_SAFETY: float = _f("FOLLOWUP_W_SAFETY", 0.30)
-W_IG: float = _f("FOLLOWUP_W_IG", 0.35)
+W_IG: float = _f("FOLLOWUP_W_IG", 0.45)
 W_PLAN: float = _f("FOLLOWUP_W_PLAN", 0.12)
-W_CONFGAP: float = _f("FOLLOWUP_W_CONFGAP", 0.12)
+W_CONFGAP: float = _f("FOLLOWUP_W_CONFGAP", 0.05)
 W_BURDEN: float = _f("FOLLOWUP_W_BURDEN", 0.10)
-W_REP: float = _f("FOLLOWUP_W_REP", 0.15)
+W_REP: float = _f("FOLLOWUP_W_REP", 0.20)
 
 # ── 树规模上限（§6.6 防爆炸）──
 MAX_CANDIDATES: int = _i("FOLLOWUP_MAX_CANDIDATES", 3)
