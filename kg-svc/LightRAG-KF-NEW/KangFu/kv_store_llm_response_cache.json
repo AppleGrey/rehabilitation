@@ -570,6 +570,51 @@
       "embedding_min": null,
       "embedding_max": null,
       "original_prompt": "肩颈颈肩部肌肉劳损 不良姿势相关性疼痛 颈椎小关节功能紊乱 评估要点 红旗 禁忌 鉴别点（中文作答）"
+    },
+    "e6bdf1c1062313b5fa6070cdc3ae80c8": {
+      "return": "{\"high_level_keywords\": [\"\\u8116\\u5b50\\u8bc4\\u4f30\", \"\\u4e34\\u5e8a\\u68c0\\u67e5\\u8981\\u70b9\", \"\\u7ea2\\u65d7\\u8b66\\u793a\", \"\\u7981\\u5fcc\\u75c7\", \"\\u9274\\u522b\\u8bca\\u65ad\"], \"low_level_keywords\": [\"\\u8116\\u5b50\", \"\\u9888\\u690e\", \"\\u6dcb\\u5df4\\u7ed3\", \"\\u80bf\\u5757\", \"\\u538b\\u75db\", \"\\u6d3b\\u52a8\\u53d7\\u9650\", \"\\u8840\\u7ba1\\u6742\\u97f3\"]}",
+      "cache_type": "keywords",
+      "embedding": null,
+      "embedding_shape": null,
+      "embedding_min": null,
+      "embedding_max": null,
+      "original_prompt": "脖子 评估要点 红旗 禁忌 鉴别点（中文作答）"
+    },
+    "fdcc6d6fa87a8de9e628ebb1ba47df54": {
+      "return": "{\"high_level_keywords\": [\"\\u9888\\u90e8\\u808c\\u8089\\u52b3\\u635f\", \"\\u59ff\\u52bf\\u4e0d\\u826f\", \"\\u9888\\u690e\\u5c0f\\u5173\\u8282\\u529f\\u80fd\\u7d0a\\u4e71\", \"\\u8bc4\\u4f30\\u8981\\u70b9\", \"\\u7ea2\\u65d7\\u5f81\", \"\\u7981\\u5fcc\", \"\\u9274\\u522b\\u8bca\\u65ad\"], \"low_level_keywords\": [\"\\u957f\\u671f\\u4f4e\\u5934\", \"\\u75bc\\u75db\\u8bc4\\u4f30\", \"\\u6d3b\\u52a8\\u53d7\\u9650\", \"\\u538b\\u75db\\u70b9\", \"\\u795e\\u7ecf\\u75c7\\u72b6\", \"\\u5f71\\u50cf\\u5b66\\u68c0\\u67e5\", \"\\u5371\\u9669\\u4fe1\\u53f7\", \"\\u624b\\u6cd5\\u7981\\u5fcc\", \"\\u708e\\u75c7\\u9274\\u522b\", \"\\u80bf\\u7624\\u9274\\u522b\"]}",
+      "cache_type": "keywords",
+      "embedding": null,
+      "embedding_shape": null,
+      "embedding_min": null,
+      "embedding_max": null,
+      "original_prompt": "脖子颈部肌肉劳损 姿势不良（如长期低头） 颈椎小关节功能紊乱 评估要点 红旗 禁忌 鉴别点（中文作答）"
+    },
+    "94f535d9f45c792447372e022e7d41b4": {
+      "return": "{\"high_level_keywords\": [\"\\u808c\\u8089\\u9aa8\\u9abc\\u75be\\u75c5\\u8bc4\\u4f30\", \"\\u7ea2\\u8272\\u8b66\\u793a\\u5f81\\u8c61\", \"\\u9274\\u522b\\u8bca\\u65ad\"], \"low_level_keywords\": [\"\\u80a9\\u9888\\u808c\\u8089\\u52b3\\u635f\", \"\\u9888\\u690e\\u5c0f\\u5173\\u8282\\u7d0a\\u4e71\", \"\\u9888\\u690e\\u95f4\\u76d8\\u6e90\\u6027\\u75bc\\u75db\", \"\\u7981\\u5fcc\\u75c7\", \"\\u8bc4\\u4f30\\u8981\\u70b9\"]}",
+      "cache_type": "keywords",
+      "embedding": null,
+      "embedding_shape": null,
+      "embedding_min": null,
+      "embedding_max": null,
+      "original_prompt": "肩颈颈部肌肉劳损 颈椎小关节紊乱 颈椎间盘源性疼痛 评估要点 红旗 禁忌 鉴别点（中文作答）"
+    },
+    "27f3610c242c94e63e2b65f91f9cdd3b": {
+      "return": "{\"high_level_keywords\": [\"\\u80a9\\u9888\\u59ff\\u52bf\\u4e0d\\u826f\", \"\\u9888\\u90e8\\u808c\\u8089\\u52b3\\u635f\", \"\\u9888\\u690e\\u5c0f\\u5173\\u8282\\u7d0a\\u4e71\", \"\\u9888\\u80a9\\u90e8\\u808c\\u7b4b\\u819c\\u75bc\\u75db\", \"\\u8bc4\\u4f30\\u8981\\u70b9\", \"\\u7ea2\\u65d7\\u5f81\\u8c61\", \"\\u7981\\u5fcc\", \"\\u9274\\u522b\\u8bca\\u65ad\"], \"low_level_keywords\": [\"\\u59ff\\u52bf\\u8bc4\\u4f30\", \"\\u808c\\u8089\\u7d27\\u5f20\", \"\\u538b\\u75db\\u70b9\", \"\\u6d3b\\u52a8\\u53d7\\u9650\", \"\\u795e\\u7ecf\\u75c7\\u72b6\", \"\\u9aa8\\u6298\", \"\\u611f\\u67d3\", \"\\u80bf\\u7624\", \"\\u98ce\\u6e7f\\u6027\\u75be\\u75c5\", \"\\u5f71\\u50cf\\u5b66\\u68c0\\u67e5\", \"\\u624b\\u6cd5\\u6cbb\\u7597\\u7981\\u5fcc\"]}",
+      "cache_type": "keywords",
+      "embedding": null,
+      "embedding_shape": null,
+      "embedding_min": null,
+      "embedding_max": null,
+      "original_prompt": "肩颈姿势不良/颈部肌肉劳损 颈椎小关节紊乱 颈肩部肌筋膜疼痛 评估要点 红旗 禁忌 鉴别点（中文作答）"
+    },
+    "d3e000da73590c1f3880f0768942b3fc": {
+      "return": "{\"high_level_keywords\": [\"\\u80a9\\u9888\\u808c\\u7b4b\\u819c\\u75bc\\u75db\", \"\\u59ff\\u52bf\\u4e0d\\u826f\", \"\\u9888\\u90e8\\u808c\\u8089\\u52b3\\u635f\", \"\\u9888\\u690e\\u5c0f\\u5173\\u8282\\u7d0a\\u4e71\", \"\\u8bc4\\u4f30\\u8981\\u70b9\", \"\\u7ea2\\u65d7\\u5f81\", \"\\u7981\\u5fcc\", \"\\u9274\\u522b\\u8bca\\u65ad\"], \"low_level_keywords\": [\"\\u808c\\u7b4b\\u819c\\u89e6\\u53d1\\u70b9\", \"\\u75bc\\u75db\\u8bc4\\u4f30\", \"\\u6d3b\\u52a8\\u53d7\\u9650\", \"\\u795e\\u7ecf\\u75c7\\u72b6\", \"\\u9aa8\\u6298\", \"\\u80bf\\u7624\", \"\\u611f\\u67d3\", \"\\u810a\\u9ad3\\u538b\\u8feb\", \"\\u7269\\u7406\\u6cbb\\u7597\\u7981\\u5fcc\", \"\\u624b\\u6cd5\\u8c03\\u6574\\u98ce\\u9669\"]}",
+      "cache_type": "keywords",
+      "embedding": null,
+      "embedding_shape": null,
+      "embedding_min": null,
+      "embedding_max": null,
+      "original_prompt": "肩颈颈肩部肌筋膜疼痛 姿势不良/颈部肌肉劳损 颈椎小关节紊乱 评估要点 红旗 禁忌 鉴别点（中文作答）"
     }
   },
   "global": {
