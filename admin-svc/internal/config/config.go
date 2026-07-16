@@ -12,6 +12,7 @@ type Config struct {
 	HTTPAddr    string
 	DatabaseURL string
 	StaticDir   string
+	KgSvcURL    string
 }
 
 func Load() (*Config, error) {
@@ -22,6 +23,7 @@ func Load() (*Config, error) {
 		HTTPAddr:    env("HTTP_ADDR", ":8082"),
 		DatabaseURL: env("DATABASE_URL", "postgresql://postgres@localhost:5432/rehabilitation"),
 		StaticDir:   env("STATIC_DIR", "../frontend-admin/dist"),
+		KgSvcURL:    env("KG_SVC_URL", "http://127.0.0.1:8010"),
 	}, nil
 }
 

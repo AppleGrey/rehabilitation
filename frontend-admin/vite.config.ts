@@ -10,6 +10,12 @@ export default defineConfig({
         target: 'http://127.0.0.1:8082',
         changeOrigin: true,
       },
+      // Same-origin proxy to kg-svc (avoids CORS during local dev)
+      '/kg-svc': {
+        target: 'http://127.0.0.1:8010',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/kg-svc/, ''),
+      },
     },
   },
 })

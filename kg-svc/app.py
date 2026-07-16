@@ -15,10 +15,7 @@ from __future__ import annotations
 import time
 from typing import Any, Literal
 
-from pathlib import Path
-
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from config import settings
@@ -51,15 +48,6 @@ class RetrieveResponse(BaseModel):
     elapsed_ms: int
     length: int
     context: str
-
-
-HERE = Path(__file__).resolve().parent
-
-
-@app.get("/test")
-async def test_page() -> FileResponse:
-    """浏览器检索测试页（同端口，无 CORS 问题）。"""
-    return FileResponse(HERE / "test.html", media_type="text/html; charset=utf-8")
 
 
 @app.get("/health")

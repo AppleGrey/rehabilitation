@@ -80,7 +80,7 @@ kg-svc\.venv\Scripts\python.exe -m uvicorn app:app --app-dir kg-svc --host 127.0
 | 方式 | 地址 / 命令 |
 |------|-------------|
 | 健康检查 | <http://127.0.0.1:8010/health> |
-| 浏览器测试页 | <http://127.0.0.1:8010/test> |
+| 管理后台 KG 检索页 | frontend-admin `/kg`（经 `/kg-svc` 代理到 8010） |
 | 命令行探针 | `kg-svc\.venv\Scripts\python.exe kg-svc\_probe.py "膝关节术后康复" hybrid` |
 | 直连脚本 | `kg-svc\.venv\Scripts\python.exe kg-svc\smoke_test.py` |
 

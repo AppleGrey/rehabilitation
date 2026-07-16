@@ -35,7 +35,7 @@ func main() {
 
 	repo := strategy.NewRepo(pool)
 	handler := strategy.NewHandler(repo)
-	router := httpserver.NewRouter(handler, cfg.StaticDir)
+	router := httpserver.NewRouter(handler, cfg.StaticDir, cfg.KgSvcURL)
 
 	srv := &http.Server{
 		Addr:              cfg.HTTPAddr,

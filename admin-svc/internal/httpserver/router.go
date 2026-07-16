@@ -2,8 +2,11 @@ package httpserver
 
 import (
 	"net/http"
+	"net/http/httputil"
+	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -11,7 +14,7 @@ import (
 	"rehabilitation/admin-svc/internal/strategy"
 )
 
-func NewRouter(h *strategy.Handler, staticDir string) *gin.Engine {
+func NewRouter(h *strategy.Handler, staticDir, kgSvcURL string) *gin.Engine {
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery())
 	r.Use(corsMiddleware())
@@ -29,6 +32,12 @@ func NewRouter(h *strategy.Handler, staticDir string) *gin.Engine {
 		api.GET("/consult/sessions", h.ListSessions)
 		api.GET("/session/:session_id/strategy/history", h.History)
 		api.GET("/session/:session_id/strategy", h.Latest)
+	}
+
+	if kgSvcURL != "" {
+		if proxy, err := newKgProxy(kgSvcURL); err == nil {
+			r.Any("/kg-svc/*filepath", proxy)
+		}
 	}
 
 	if staticDir != "" {
@@ -61,6 +70,28 @@ func NewRouter(h *strategy.Handler, staticDir string) *gin.Engine {
 	}
 
 	return r
+}
+
+func newKgProxy(raw string) (gin.HandlerFunc, error) {
+	target, err := url.Parse(strings.TrimRight(raw, "/"))
+	if err != nil {
+		return nil, err
+	}
+	proxy := httputil.NewSingleHostReverseProxy(target)
+	originalDirector := proxy.Director
+	proxy.Director = func(req *http.Request) {
+		originalDirector(req)
+		req.Host = target.Host
+		// /kg-svc/health -> /health ; /kg-svc/kg/retrieve -> /kg/retrieve
+		req.URL.Path = strings.TrimPrefix(req.URL.Path, "/kg-svc")
+		if req.URL.Path == "" {
+			req.URL.Path = "/"
+		}
+		req.URL.RawPath = ""
+	}
+	return func(c *gin.Context) {
+		proxy.ServeHTTP(c.Writer, c.Request)
+	}, nil
 }
 
 func corsMiddleware() gin.HandlerFunc {
