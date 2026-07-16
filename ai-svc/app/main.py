@@ -31,7 +31,6 @@ logging.basicConfig(
 from fastapi import BackgroundTasks, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
-from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
@@ -374,7 +373,7 @@ async def ai_consult(req: ConsultRequest):
 
 @app.get("/api/ai/session/{session_id}/strategy")
 def ai_strategy_snapshot(session_id: str):
-    """后台/调试：拉取该会话最新一条策略树快照（问诊策略面板用）。"""
+    """C 端问诊报告：拉取该会话最新一条策略树快照。"""
     snap = _fp.load_latest_snapshot(session_id)
     if snap is None:
         raise HTTPException(status_code=404, detail="暂无策略树快照")
@@ -386,48 +385,6 @@ def ai_kg_health():
     """探活 kg-svc（内网检索服务）。"""
     info = _kg_client.health()
     return {"kg_svc": "ok" if info else "unavailable", "detail": info}
-
-
-def _impression_of(snap: dict) -> list[dict]:
-    """从快照 hypotheses(jsonb) 取 Top-2 印象（name+confidence）。"""
-    hyps = snap.get("hypotheses") or []
-    if not isinstance(hyps, list):
-        return []
-    active = [h for h in hyps if isinstance(h, dict) and h.get("status", "active") == "active"]
-    active.sort(key=lambda h: h.get("confidence", 0), reverse=True)
-    return [{"name": h.get("name"), "confidence": round(h.get("confidence", 0), 2)} for h in active[:2]]
-
-
-@app.get("/api/ai/consult/sessions")
-def ai_consult_sessions(limit: int = 30):
-    """后台可视化：最近有策略树快照的问诊会话列表。"""
-    rows = _fp.list_recent_sessions(limit=limit)
-    out = []
-    for r in rows:
-        out.append({
-            "session_id": str(r.get("session_id")),
-            "turn_no": r.get("turn_no"),
-            "phase": r.get("phase"),
-            "strategy_source": r.get("strategy_source"),
-            "impression": _impression_of(r),
-            "created_at": r.get("created_at").isoformat() if r.get("created_at") else None,
-        })
-    return {"sessions": out}
-
-
-@app.get("/api/ai/session/{session_id}/strategy/history")
-def ai_strategy_history(session_id: str):
-    """后台可视化：该会话按轮次的全部策略树快照（时间线）。"""
-    return {"session_id": session_id, "snapshots": _fp.list_snapshots(session_id)}
-
-
-@app.get("/api/ai/strategy-viz")
-def ai_strategy_viz():
-    """策略树可视化后台网页（无鉴权，内网/调试用）。"""
-    html = Path(__file__).parent / "static" / "strategy.html"
-    if not html.exists():
-        raise HTTPException(status_code=404, detail="strategy.html 缺失")
-    return FileResponse(html, media_type="text/html; charset=utf-8")
 
 
 @app.get("/api/test/ping")

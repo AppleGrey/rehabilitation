@@ -2,7 +2,8 @@
 策略树快照 / 问题事件落库（§10.3）。
 
 幂等：以 (session_id, turn_no) 为去重键，断线重连/重试不重复追加。
-读取供后台「问诊策略面板」回放（增量3 的 GET /api/ai/session/{id}/strategy）。
+读取供 C 端问诊报告（GET /api/ai/session/{id}/strategy）。
+后台可视化会话列表/历史由 admin-svc 直连同一数据库查询。
 """
 from __future__ import annotations
 
@@ -145,44 +146,6 @@ def load_latest_snapshot(session_id: str) -> Optional[dict]:
     except Exception:
         logger.exception("[FOLLOWUP] 读取快照失败 session=%s", session_id)
         return None
-
-
-def list_snapshots(session_id: str) -> list[dict]:
-    """某会话按轮次的全部快照（时间线/回放用）。"""
-    try:
-        with db_cursor(commit=False) as cur:
-            cur.execute(
-                """
-                SELECT * FROM consult_strategy_snapshots
-                WHERE session_id = %s ORDER BY turn_no ASC
-                """,
-                (session_id,),
-            )
-            return [dict(r) for r in cur.fetchall()]
-    except Exception:
-        logger.exception("[FOLLOWUP] 读取快照列表失败 session=%s", session_id)
-        return []
-
-
-def list_recent_sessions(limit: int = 30) -> list[dict]:
-    """后台可视化：最近有策略树快照的会话（每会话取最新一轮）。"""
-    try:
-        with db_cursor(commit=False) as cur:
-            cur.execute(
-                """
-                SELECT * FROM (
-                    SELECT DISTINCT ON (session_id)
-                        session_id, turn_no, phase, strategy_source, hypotheses, created_at
-                    FROM consult_strategy_snapshots
-                    ORDER BY session_id, turn_no DESC
-                ) t ORDER BY created_at DESC LIMIT %s
-                """,
-                (limit,),
-            )
-            return [dict(r) for r in cur.fetchall()]
-    except Exception:
-        logger.exception("[FOLLOWUP] 读取会话列表失败")
-        return []
 
 
 # ─────────────────── 会话实时状态（StrategySession 全量）───────────────────

@@ -103,10 +103,12 @@ def main() -> None:
             if done:
                 break
 
-        print("\n3) GET /api/ai/strategy-viz (HTML)")
-        r = c.get("/api/ai/strategy-viz")
-        print("   status:", r.status_code, "| 含 vis-network:", "vis-network" in r.text)
-        assert r.status_code == 200
+        print("\n3) GET /api/ai/session/{id}/strategy (最新快照)")
+        if done:
+            r = c.get(f"/api/ai/session/{sid}/strategy")
+            print("   status:", r.status_code)
+            # 粗问未收敛时可能 404，有快照则应为 200
+            assert r.status_code in (200, 404)
 
         outcome = done.get("outcome") if done else "（未在 10 轮内收敛）"
         # 打印每轮 trace 的事件种类，验证「AI 原文 + KG 查询 + 行为」被记录
@@ -119,6 +121,7 @@ def main() -> None:
                 print(f"   轮{i}: {kinds}"
                       + (f" | 选题ig={bd.get('ig')} intent={pick.get('intent')}" if pick else ""))
         print(f"\n[OK] consult SSE 端到端联调通过 ✅  收敛结果: {outcome}")
+        print("提示: 策略树可视化已迁至 admin-svc + frontend-admin")
 
 
 if __name__ == "__main__":

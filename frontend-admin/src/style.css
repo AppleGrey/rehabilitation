@@ -1,0 +1,31 @@
+:root {
+  --bg: #0f1420;
+  --panel: #171e2e;
+  --line: #26324a;
+  --fg: #e6ebf5;
+  --muted: #93a1bd;
+  --primary: #00a68c;
+  --red: #ff5c6c;
+  --blue: #4c8bff;
+  --green: #37c26a;
+  --gray: #6b7688;
+  --yellow: #f5b02e;
+  --purple: #8a5cff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  font-family: -apple-system, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+}
