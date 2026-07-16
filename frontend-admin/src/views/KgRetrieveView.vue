@@ -2,7 +2,7 @@
 import { onMounted, ref } from 'vue'
 
 const baseUrl = ref('/kg-svc')
-const query = ref('膝关节前交叉韧带重建术后早期应如何进行康复训练？有哪些注意事项和禁忌？')
+const query = ref('网球肘患者握物时常见的代偿模式是什么？')
 const mode = ref('hybrid')
 const topK = ref(20)
 const onlyNeedContext = ref('true')
