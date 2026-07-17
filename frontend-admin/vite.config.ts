@@ -16,6 +16,12 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/kg-svc/, ''),
       },
+      // Same-origin proxy to core-svc video API (:8081)
+      '/core-svc': {
+        target: 'http://127.0.0.1:8081',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/core-svc/, ''),
+      },
     },
   },
 })

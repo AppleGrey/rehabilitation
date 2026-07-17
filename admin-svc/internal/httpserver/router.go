@@ -14,7 +14,7 @@ import (
 	"rehabilitation/admin-svc/internal/strategy"
 )
 
-func NewRouter(h *strategy.Handler, staticDir, kgSvcURL string) *gin.Engine {
+func NewRouter(h *strategy.Handler, staticDir, kgSvcURL, coreSvcURL string) *gin.Engine {
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery())
 	r.Use(corsMiddleware())
@@ -35,8 +35,14 @@ func NewRouter(h *strategy.Handler, staticDir, kgSvcURL string) *gin.Engine {
 	}
 
 	if kgSvcURL != "" {
-		if proxy, err := newKgProxy(kgSvcURL); err == nil {
+		if proxy, err := newPrefixProxy(kgSvcURL, "/kg-svc"); err == nil {
 			r.Any("/kg-svc/*filepath", proxy)
+		}
+	}
+
+	if coreSvcURL != "" {
+		if proxy, err := newPrefixProxy(coreSvcURL, "/core-svc"); err == nil {
+			r.Any("/core-svc/*filepath", proxy)
 		}
 	}
 
@@ -72,18 +78,18 @@ func NewRouter(h *strategy.Handler, staticDir, kgSvcURL string) *gin.Engine {
 	return r
 }
 
-func newKgProxy(raw string) (gin.HandlerFunc, error) {
+func newPrefixProxy(raw, prefix string) (gin.HandlerFunc, error) {
 	target, err := url.Parse(strings.TrimRight(raw, "/"))
 	if err != nil {
 		return nil, err
 	}
 	proxy := httputil.NewSingleHostReverseProxy(target)
+	proxy.FlushInterval = -1 // stream video Range responses without buffering
 	originalDirector := proxy.Director
 	proxy.Director = func(req *http.Request) {
 		originalDirector(req)
 		req.Host = target.Host
-		// /kg-svc/health -> /health ; /kg-svc/kg/retrieve -> /kg/retrieve
-		req.URL.Path = strings.TrimPrefix(req.URL.Path, "/kg-svc")
+		req.URL.Path = strings.TrimPrefix(req.URL.Path, prefix)
 		if req.URL.Path == "" {
 			req.URL.Path = "/"
 		}
@@ -98,7 +104,8 @@ func corsMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Header("Access-Control-Allow-Origin", "*")
 		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
-		c.Header("Access-Control-Allow-Headers", "Authorization, Content-Type")
+		c.Header("Access-Control-Allow-Headers", "Authorization, Content-Type, Range")
+		c.Header("Access-Control-Expose-Headers", "Accept-Ranges, Content-Length, Content-Range")
 		if c.Request.Method == http.MethodOptions {
 			c.AbortWithStatus(http.StatusNoContent)
 			return

@@ -20,8 +20,8 @@ func (r *Repo) ListMetadata(ctx context.Context, targetJoint, severity string, l
 	if limit <= 0 {
 		limit = 20
 	}
-	if limit > 200 {
-		limit = 200
+	if limit > 500 {
+		limit = 500
 	}
 
 	query := `
