@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 
 import '../theme/app_theme.dart';
 import '../config/api_config.dart';
+import 'baseline_page.dart';
 import 'chat_list_page.dart';
 import 'consult_report_page.dart';
 
@@ -496,6 +497,27 @@ class _ConsultPageState extends State<ConsultPage> {
               ...impression.map((h) => _impressionRow(h as Map<String, dynamic>)),
             ],
             const SizedBox(height: 14),
+            if (!isRefer) ...[
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    elevation: 0,
+                  ),
+                  onPressed: _sessionId == null
+                      ? null
+                      : () => Navigator.of(context).push(MaterialPageRoute<void>(
+                          builder: (_) => BaselinePage(sessionId: _sessionId!))),
+                  icon: const Icon(Icons.assignment_turned_in, size: 18),
+                  label: const Text('生成我的康复方案', style: TextStyle(fontWeight: FontWeight.w600)),
+                ),
+              ),
+              const SizedBox(height: 10),
+            ],
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
