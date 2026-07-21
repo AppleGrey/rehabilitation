@@ -11,10 +11,11 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"rehabilitation/admin-svc/internal/program"
 	"rehabilitation/admin-svc/internal/strategy"
 )
 
-func NewRouter(h *strategy.Handler, staticDir, kgSvcURL, coreSvcURL string) *gin.Engine {
+func NewRouter(h *strategy.Handler, ph *program.Handler, staticDir, kgSvcURL, coreSvcURL string) *gin.Engine {
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery())
 	r.Use(corsMiddleware())
@@ -32,6 +33,10 @@ func NewRouter(h *strategy.Handler, staticDir, kgSvcURL, coreSvcURL string) *gin
 		api.GET("/consult/sessions", h.ListSessions)
 		api.GET("/session/:session_id/strategy/history", h.History)
 		api.GET("/session/:session_id/strategy", h.Latest)
+		// 方案查看（直读库）+ 用户跟练视频列表
+		api.GET("/programs", ph.ListPrograms)
+		api.GET("/programs/:id", ph.GetProgram)
+		api.GET("/uploads", ph.ListUploads)
 	}
 
 	if kgSvcURL != "" {

@@ -9,6 +9,8 @@ import { RouterLink, RouterView } from 'vue-router'
       <RouterLink class="nav-link" to="/strategy">问诊策略树</RouterLink>
       <RouterLink class="nav-link" to="/kg">知识图谱检索</RouterLink>
       <RouterLink class="nav-link" to="/videos">视频库</RouterLink>
+      <RouterLink class="nav-link" to="/programs">康复方案</RouterLink>
+      <RouterLink class="nav-link" to="/uploads">用户跟练视频</RouterLink>
     </nav>
     <div class="content">
       <RouterView />

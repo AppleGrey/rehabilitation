@@ -60,7 +60,7 @@ func (h *Handler) Play(c *gin.Context) {
 	}
 
 	total := meta.Size
-	start, end, isPartial, ok := parseByteRange(c.GetHeader("Range"), total)
+	start, end, isPartial, ok := storage.ParseByteRange(c.GetHeader("Range"), total)
 	if !ok {
 		c.Header("Content-Range", fmt.Sprintf("bytes */%d", total))
 		c.Status(http.StatusRequestedRangeNotSatisfiable)
@@ -95,59 +95,4 @@ func (h *Handler) Play(c *gin.Context) {
 		c.Status(http.StatusOK)
 	}
 	_, _ = io.Copy(c.Writer, play.Object)
-}
-
-// parseByteRange supports "bytes=start-end" / "bytes=start-".
-// ok=false means Range is present but unsatisfiable.
-func parseByteRange(header string, size int64) (start, end int64, partial bool, ok bool) {
-	if size <= 0 {
-		return 0, -1, false, true
-	}
-	header = strings.TrimSpace(header)
-	if header == "" {
-		return 0, size - 1, false, true
-	}
-	if !strings.HasPrefix(header, "bytes=") {
-		return 0, size - 1, false, true
-	}
-	spec := strings.TrimPrefix(header, "bytes=")
-	// Only honor the first range.
-	if i := strings.IndexByte(spec, ','); i >= 0 {
-		spec = spec[:i]
-	}
-	parts := strings.SplitN(spec, "-", 2)
-	if len(parts) != 2 {
-		return 0, 0, false, false
-	}
-
-	if parts[0] == "" {
-		// suffix form: bytes=-N
-		n, err := strconv.ParseInt(parts[1], 10, 64)
-		if err != nil || n <= 0 {
-			return 0, 0, false, false
-		}
-		if n > size {
-			n = size
-		}
-		return size - n, size - 1, true, true
-	}
-
-	s, err := strconv.ParseInt(parts[0], 10, 64)
-	if err != nil || s < 0 {
-		return 0, 0, false, false
-	}
-	if s >= size {
-		return 0, 0, false, false
-	}
-	if parts[1] == "" {
-		return s, size - 1, true, true
-	}
-	e, err := strconv.ParseInt(parts[1], 10, 64)
-	if err != nil || e < s {
-		return 0, 0, false, false
-	}
-	if e >= size {
-		e = size - 1
-	}
-	return s, e, true, true
 }

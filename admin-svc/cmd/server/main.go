@@ -13,6 +13,7 @@ import (
 
 	"rehabilitation/admin-svc/internal/config"
 	"rehabilitation/admin-svc/internal/httpserver"
+	"rehabilitation/admin-svc/internal/program"
 	"rehabilitation/admin-svc/internal/strategy"
 )
 
@@ -35,7 +36,8 @@ func main() {
 
 	repo := strategy.NewRepo(pool)
 	handler := strategy.NewHandler(repo)
-	router := httpserver.NewRouter(handler, cfg.StaticDir, cfg.KgSvcURL, cfg.CoreSvcURL)
+	programHandler := program.NewHandler(program.NewRepo(pool))
+	router := httpserver.NewRouter(handler, programHandler, cfg.StaticDir, cfg.KgSvcURL, cfg.CoreSvcURL)
 
 	srv := &http.Server{
 		Addr:              cfg.HTTPAddr,

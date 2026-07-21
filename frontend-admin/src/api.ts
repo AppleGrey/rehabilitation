@@ -69,3 +69,38 @@ export function playUrl(video: Pick<VideoItem, 'video_id' | 'url'>): string {
   if (video.url) return video.url
   return `${CORE_SVC_BASE}/api/videos/${encodeURIComponent(video.video_id)}/play`
 }
+
+// ── 康复方案（admin-svc 直读库）+ 用户跟练视频 ──
+
+export interface ProgramSummary {
+  program_id: string
+  condition?: string
+  body_part?: string
+  status?: string
+  current_stage_no?: number
+  impression?: { name?: string; confidence?: number }[]
+  created_at?: string | null
+}
+
+export interface UploadItem {
+  task_id: string
+  session_id?: string
+  standard_video_id?: string
+  status?: string
+  summary?: string | null
+  assessment?: Record<string, unknown> | null
+  play_url: string
+  created_at?: string | null
+}
+
+export function fetchPrograms(limit = 50) {
+  return getJSON<{ programs: ProgramSummary[] }>(`/admin-api/programs?limit=${limit}`)
+}
+
+export function fetchProgram(id: string) {
+  return getJSON<Record<string, any>>(`/admin-api/programs/${encodeURIComponent(id)}`)
+}
+
+export function fetchUploads(limit = 50) {
+  return getJSON<{ uploads: UploadItem[] }>(`/admin-api/uploads?limit=${limit}`)
+}

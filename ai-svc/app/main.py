@@ -387,6 +387,48 @@ def ai_kg_health():
     return {"kg_svc": "ok" if info else "unavailable", "detail": info}
 
 
+# ── 闭环康复方案（K2）：问诊 → baseline 试跟做 → 生成方案 ─────────────────────────
+from .program import service as _program  # noqa: E402
+
+
+class ProgramStartRequest(BaseModel):
+    session_id: str
+
+
+class ProgramPlanRequest(BaseModel):
+    baseline: list[dict] | None = None  # [{video_id, overall_score?, range_of_motion?, notes?}]
+
+
+@app.post("/api/ai/program/start")
+def ai_program_start(req: ProgramStartRequest):
+    """问诊完成 → 建疗程 + 返回 baseline 视频让用户先试跟做。"""
+    session = _get_strategy_session(req.session_id)
+    if session is None:
+        raise HTTPException(status_code=404, detail="问诊会话不存在")
+    result = _program.start_program(session)
+    if result is None:
+        raise HTTPException(status_code=500, detail="建疗程失败（检查数据库）")
+    return result
+
+
+@app.post("/api/ai/program/{program_id}/plan")
+def ai_program_plan(program_id: str, req: ProgramPlanRequest):
+    """据 问诊 + baseline 表现 生成当前分期方案。"""
+    result = _program.generate_stage_plan(program_id, baseline_results=req.baseline)
+    if result is None:
+        raise HTTPException(status_code=404, detail="疗程不存在或方案生成失败")
+    return result
+
+
+@app.get("/api/ai/program/{program_id}")
+def ai_program_get(program_id: str):
+    """疗程全景（当前阶段方案 + 训练项）。"""
+    result = _program.view_program(program_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="疗程不存在")
+    return result
+
+
 @app.get("/api/test/ping")
 def test_ping():
     return {

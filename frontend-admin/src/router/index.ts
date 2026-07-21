@@ -3,6 +3,8 @@ import AdminLayout from '../layouts/AdminLayout.vue'
 import StrategyVizView from '../views/StrategyVizView.vue'
 import KgRetrieveView from '../views/KgRetrieveView.vue'
 import VideoManageView from '../views/VideoManageView.vue'
+import ProgramView from '../views/ProgramView.vue'
+import UserVideoView from '../views/UserVideoView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -15,6 +17,8 @@ const router = createRouter({
         { path: 'strategy', name: 'strategy', component: StrategyVizView },
         { path: 'kg', name: 'kg', component: KgRetrieveView },
         { path: 'videos', name: 'videos', component: VideoManageView },
+        { path: 'programs', name: 'programs', component: ProgramView },
+        { path: 'uploads', name: 'uploads', component: UserVideoView },
       ],
     },
   ],

@@ -29,6 +29,9 @@ DASHSCOPE_MODEL: str = os.getenv("DASHSCOPE_MODEL", "qwen3.6-plus")
 # kg-svc（LightRAG 康复知识图谱检索服务，只检索不生成）
 KG_SVC_URL: str = os.getenv("KG_SVC_URL", "http://127.0.0.1:8010")
 
+# core-svc（Go 核心服务：视频内容 + 康复方案存储）。ai-svc 生成方案后调它落库。
+CORE_SVC_URL: str = os.getenv("CORE_SVC_URL", "http://127.0.0.1:8081")
+
 # PostgreSQL（默认本地无密码）
 DATABASE_URL: str = os.getenv(
     "DATABASE_URL",

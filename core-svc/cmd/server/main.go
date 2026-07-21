@@ -13,6 +13,7 @@ import (
 
 	"rehabilitation/core-svc/internal/config"
 	"rehabilitation/core-svc/internal/httpserver"
+	"rehabilitation/core-svc/internal/program"
 	"rehabilitation/core-svc/internal/storage"
 	"rehabilitation/core-svc/internal/video"
 )
@@ -46,7 +47,13 @@ func main() {
 	repo := video.NewRepo(pool)
 	svc := video.NewService(repo, minioClient)
 	handler := video.NewHandler(svc)
-	router := httpserver.NewRouter(handler)
+
+	if err := program.EnsureSchema(ctx, pool); err != nil {
+		log.Fatalf("program schema: %v", err)
+	}
+	programHandler := program.NewHandler(program.NewRepo(pool), minioClient)
+
+	router := httpserver.NewRouter(handler, programHandler)
 
 	srv := &http.Server{
 		Addr:              cfg.HTTPAddr,
