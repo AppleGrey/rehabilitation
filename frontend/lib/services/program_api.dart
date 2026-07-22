@@ -43,6 +43,19 @@ class ProgramApi {
     return _decode(resp, '读取方案失败');
   }
 
+  /// 查动作评估任务状态（用于收集基线跟做的表现）。失败/未完成返回 null。
+  static Future<Map<String, dynamic>?> assessStatus(String taskId) async {
+    try {
+      final resp = await http
+          .get(Uri.parse('$_base/api/assess/status/$taskId'))
+          .timeout(const Duration(seconds: 12));
+      if (resp.statusCode == 200) {
+        return jsonDecode(utf8.decode(resp.bodyBytes)) as Map<String, dynamic>;
+      }
+    } catch (_) {}
+    return null;
+  }
+
   static Map<String, dynamic> _decode(http.Response resp, String errPrefix) {
     if (resp.statusCode != 200) {
       String detail = '${resp.statusCode}';

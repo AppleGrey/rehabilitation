@@ -7,6 +7,7 @@ LLM 只产出 tree_nodes/tree_edges（每个 question 自带 question_text）；
 from __future__ import annotations
 
 import logging
+import re
 import uuid
 from typing import Optional
 
@@ -48,7 +49,10 @@ _SYSTEM = (
     "但它**优先级低于鉴别问题**，等候选大致区分后再补。\n"
     "5) selected_question_id = **最能劈开当前领先两名候选**的那个问题。\n"
     "6) 只用 type=\"question\"/\"terminal\"，不要 branch/action。answer_type 用 single_choice，options 含『不确定』。\n"
-    "7) 只输出 JSON：{\"hypotheses\":[...],\"tree_nodes\":[...],\"tree_edges\":[...],\"selected_question_id\":\"...\"}。\n"
+    "7) tree_edges 尽量简化：可输出空数组 []（推荐）；若串联问题，when 只能写该题 options 原文，"
+    "用 | 连接，如 \"是|否|不确定\"，或写 \"any\" 表示任意回答都进入下一题。"
+    "禁止 Python 表达式（如 answer== / answer in）。\n"
+    "8) 只输出 JSON：{\"hypotheses\":[...],\"tree_nodes\":[...],\"tree_edges\":[...],\"selected_question_id\":\"...\"}。\n"
     "   question 字段：node_id,type,target_slots(自拟语义化 slot_id 如 neck_pain_trigger),intent,"
     "question_text,answer_type,options,discriminates,option_leanings,ask_reason。\n"
     "   terminal 字段：node_id,type:\"terminal\",terminal_type:\"refer\",rationale。边：from,to,when。\n"
@@ -167,11 +171,163 @@ def seed_hypotheses_if_empty(session: StrategySession, data: dict) -> None:
     session.hypotheses = seeded
 
 
+# when 写成这些 → 视为「任意回答都走这条边」
+_WHEN_WILDCARDS = frozenset({
+    "", "any", "*", "all", "always", "默认", "任意", "继续", "next", "true", "yes",
+})
+
+
+def _extract_quoted_tokens(text: str) -> list[str]:
+    """从 answer in [...] / answer == \"x\" 这类表达式里抠出引号内的选项。"""
+    return [m.group(1) for m in re.finditer(r"[\"'“”‘’]([^\"'“”‘’]+)[\"'“”‘’]", text or "")]
+
+
+def _covers_from_when(when: str, options: list[str]) -> Optional[list[str]]:
+    """
+    把 LLM 的 when 规范化成 covers。
+    返回 None 表示通配（应覆盖该题全部 options）；返回 list 表示具体选项集合。
+    """
+    w = (when or "").strip()
+    if w.lower() in _WHEN_WILDCARDS or w in _WHEN_WILDCARDS:
+        return None  # wildcard
+
+    opts = [o for o in options if o]
+    opt_set = set(opts)
+
+    # 精确匹配单个 option
+    if w in opt_set:
+        return [w]
+
+    # 管道 / 中文顿号逗号分隔：加重|减轻|不变
+    if any(sep in w for sep in ("|", "、", "，", ",")) and "answer" not in w.lower():
+        parts = []
+        for chunk in w.replace("、", "|").replace("，", "|").replace(",", "|").split("|"):
+            p = chunk.strip()
+            if p:
+                parts.append(p)
+        hit = [p for p in parts if p in opt_set]
+        if hit:
+            return hit
+        # 分隔了但一个都不在 options 里 → 通配兜底，避免整题被判定未覆盖
+        return None
+
+    # Python/伪代码：answer in ["是","否"] / answer == "否"
+    quoted = _extract_quoted_tokens(w)
+    if quoted:
+        hit = [q for q in quoted if q in opt_set]
+        if hit:
+            return hit
+        # 引号内容对不上 options，但像通配表达式 → 通配
+        if "answer" in w.lower() or "in" in w.lower() or "==" in w or "=" in w:
+            return None
+
+    # when 里嵌着若干 option 原文（小模型常把整句条件塞进 when）
+    embedded = [o for o in opts if o and o in w]
+    if embedded:
+        return embedded
+
+    # 无法解析 → 通配，交给后续补全（保证小模型也能过校验）
+    return None
+
+
+def _repair_edges(
+    nodes: list[StrategyTreeNode], edges: list[StrategyTreeEdge],
+) -> list[StrategyTreeEdge]:
+    """
+    修复小模型常见的边写法，使「指向下一问」的出边能穷尽 options：
+    - when=any/空/伪代码 → 补 covers=全部 options
+    - 部分 covers 有缺口 → 缺口并进第一条指向下一问的边
+    - 仍无法修复 → 丢掉该题指向 question 的边（退化为合法前沿节点）
+    只指向 terminal 的部分覆盖边保持原样（校验器允许）。
+    """
+    by_id = {n.node_id: n for n in nodes}
+    # 先按 when/covers 规范化每条边
+    normalized: list[StrategyTreeEdge] = []
+    for e in edges:
+        src = by_id.get(e.from_)
+        opts = list(src.options) if src and src.is_question() else []
+        covers = list(e.covers) if e.covers else []
+        # 已有 covers 但含未知值时，只保留落在 options 内的
+        if covers and opts:
+            covers = [c for c in covers if c in opts] or covers
+        if not covers:
+            parsed = _covers_from_when(e.when, opts)
+            if parsed is None and opts:
+                covers = list(opts)  # wildcard → 全覆盖
+            elif parsed:
+                covers = parsed
+        # 同步 when 为 covers 的 | 连接，便于 matches() 与日志阅读
+        when = "|".join(covers) if covers else (e.when or "")
+        normalized.append(StrategyTreeEdge.model_validate({
+            "from": e.from_, "to": e.to, "when": when, "covers": covers,
+            **({"prob": e.prob} if e.prob is not None else {}),
+        }))
+
+    # 按题补齐：出边若指向其他 question，covers 并集必须盖住 options
+    out_by_src: dict[str, list[StrategyTreeEdge]] = {}
+    for e in normalized:
+        out_by_src.setdefault(e.from_, []).append(e)
+
+    repaired: list[StrategyTreeEdge] = []
+    handled_srcs: set[str] = set()
+
+    for src_id, outs in out_by_src.items():
+        handled_srcs.add(src_id)
+        src = by_id.get(src_id)
+        if not src or not src.is_question() or not src.options:
+            repaired.extend(outs)
+            continue
+
+        opts = list(src.options)
+        q_edges = [
+            e for e in outs
+            if (tgt := by_id.get(e.to)) is not None and tgt.is_question()
+        ]
+        other_edges = [e for e in outs if e not in q_edges]
+
+        if not q_edges:
+            # 仅 terminal / 未知：保持，允许部分覆盖
+            repaired.extend(outs)
+            continue
+
+        covered: set[str] = set()
+        for e in outs:
+            covered |= set(e.covers)
+        missing = [o for o in opts if o not in covered]
+        if not missing:
+            repaired.extend(outs)
+            continue
+
+        # 把缺口补到第一条「下一问」边（线性链 / any 边的常见形态）
+        primary = q_edges[0]
+        new_covers = list(dict.fromkeys([*primary.covers, *missing]))
+        fixed_primary = StrategyTreeEdge.model_validate({
+            "from": primary.from_, "to": primary.to,
+            "when": "|".join(new_covers), "covers": new_covers,
+            **({"prob": primary.prob} if primary.prob is not None else {}),
+        })
+        rest = [e for e in outs if e is not primary]
+        # 再验一次；若仍有问题（理论上不应），丢掉指向 question 的边，保留 terminal 边
+        covered2 = set(fixed_primary.covers)
+        for e in rest:
+            covered2 |= set(e.covers)
+        if any(o not in covered2 for o in opts):
+            logger.info("[LLM-B] 边覆盖无法自动补全，将 %s 的跨问题边降级为前沿", src_id)
+            repaired.extend(other_edges)
+        else:
+            repaired.append(fixed_primary)
+            repaired.extend(rest)
+
+    return repaired
+
+
 def _to_tree(data: dict, k: int, refresh_reason: str) -> Optional[StrategyTree]:
     """
     把 LLM 输出的 dict 解析成 StrategyTree，尽量修复而非丢弃：
     - question 缺 answer_type 时按有无 options 补 single_choice/free_text；
+    - 单选题缺『不确定』时自动补上；
     - 剔除端点不存在的悬空边（该 question 退化为合法的前沿节点）；
+    - 规范化 when/covers，补齐跨问题边的选项穷尽性（小模型容错）；
     - selected_question_id 缺失/无效时回退到第一个 question。
     """
     raw_nodes = data.get("tree_nodes") or data.get("nodes") or []
@@ -186,6 +342,13 @@ def _to_tree(data: dict, k: int, refresh_reason: str) -> Optional[StrategyTree]:
                 continue  # 无问句无法展示，跳过
             if not rn.get("answer_type"):
                 rn["answer_type"] = "single_choice" if rn.get("options") else "free_text"
+            # 单选题补「不确定」，减少校验告警与后续分支缺口
+            if rn.get("answer_type") == "single_choice":
+                opts = rn.get("options") or []
+                if isinstance(opts, str):
+                    opts = [opts] if opts else []
+                if opts and not any(o in ("不确定", "说不清", "不知道") for o in opts):
+                    rn = {**rn, "options": [*opts, "不确定"]}
         try:
             nodes.append(StrategyTreeNode.model_validate(rn))
         except Exception as exc:  # noqa: BLE001
@@ -204,6 +367,8 @@ def _to_tree(data: dict, k: int, refresh_reason: str) -> Optional[StrategyTree]:
             continue
         if e.from_ in node_ids and e.to in node_ids:  # 剔除悬空边（修复而非报错）
             edges.append(e)
+
+    edges = _repair_edges(nodes, edges)
 
     sel = data.get("selected_question_id")
     if sel not in node_ids:

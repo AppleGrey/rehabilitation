@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/program_api.dart';
+import '../services/program_store.dart';
 import '../theme/app_theme.dart';
 import 'program_page.dart';
 import 'rehab_video_page.dart';
@@ -70,7 +72,9 @@ class _BaselinePageState extends State<BaselinePage> {
     if (pid == null || _generating) return;
     setState(() => _generating = true);
     try {
-      await ProgramApi.generatePlan(pid); // baseline 表现（可选）留待后续细化
+      final baseline = await _collectBaselineResults();
+      await ProgramApi.generatePlan(pid, baseline: baseline.isEmpty ? null : baseline);
+      await ProgramStore.saveCurrent(pid, widget.sessionId);
       if (!mounted) return;
       Navigator.of(context).pushReplacement(MaterialPageRoute<void>(
         builder: (_) => ProgramPage(programId: pid, sessionId: widget.sessionId),
@@ -80,6 +84,30 @@ class _BaselinePageState extends State<BaselinePage> {
       setState(() => _generating = false);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('生成方案失败：$e')));
     }
+  }
+
+  /// 从本地记录的评估任务里，收集已完成的基线跟做表现，回喂给方案生成。
+  Future<List<Map<String, dynamic>>> _collectBaselineResults() async {
+    final prefs = await SharedPreferences.getInstance();
+    final out = <Map<String, dynamic>>[];
+    for (final v in _videos) {
+      final vid = v['video_id'] as String?;
+      if (vid == null) continue;
+      final taskId = prefs.getString('assess_task_${widget.sessionId}_$vid');
+      if (taskId == null) continue;
+      final task = await ProgramApi.assessStatus(taskId);
+      if (task == null || task['status'] != 'done') continue;
+      final a = task['assessment'];
+      if (a is! Map) continue;
+      final findings = (a['key_findings'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
+      out.add({
+        'video_id': vid,
+        'overall_score': a['overall_score'],
+        'range_of_motion': a['range_of_motion'],
+        'notes': findings.isNotEmpty ? findings.join('；') : (task['summary'] ?? ''),
+      });
+    }
+    return out;
   }
 
   @override

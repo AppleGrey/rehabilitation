@@ -203,6 +203,88 @@ def test_schema_tolerance() -> None:
            "null 的 option_leanings 被过滤")
 
 
+def test_edge_repair_for_small_models() -> None:
+    print("9. 小模型边写法自动修复后能通过校验")
+    from ..policy import validator
+    sess = _session()
+
+    # 案例1：when=any 线性链
+    case_any = {
+        "selected_question_id": "Q1",
+        "tree_nodes": [
+            {"node_id": "Q1", "type": "question", "target_slots": ["lumbar_extension_change"],
+             "intent": "differential",
+             "question_text": "后仰时疼痛加重、减轻还是不变？",
+             "answer_type": "single_choice",
+             "options": ["加重", "减轻", "不变", "不确定"]},
+            {"node_id": "Q2", "type": "question", "target_slots": ["leg_radiation"],
+             "intent": "differential",
+             "question_text": "有没有下肢放射？",
+             "answer_type": "single_choice",
+             "options": ["有", "没有", "不确定"]},
+            {"node_id": "Q3", "type": "question", "target_slots": ["pain_score"],
+             "intent": "plan_constraint",
+             "question_text": "疼痛几分？",
+             "answer_type": "single_choice",
+             "options": ["0", "1", "2", "不确定"]},
+        ],
+        "tree_edges": [
+            {"from": "Q1", "to": "Q2", "when": "any"},
+            {"from": "Q2", "to": "Q3", "when": "any"},
+        ],
+    }
+    tree = tree_builder._to_tree(case_any, k=3, refresh_reason="initial_tree_build")
+    res = validator.validate_tree(tree, sess, selected_node_id="Q1")
+    _check(res.ok, f"when=any 线性链修复后通过（errors={res.errors}）")
+    e1 = next(e for e in tree.edges if e.from_ == "Q1")
+    _check(set(e1.covers) == {"加重", "减轻", "不变", "不确定"}, f"Q1 covers 已补全: {e1.covers}")
+
+    # 案例2：空 when
+    case_empty = {
+        "selected_question_id": "q1",
+        "tree_nodes": [
+            {"node_id": "q1", "type": "question", "question_text": "是否放射？",
+             "answer_type": "single_choice",
+             "options": ["是，放射到下肢", "是，仅放射到臀部", "否，没有放射"]},
+            {"node_id": "q2", "type": "question", "question_text": "弯腰如何？",
+             "answer_type": "single_choice",
+             "options": ["加重", "减轻", "无明显变化", "不确定"]},
+        ],
+        "tree_edges": [
+            {"from": "q1", "to": "q2", "when": ""},
+        ],
+    }
+    tree2 = tree_builder._to_tree(case_empty, k=3, refresh_reason="initial_tree_build")
+    res2 = validator.validate_tree(tree2, sess, selected_node_id="q1")
+    _check(res2.ok, f"空 when 线性链修复后通过（errors={res2.errors}）")
+    q1 = tree2.node("q1")
+    _check("不确定" in q1.options, f"单选题自动补不确定: {q1.options}")
+
+    # 案例3：伪代码 when + 悬空 end
+    case_expr = {
+        "selected_question_id": "q1",
+        "tree_nodes": [
+            {"node_id": "q1", "type": "question", "question_text": "是否放射？",
+             "answer_type": "single_choice", "options": ["是", "否", "不确定"]},
+            {"node_id": "q2", "type": "question", "question_text": "咳嗽加重吗？",
+             "answer_type": "single_choice", "options": ["会加重", "不会加重", "不确定"]},
+        ],
+        "tree_edges": [
+            {"from": "q1", "to": "q2", "when": 'answer in ["是","不确定"]'},
+            {"from": "q1", "to": "end", "when": 'answer == "否"'},
+        ],
+    }
+    tree3 = tree_builder._to_tree(case_expr, k=3, refresh_reason="initial_tree_build")
+    res3 = validator.validate_tree(tree3, sess, selected_node_id="q1")
+    _check(res3.ok, f"伪代码 when + 悬空 end 修复后通过（errors={res3.errors}）")
+    _check(all(e.to != "end" for e in tree3.edges), "悬空 end 边已剔除")
+    covered = set()
+    for e in tree3.edges:
+        if e.from_ == "q1":
+            covered |= set(e.covers)
+    _check(covered == {"是", "否", "不确定"}, f"缺口「否」已并入下一问边: {covered}")
+
+
 def main() -> None:
     test_json_parse()
     test_extractor_apply()
@@ -212,7 +294,8 @@ def main() -> None:
     test_kg_query_build()
     test_hypothesis_driven()
     test_schema_tolerance()
-    print("\n[OK] 增量2 离线冒烟全部通过 ✅")
+    test_edge_repair_for_small_models()
+    print("\n[OK] 增量2 离线冒烟全部通过")
 
 
 if __name__ == "__main__":
