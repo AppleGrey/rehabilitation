@@ -63,3 +63,29 @@ def get_program(program_id: str) -> Optional[dict]:
     except Exception as exc:  # noqa: BLE001
         logger.warning("[CORE] get_program 失败: %s", exc)
         return None
+
+
+def set_status(program_id: str, status: str) -> bool:
+    try:
+        with httpx.Client(timeout=_TIMEOUT) as client:
+            r = client.post(f"{_base()}/api/programs/{program_id}/status", json={"status": status})
+            r.raise_for_status()
+            return True
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("[CORE] set_status 失败: %s", exc)
+        return False
+
+
+def save_decision(program_id: str, *, stage_no: int, decision: str,
+                  rationale: str, metrics: dict) -> bool:
+    try:
+        with httpx.Client(timeout=_TIMEOUT) as client:
+            r = client.post(f"{_base()}/api/programs/{program_id}/decision", json={
+                "stage_no": stage_no, "decision": decision,
+                "rationale": rationale, "metrics": metrics,
+            })
+            r.raise_for_status()
+            return True
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("[CORE] save_decision 失败: %s", exc)
+        return False

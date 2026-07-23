@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import logging
 
+from ..followup.policy.body_parts import normalize_body_region
 from ..media.video_metadata import load_all_videos
 from . import staging
 
@@ -16,11 +17,12 @@ _JOINT_KEYS = ["颈", "肩", "肘", "腕", "腰", "背", "髋", "膝", "踝", "�
 
 
 def _joint_key(s: str | None) -> str:
-    s = s or ""
+    # 先归一到标准七部位，再取核心字（「脖子」→「颈部」→「颈」）
+    canon = normalize_body_region(s) or (s or "")
     for k in _JOINT_KEYS:
-        if k in s:
+        if k in canon:
             return k
-    return s.strip()
+    return canon.strip()
 
 
 def _joint_match(user_joint: str | None, video_joint: str | None) -> bool:

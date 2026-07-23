@@ -143,10 +143,10 @@ def main() -> None:
 
     print("6. 导出已知（K2 桥接用）")
     known = planner.catalog.export_known(session)
-    _check(known.get("target_joint") == "右膝" and known.get("pain_score") == 4, "export_known 含部位与评分")
+    _check(known.get("target_joint") == "膝关节" and known.get("pain_score") == 4, "export_known 含部位与评分")
     _check(known.get("severity") == "中度", "severity 由 pain_score=4 现算为中度")
 
-    print("\n[OK] 增量3 离线冒烟全部通过 ✅")
+    print("\n[OK] 增量3 离线冒烟全部通过")
 
 
 if __name__ == "__main__":

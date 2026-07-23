@@ -83,6 +83,7 @@ class _ConsultPageState extends State<ConsultPage> {
           text: m['text'] ?? '',
         ));
       }
+      await _restoreState(); // 恢复结论卡片 / 预选项 / 结束态
       if (mounted) {
         setState(() => _isInitializing = false);
         _scrollToBottom(animate: false);
@@ -91,6 +92,33 @@ class _ConsultPageState extends State<ConsultPage> {
       await _newSession();
       if (mounted) setState(() => _isInitializing = false);
     }
+  }
+
+  /// 退出重进时从后端恢复问诊「展示态」（是否结束 / 预选项 / 结论卡片）。
+  Future<void> _restoreState() async {
+    final sid = _sessionId;
+    if (sid == null) return;
+    try {
+      final resp = await http
+          .get(Uri.parse('$kBackendBase/api/ai/consult/$sid/state'))
+          .timeout(const Duration(seconds: 8));
+      if (resp.statusCode != 200) return;
+      final data = jsonDecode(utf8.decode(resp.bodyBytes)) as Map<String, dynamic>;
+      final rv = data['resume_view'] as Map<String, dynamic>?;
+      if (rv == null) return;
+      if (rv['is_done'] == true) {
+        _isDone = true;
+        _result = rv['result'] as Map<String, dynamic>?;
+      } else {
+        final spec = rv['spec'] as Map<String, dynamic>?;
+        if (spec != null) {
+          _spec = _Spec(
+            spec['answer_type'] as String? ?? 'free_text',
+            ((spec['options'] as List<dynamic>?) ?? const []).map((e) => e.toString()).toList(),
+          );
+        }
+      }
+    } catch (_) {}
   }
 
   Future<void> _newSession() async {

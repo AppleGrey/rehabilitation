@@ -298,9 +298,13 @@ class StrategySession(_Model):
     tree: Optional[StrategyTree] = None
     current_tree_node_id: Optional[str] = None
     asked_slot_ids: list[str] = Field(default_factory=list)
+    # 已向用户展示过的问句原文（重建时禁止同义复问）
+    asked_question_texts: list[str] = Field(default_factory=list)
     kg_cache_key: Optional[str] = None
     budget: Budget = Field(default_factory=Budget)
     strategy_source: StrategySource = StrategySource.TREE
+    # 前端恢复用的「展示态」：{is_done, spec:{answer_type,options}, result:{...}}。退出重进可还原结论卡片/预选项/锁定态。
+    resume_view: dict = Field(default_factory=dict)
 
     # ── 便捷查询 ──
     def slot(self, slot_id: str) -> Optional[Slot]:

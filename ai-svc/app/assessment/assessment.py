@@ -59,6 +59,23 @@ ASSESSMENT_TEMPLATE = """\
 不要输出任何解释、分析过程或多余文字，仅输出合法的 JSON 对象。
 """
 
+# 基线试跟做：不打分，只输出「对生成康复方案有用」的定性信息。
+BASELINE_TEMPLATE = """\
+你是一位专业的运动康复评估师。你将收到一段拼接视频：
+- 0:00 ~ {standard_duration}s 为标准动作演示
+- {standard_duration} ~ {total_duration}s 为用户跟做
+
+这是用户的「基线试做」，目的是了解其当前能力以便制定康复方案。**不要打分**，
+请观察并以严格 JSON 输出对制定方案有用的信息：
+- movement_quality: 字符串，一句话概述完成质量
+- limitations: 字符串数组，观察到的活动受限/无法完成之处（0-4条）
+- compensations: 字符串数组，代偿或错误发力（0-3条）
+- suggested_focus: 字符串数组，基于表现建议方案应侧重的点（1-3条）
+- notes: 字符串，其他对方案有用的备注
+
+仅输出合法 JSON 对象，不要多余文字。
+"""
+
 MAX_UPLOAD_MB = 12
 # qwen3 等推理模型会把 token 耗在 reasoning_content；评估只需 JSON 正文
 ASSESSMENT_MAX_TOKENS = int(os.getenv("ASSESSMENT_MAX_TOKENS", "4096"))
@@ -311,8 +328,10 @@ def _concat_videos(
 def evaluate_motion(
     standard_video_path: Path,
     user_video_path: Path,
+    *,
+    template: str = ASSESSMENT_TEMPLATE,
 ) -> dict:
-    """调用 qwen3.6-plus 对标准视频和用户视频进行对比评估。"""
+    """调用 qwen3.6-plus 对标准视频和用户视频进行对比评估（template 决定打分/基线定性）。"""
     api_key = DASHSCOPE_API_KEY
     if not api_key:
         raise ValueError("DASHSCOPE_API_KEY 环境变量未设置")
@@ -328,7 +347,7 @@ def evaluate_motion(
         upload_path = _compress_if_needed(concat_path)
         upload_kb = upload_path.stat().st_size // 1024
 
-        system_prompt = ASSESSMENT_TEMPLATE.format(
+        system_prompt = template.format(
             standard_duration=f"{std_dur:.1f}",
             total_duration=f"{total_dur:.1f}",
         )
@@ -454,3 +473,11 @@ def evaluate_from_video(
     user_video_path: Path,
 ) -> dict:
     return evaluate_motion(standard_video_path, user_video_path)
+
+
+def evaluate_baseline(
+    standard_video_path: Path,
+    user_video_path: Path,
+) -> dict:
+    """基线试做的定性评估（为生成方案服务，不打分）。"""
+    return evaluate_motion(standard_video_path, user_video_path, template=BASELINE_TEMPLATE)

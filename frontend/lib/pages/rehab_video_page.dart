@@ -73,6 +73,11 @@ class RehabVideoPage extends StatefulWidget {
   final String? sessionId;
   final String? videoTitle;
 
+  /// 上传模式：legacy(旧问诊推荐,录完弹分) / baseline(基线试做,录完存档返回) / training(方案训练,录完提交评估返回)
+  final String uploadMode;
+  final String? programId;
+  final int? stageNo;
+
   const RehabVideoPage({
     super.key,
     required this.onBack,
@@ -80,6 +85,9 @@ class RehabVideoPage extends StatefulWidget {
     this.videoId,
     this.sessionId,
     this.videoTitle,
+    this.uploadMode = 'legacy',
+    this.programId,
+    this.stageNo,
   });
 
   @override
@@ -223,16 +231,6 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
       _phase = _Phase.countdown;
     });
 
-    // 演示小窗：静音 + 循环 + 从头播放，倒计时阶段即开始，方便录制时对照跟做。
-    // 静音可避免演示声音被摄像头麦克风录入用户视频。
-    final v = _videoCtrl;
-    if (v != null && _videoReady) {
-      v.setVolume(0);
-      v.setLooping(true);
-      v.seekTo(Duration.zero);
-      v.play();
-    }
-
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (t) async {
       if (_countdownValue > 1) {
         setState(() => _countdownValue--);
@@ -248,6 +246,15 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
   Future<void> _startRecording() async {
     if (_camCtrl == null || !_camCtrl!.value.isInitialized) return;
     try {
+      // 倒计时结束、正式开始录制时再播放演示小窗，方便对照跟做。
+      // 静音 + 循环 + 从头播放；静音避免演示声音被摄像头麦克风录入用户视频。
+      final v = _videoCtrl;
+      if (v != null && _videoReady) {
+        v.setVolume(0);
+        v.setLooping(true);
+        v.seekTo(Duration.zero);
+        v.play();
+      }
       await _camCtrl!.startVideoRecording();
       setState(() => _phase = _Phase.recording);
     } catch (e) {
@@ -270,10 +277,51 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
       _camCtrl = null;
       _videoCtrl?.pause(); // 停止后台演示小窗播放
 
-      await _uploadVideo(xfile.path);
+      if (widget.uploadMode == 'legacy') {
+        await _uploadVideo(xfile.path);
+      } else {
+        await _uploadAndReturn(xfile.path);
+      }
     } catch (e) {
       setState(() {
         _uploadError = '停止录制失败：$e';
+        _phase = _Phase.result;
+      });
+    }
+  }
+
+  /// 基线/训练模式：录完只上传，然后直接返回上一界面（不弹分，由上层轮询/查看）。
+  Future<void> _uploadAndReturn(String videoPath) async {
+    setState(() => _phase = _Phase.uploading);
+    try {
+      final http.MultipartRequest req;
+      if (widget.uploadMode == 'baseline') {
+        req = http.MultipartRequest(
+          'POST',
+          Uri.parse('$kBackendBase/api/ai/program/${widget.programId}/baseline'),
+        )..fields['video_id'] = widget.videoId ?? '';
+      } else {
+        req = http.MultipartRequest(
+          'POST',
+          Uri.parse('$kBackendBase/api/assess/motion'),
+        )
+          ..fields['session_id'] = widget.sessionId ?? ''
+          ..fields['standard_video_id'] = widget.videoId ?? ''
+          ..fields['program_id'] = widget.programId ?? ''
+          ..fields['stage_no'] = '${widget.stageNo ?? 1}'
+          ..fields['video_id'] = widget.videoId ?? ''
+          ..fields['purpose'] = 'training';
+      }
+      req.files.add(await http.MultipartFile.fromPath(
+          'user_video', videoPath, filename: 'user_training.mp4'));
+      final streamed = await req.send().timeout(const Duration(minutes: 2));
+      await streamed.stream.drain<void>();
+      if (!mounted) return;
+      widget.onBack();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _uploadError = '上传失败：$e';
         _phase = _Phase.result;
       });
     }

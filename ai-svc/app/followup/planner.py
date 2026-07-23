@@ -45,6 +45,7 @@ def _apply_answer_to_prev_question(
     node = session.tree.node(prev_node_id)
     if node is None or not node.is_question():
         return False
+    node.status = "answered"
     a = (answer or "").strip()
     uncertain = any(k in a for k in _UNCERTAIN)
     for sid in node.target_slots:
@@ -106,8 +107,25 @@ def new_session(session_id: str) -> tuple[StrategySession, list[dict]]:
                  "你现在主要是哪个部位不舒服，大概是什么样的问题呢？"),
         _ev_input("free_text", []),
     ]
+    session.resume_view = _resume_view_from_events(events)
     persistence.save_strategy_state(session)
     return session, events
+
+
+def _resume_view_from_events(events: list[dict]) -> dict:
+    """从一轮产出的 events 提炼「展示态」，供前端退出重进恢复结论卡片/预选项/锁定态。"""
+    spec = None
+    result = None
+    is_done = False
+    for e in events:
+        t = e.get("type")
+        if t == "input_spec":
+            spec = {"answer_type": e.get("answer_type"), "options": e.get("options") or []}
+        elif t == "done":
+            is_done = e.get("should_stop") is True and e.get("outcome") != "continue"
+            result = {k: e.get(k) for k in
+                      ("outcome", "should_stop", "impression", "summary", "collected", "turn_no")}
+    return {"is_done": is_done, "spec": spec, "result": result}
 
 
 # ─────────────────── 主入口 ───────────────────
@@ -124,6 +142,7 @@ def consult_turn(session: StrategySession, user_message: str, conversation_text:
     except Exception:  # noqa: BLE001
         logger.exception("[PLANNER] turn 处理异常，返回安全兜底问题")
         events = _safe_fallback(session)
+    session.resume_view = _resume_view_from_events(events)
     persistence.save_strategy_state(session)
     return events
 
@@ -252,6 +271,10 @@ def _select_and_ask(session: StrategySession, *, kg_context_used: str,
     for sid in node.target_slots:
         if sid not in session.asked_slot_ids:
             session.asked_slot_ids.append(sid)
+    # 记录问句原文，供重建时禁止同义复问
+    qtext = (node.question_text or "").strip()
+    if qtext and qtext not in session.asked_question_texts:
+        session.asked_question_texts.append(qtext)
 
     if trace is not None:
         trace.append({"t": "pick", "action": "选定当前问题", "node": node.node_id,

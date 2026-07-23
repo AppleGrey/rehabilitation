@@ -29,14 +29,25 @@ CREATE TABLE IF NOT EXISTS assessment_tasks (
     assessment JSONB,
     summary TEXT,
     error TEXT,
+    program_id UUID,
+    stage_no INT,
+    video_id TEXT,
+    purpose TEXT DEFAULT 'training',   -- baseline / training
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+-- 兼容旧表：补列
+ALTER TABLE assessment_tasks ADD COLUMN IF NOT EXISTS program_id UUID;
+ALTER TABLE assessment_tasks ADD COLUMN IF NOT EXISTS stage_no INT;
+ALTER TABLE assessment_tasks ADD COLUMN IF NOT EXISTS video_id TEXT;
+ALTER TABLE assessment_tasks ADD COLUMN IF NOT EXISTS purpose TEXT DEFAULT 'training';
 
 CREATE INDEX IF NOT EXISTS idx_assessment_tasks_session_id
     ON assessment_tasks (session_id);
 CREATE INDEX IF NOT EXISTS idx_assessment_tasks_status
     ON assessment_tasks (status);
+CREATE INDEX IF NOT EXISTS idx_assessment_tasks_program
+    ON assessment_tasks (program_id, stage_no, video_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_updated_at
     ON sessions (updated_at DESC);
 

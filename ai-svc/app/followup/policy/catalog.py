@@ -16,6 +16,7 @@ from ..models import (
     StrategySession,
     StrategyTreeNode,
 )
+from .body_parts import normalize_body_region
 
 
 def default_plan_slots() -> list[Slot]:
@@ -79,7 +80,9 @@ def init_tree_slots(session: StrategySession) -> None:
 
     seed = session.seed
     if seed.body_region:
-        _set_known(session, "target_joint", seed.body_region)
+        joint = normalize_body_region(seed.body_region) or seed.body_region
+        seed.body_region = joint
+        _set_known(session, "target_joint", joint)
     stage = _infer_rehab_stage(seed.onset)
     if stage:
         _set_known(session, "rehab_stage", stage)
@@ -111,6 +114,11 @@ def export_known(session: StrategySession) -> dict:
             out[s.slot_id] = s.value
     if isinstance(out.get("pain_score"), (int, float)):
         out["severity"] = _infer_severity(int(out["pain_score"]))
+    # 部位兜底归一，避免「脖子」流入匹配
+    if out.get("target_joint"):
+        fixed = normalize_body_region(str(out["target_joint"]))
+        if fixed:
+            out["target_joint"] = fixed
     return out
 
 

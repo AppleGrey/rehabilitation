@@ -285,6 +285,39 @@ def test_edge_repair_for_small_models() -> None:
     _check(covered == {"是", "否", "不确定"}, f"缺口「否」已并入下一问边: {covered}")
 
 
+def test_body_region_and_no_repeat_ask() -> None:
+    print("10. 标准部位归一 + 重建禁止复问")
+    from ..policy.body_parts import normalize_body_region, question_fingerprint
+    from ..policy import scoring
+    from ..models import AnswerType, NodeType, StrategyTree, StrategyTreeNode
+
+    _check(normalize_body_region("脖子") == "颈部", "脖子→颈部")
+    _check(normalize_body_region("右膝盖") == "膝关节", "右膝盖→膝关节")
+    _check(normalize_body_region("肩膀酸") == "肩部", "肩膀→肩部")
+    _check(normalize_body_region("髋关节") == "髋部", "髋关节→髋部")
+
+    sess = _session()
+    sess.asked_question_texts = ["您是否有手臂或手指的麻木、疼痛或无力感？"]
+    data = {
+        "selected_question_id": "q_repeat",
+        "tree_nodes": [
+            {"node_id": "q_repeat", "type": "question",
+             "question_text": "是否有手臂或手指的麻木、疼痛或无力感？",
+             "answer_type": "single_choice", "options": ["是", "否", "不确定"]},
+            {"node_id": "q_new", "type": "question",
+             "question_text": "低头看手机久了会更酸吗？",
+             "answer_type": "single_choice", "options": ["会", "不会", "不确定"]},
+        ],
+        "tree_edges": [],
+    }
+    tree = tree_builder._to_tree(data, k=3, refresh_reason="initial_tree_build", session=sess)
+    ids = {n.node_id for n in tree.question_nodes()}
+    _check("q_repeat" not in ids and "q_new" in ids, f"复问题被丢弃，保留新题: {ids}")
+    pick = scoring.pick_current_node(tree, sess)
+    _check(pick is not None and pick.node_id == "q_new", f"选点跳过已问同义题: {pick.node_id if pick else None}")
+    _check(question_fingerprint("您是否有手臂麻木？") != "", "指纹非空")
+
+
 def main() -> None:
     test_json_parse()
     test_extractor_apply()
@@ -295,6 +328,7 @@ def main() -> None:
     test_hypothesis_driven()
     test_schema_tolerance()
     test_edge_repair_for_small_models()
+    test_body_region_and_no_repeat_ask()
     print("\n[OK] 增量2 离线冒烟全部通过")
 
 

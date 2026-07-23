@@ -56,6 +56,15 @@ class ProgramApi {
     return null;
   }
 
+  /// K4：做完本轮训练 → 大模型决定进阶/保持/回退/转诊/结业，并推进疗程。
+  static Future<Map<String, dynamic>> progress(String programId) async {
+    final resp = await http
+        .post(Uri.parse('$_base/api/ai/program/$programId/progress'),
+            headers: {'Content-Type': 'application/json'})
+        .timeout(const Duration(seconds: 90));
+    return _decode(resp, '进阶决策失败');
+  }
+
   static Map<String, dynamic> _decode(http.Response resp, String errPrefix) {
     if (resp.statusCode != 200) {
       String detail = '${resp.statusCode}';

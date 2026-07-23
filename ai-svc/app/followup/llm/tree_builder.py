@@ -28,6 +28,7 @@ from ..models import (
     TerminalType,
 )
 from ..policy.stopping import needs_sp_backfill
+from ..policy.body_parts import question_fingerprint
 from .util import call_json_llm, make_json_llm
 
 logger = logging.getLogger(__name__)
@@ -37,22 +38,24 @@ MAX_QUESTIONS_HINT = 4  # 提示 LLM 单次最多生成几个候选问题
 
 _SYSTEM = (
     "你是康复问诊的『规划器』，采用**鉴别式问诊**：先想清楚用户可能是哪几种情况，再问"
-    "「最能把它们区分开」的问题。根据【主诉种子】【已知事实】【候选假设】【图谱要点】，输出 JSON。规则：\n"
+    "「最能把它们区分开」的问题。根据【主诉种子】【已知事实】【已问过的问题】【候选假设】【图谱要点】，输出 JSON。规则：\n"
     "1) 先给出/更新 2~3 个**候选情况**（hypotheses）：name + confidence(0~1，和≈1) + 一句 rationale。\n"
     "2) 再生成 2~4 个**鉴别问题**，每个问题的目的就是区分某两个候选：\n"
     "   - discriminates: 列出它能区分的候选 name；\n"
     "   - option_leanings: 每个选项倾向哪个候选，如 {\"低头加重\":\"姿势不良\",\"转头卡\":\"小关节紊乱\"}；\n"
     "   - intent 多为 differential/function/stage；question_text 通俗单句、不堆术语、不下诊断。\n"
-    "3) **循序渐进、部位相关的安全排查**：只有涉及腰背/脊柱/下肢神经时才问大小便/马尾类；单纯关节"
+    "3) **严禁复问**：【已问过的问题】里出现过的内容（含同义改写，如「手臂麻木」与「手指出力弱」若本质同一排查点）"
+    "一律不要再生成；target_slots 也不要换个 id 再问同一临床点。只问尚未覆盖的新鉴别点。\n"
+    "4) **循序渐进、部位相关的安全排查**：只有涉及腰背/脊柱/下肢神经时才问大小便/马尾类；单纯关节"
     "（膝/肩/踝/颈等）不要问大小便。若确有相关红旗，intent=red_flag 并可加 terminal(refer) + 一条 when 边。\n"
-    "4) 若【缺失必填槽】里还有未采集项（如 pain_score 疼痛评分），可放一个候选问题(intent=plan_constraint)，"
+    "5) 若【缺失必填槽】里还有未采集项（如 pain_score 疼痛评分），可放一个候选问题(intent=plan_constraint)，"
     "但它**优先级低于鉴别问题**，等候选大致区分后再补。\n"
-    "5) selected_question_id = **最能劈开当前领先两名候选**的那个问题。\n"
-    "6) 只用 type=\"question\"/\"terminal\"，不要 branch/action。answer_type 用 single_choice，options 含『不确定』。\n"
-    "7) tree_edges 尽量简化：可输出空数组 []（推荐）；若串联问题，when 只能写该题 options 原文，"
+    "6) selected_question_id = **最能劈开当前领先两名候选**且未问过的那个问题。\n"
+    "7) 只用 type=\"question\"/\"terminal\"，不要 branch/action。answer_type 用 single_choice，options 含『不确定』。\n"
+    "8) tree_edges 尽量简化：可输出空数组 []（推荐）；若串联问题，when 只能写该题 options 原文，"
     "用 | 连接，如 \"是|否|不确定\"，或写 \"any\" 表示任意回答都进入下一题。"
     "禁止 Python 表达式（如 answer== / answer in）。\n"
-    "8) 只输出 JSON：{\"hypotheses\":[...],\"tree_nodes\":[...],\"tree_edges\":[...],\"selected_question_id\":\"...\"}。\n"
+    "9) 只输出 JSON：{\"hypotheses\":[...],\"tree_nodes\":[...],\"tree_edges\":[...],\"selected_question_id\":\"...\"}。\n"
     "   question 字段：node_id,type,target_slots(自拟语义化 slot_id 如 neck_pain_trigger),intent,"
     "question_text,answer_type,options,discriminates,option_leanings,ask_reason。\n"
     "   terminal 字段：node_id,type:\"terminal\",terminal_type:\"refer\",rationale。边：from,to,when。\n"
@@ -62,6 +65,7 @@ _SYSTEM = (
 _USER_TMPL = (
     "【主诉种子】\n{seed}\n\n"
     "【已知事实】\n{known}\n\n"
+    "【已问过的问题】（禁止再生成同义问题）\n{asked}\n\n"
     "【当前候选假设(若为空请你首次提出)】\n{hyps}\n\n"
     "【缺失必填槽】\n{slots}\n\n"
     "【图谱要点】\n{kg_context}\n\n"
@@ -86,6 +90,32 @@ def _hyp_text(session: StrategySession) -> str:
             f"反对={[e.fact for e in h.against]} 缺={h.missing_facts}"
             for h in session.active_hypotheses()]
     return "\n".join(rows) if rows else "（暂无，请据事实提出 1~3 个）"
+
+
+def _asked_text(session: StrategySession) -> str:
+    rows = [f"- {q}" for q in (session.asked_question_texts or []) if q]
+    return "\n".join(rows) if rows else "（尚无，可自由出题）"
+
+
+def _asked_fingerprints(session: StrategySession) -> set[str]:
+    return {question_fingerprint(q) for q in (session.asked_question_texts or []) if q}
+
+
+def _is_repeat_question(text: str | None, asked_fps: set[str]) -> bool:
+    fp = question_fingerprint(text)
+    if not fp or not asked_fps:
+        return False
+    if fp in asked_fps:
+        return True
+    # 指纹互相包含：同义改写但仍高度重合
+    for old in asked_fps:
+        if not old:
+            continue
+        if fp in old or old in fp:
+            # 过短的包含不可靠
+            if min(len(fp), len(old)) >= 8:
+                return True
+    return False
 
 
 def _slot_text(session: StrategySession) -> str:
@@ -114,13 +144,14 @@ def build_tree(
     # 注意：_SYSTEM 含字面 JSON 花括号，不能用 str.format（会把 {"tree_nodes"} 当字段）；用 replace。
     system = _SYSTEM.replace("{k}", str(k))
     user = _USER_TMPL.format(
-        seed=_seed_text(session), known=_known_text(session), hyps=_hyp_text(session),
+        seed=_seed_text(session), known=_known_text(session), asked=_asked_text(session),
+        hyps=_hyp_text(session),
         slots=_slot_text(session), kg_context=(kg_context[:2500] if kg_context else "（无）"), k=k,
     )
 
     for attempt in (1, 2):
         data, raw = call_json_llm(llm, system, user)
-        tree = _to_tree(data, k, refresh_reason) if data else None
+        tree = _to_tree(data, k, refresh_reason, session=session) if data else None
         if tree is None:
             logger.warning("[LLM-B] 第%d次解析失败", attempt)
             if trace is not None:
@@ -321,17 +352,22 @@ def _repair_edges(
     return repaired
 
 
-def _to_tree(data: dict, k: int, refresh_reason: str) -> Optional[StrategyTree]:
+def _to_tree(
+    data: dict, k: int, refresh_reason: str,
+    *, session: Optional[StrategySession] = None,
+) -> Optional[StrategyTree]:
     """
     把 LLM 输出的 dict 解析成 StrategyTree，尽量修复而非丢弃：
     - question 缺 answer_type 时按有无 options 补 single_choice/free_text；
     - 单选题缺『不确定』时自动补上；
+    - 剔除与【已问过】同义的问题节点；
     - 剔除端点不存在的悬空边（该 question 退化为合法的前沿节点）；
     - 规范化 when/covers，补齐跨问题边的选项穷尽性（小模型容错）；
     - selected_question_id 缺失/无效时回退到第一个 question。
     """
     raw_nodes = data.get("tree_nodes") or data.get("nodes") or []
     raw_edges = data.get("tree_edges") or data.get("edges") or []
+    asked_fps = _asked_fingerprints(session) if session is not None else set()
 
     nodes: list[StrategyTreeNode] = []
     for rn in raw_nodes:
@@ -340,6 +376,9 @@ def _to_tree(data: dict, k: int, refresh_reason: str) -> Optional[StrategyTree]:
         if rn.get("type") == "question":
             if not rn.get("question_text"):
                 continue  # 无问句无法展示，跳过
+            if _is_repeat_question(rn.get("question_text"), asked_fps):
+                logger.info("[LLM-B] 丢弃已问过的复问题: %s", rn.get("question_text"))
+                continue
             if not rn.get("answer_type"):
                 rn["answer_type"] = "single_choice" if rn.get("options") else "free_text"
             # 单选题补「不确定」，减少校验告警与后续分支缺口

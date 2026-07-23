@@ -24,6 +24,7 @@ import logging
 from pathlib import Path
 
 from ..core.config import DATA_DIR, ASSETS_DIR
+from ..followup.policy.body_parts import normalize_body_region
 from .storage import guess_video_key
 from .video_metadata import load_all_videos
 
@@ -35,6 +36,12 @@ _VIDEO_EXTS = (".mp4", ".MP4", ".mov", ".MOV", ".m4v", ".M4V")
 
 # 根据疼痛程度限制最大难度
 DIFFICULTY_LIMIT = {"轻度": 5, "中度": 3, "重度": 2}
+
+
+def _joint_eq(a: str | None, b: str | None) -> bool:
+    ca = normalize_body_region(a) or (a or "").strip()
+    cb = normalize_body_region(b) or (b or "").strip()
+    return bool(ca) and ca == cb
 
 
 def ensure_playable_mp4_path(video_id: str) -> str | None:
@@ -94,8 +101,8 @@ def match_videos(
     # ── 第一层：硬过滤 ──────────────────────────────────────────────────────
     candidates = []
     for v in index:
-        # target_joint 必须匹配
-        if v.get("target_joint") != target_joint:
+        # target_joint 必须匹配（含「脖子」→「颈部」等别名）
+        if not _joint_eq(v.get("target_joint"), target_joint):
             continue
 
         # difficulty 不能超过限制
@@ -121,7 +128,7 @@ def match_videos(
 
     # 如果过滤后没有候选，放宽条件只保留 joint 匹配
     if not candidates:
-        candidates = [v for v in index if v.get("target_joint") == target_joint]
+        candidates = [v for v in index if _joint_eq(v.get("target_joint"), target_joint)]
 
     # 如果仍然没有，返回第一个视频
     if not candidates:
@@ -202,7 +209,7 @@ def get_video_list(
     index = _load_index()
 
     if target_joint:
-        index = [v for v in index if v.get("target_joint") == target_joint]
+        index = [v for v in index if _joint_eq(v.get("target_joint"), target_joint)]
     if severity:
         index = [v for v in index if v.get("severity") == severity]
 

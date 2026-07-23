@@ -5,6 +5,8 @@ export default defineConfig({
   plugins: [vue()],
   server: {
     port: 5173,
+    // 允许经 frp 用公网 IP 访问（否则 Vite 会拦截非 localhost Host）
+    allowedHosts: true,
     proxy: {
       '/admin-api': {
         target: 'http://127.0.0.1:8082',

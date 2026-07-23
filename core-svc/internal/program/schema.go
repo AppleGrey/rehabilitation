@@ -71,6 +71,17 @@ CREATE TABLE IF NOT EXISTS stage_plan_items (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS idx_stage_plan_items_plan ON stage_plan_items (plan_id);
+
+CREATE TABLE IF NOT EXISTS progression_decisions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    program_id UUID NOT NULL REFERENCES rehab_programs(id) ON DELETE CASCADE,
+    stage_no INT,
+    decision TEXT,
+    rationale TEXT,
+    metrics JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_progression_decisions_program ON progression_decisions (program_id, created_at DESC);
 `
 	_, err := pool.Exec(ctx, ddl)
 	return err

@@ -29,6 +29,8 @@ func NewRouter(videoHandler *video.Handler, programHandler *program.Handler) *gi
 	// 闭环康复方案（供 ai-svc 调用写入 + C 端读取）
 	r.POST("/api/programs", programHandler.Create)
 	r.POST("/api/programs/:id/plan", programHandler.SavePlan)
+	r.POST("/api/programs/:id/status", programHandler.SetStatus)
+	r.POST("/api/programs/:id/decision", programHandler.SaveDecision)
 	r.GET("/api/programs/:id", programHandler.Get)
 	// 用户跟练上传视频播放（供后台经 /core-svc 代理）
 	r.GET("/api/uploads/:task_id/play", programHandler.PlayUpload)

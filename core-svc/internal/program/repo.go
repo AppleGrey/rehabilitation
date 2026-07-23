@@ -70,6 +70,20 @@ func jsonb(v any) []byte {
 	return b
 }
 
+func (r *Repo) SetStatus(ctx context.Context, programID, status string) error {
+	_, err := r.pool.Exec(ctx,
+		`UPDATE rehab_programs SET status=$1, updated_at=NOW() WHERE id=$2::uuid`, status, programID)
+	return err
+}
+
+func (r *Repo) SaveDecision(ctx context.Context, programID string, stageNo int, decision, rationale string, metrics map[string]any) error {
+	_, err := r.pool.Exec(ctx, `
+		INSERT INTO progression_decisions (program_id, stage_no, decision, rationale, metrics)
+		VALUES ($1::uuid, $2, $3, $4, $5)
+	`, programID, stageNo, decision, rationale, jsonb(metrics))
+	return err
+}
+
 func (r *Repo) CreateProgram(ctx context.Context, in CreateProgramInput) (string, error) {
 	var id string
 	err := r.pool.QueryRow(ctx, `
@@ -145,15 +159,15 @@ func (r *Repo) SaveStagePlan(ctx context.Context, programID string, in SavePlanI
 // GetProgram 顶层信息 + 当前阶段最新方案 + 训练项（面向 C 端/ai-svc）。
 func (r *Repo) GetProgram(ctx context.Context, programID string) (map[string]any, error) {
 	var (
-		id, status                     string
-		condition, bodyPart            *string
-		currentStageNo                 int
-		profile, impression, baseline  []byte
+		id, status                    string
+		condition, bodyPart, sessionID *string
+		currentStageNo                int
+		profile, impression, baseline []byte
 	)
 	err := r.pool.QueryRow(ctx, `
-		SELECT id::text, status, condition, body_part, current_stage_no, profile, impression, baseline
+		SELECT id::text, status, condition, body_part, session_id::text, current_stage_no, profile, impression, baseline
 		FROM rehab_programs WHERE id=$1::uuid
-	`, programID).Scan(&id, &status, &condition, &bodyPart, &currentStageNo, &profile, &impression, &baseline)
+	`, programID).Scan(&id, &status, &condition, &bodyPart, &sessionID, &currentStageNo, &profile, &impression, &baseline)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, nil
@@ -166,6 +180,7 @@ func (r *Repo) GetProgram(ctx context.Context, programID string) (map[string]any
 		"status":           status,
 		"condition":        condition,
 		"body_part":        bodyPart,
+		"session_id":       sessionID,
 		"current_stage_no": currentStageNo,
 		"profile":          decodeJSON(profile, map[string]any{}),
 		"impression":       decodeJSON(impression, []any{}),

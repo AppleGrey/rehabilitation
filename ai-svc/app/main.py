@@ -380,6 +380,16 @@ def ai_strategy_snapshot(session_id: str):
     return snap
 
 
+@app.get("/api/ai/consult/{session_id}/state")
+def ai_consult_state(session_id: str):
+    """问诊「展示态」：供前端退出重进恢复结论卡片/预选项/是否结束。"""
+    session = _get_strategy_session(session_id)
+    if session is None:
+        raise HTTPException(status_code=404, detail="会话不存在")
+    view = getattr(session, "resume_view", None) or {}
+    return {"session_id": session_id, "resume_view": view}
+
+
 @app.get("/api/ai/kg/health")
 def ai_kg_health():
     """探活 kg-svc（内网检索服务）。"""
@@ -411,19 +421,45 @@ def ai_program_start(req: ProgramStartRequest):
     return result
 
 
+@app.post("/api/ai/program/{program_id}/baseline")
+async def ai_program_baseline(
+    program_id: str,
+    video_id: str = Form(...),
+    user_video: UploadFile = File(...),
+):
+    """基线试跟做：只上传存档（不评分），生成方案时再批量处理。"""
+    suffix = Path(user_video.filename or "video.mp4").suffix or ".mp4"
+    object_key = f"{UPLOAD_PREFIX}/{uuid.uuid4()}{suffix}"
+    content = await user_video.read()
+    upload_bytes(object_key, content, content_type=user_video.content_type or "video/mp4")
+    task_id = _program.record_baseline(program_id, video_id, object_key)
+    if task_id is None:
+        raise HTTPException(status_code=500, detail="记录基线失败")
+    return {"task_id": task_id, "status": "recorded", "video_id": video_id}
+
+
 @app.post("/api/ai/program/{program_id}/plan")
-def ai_program_plan(program_id: str, req: ProgramPlanRequest):
-    """据 问诊 + baseline 表现 生成当前分期方案。"""
-    result = _program.generate_stage_plan(program_id, baseline_results=req.baseline)
-    if result is None:
-        raise HTTPException(status_code=404, detail="疗程不存在或方案生成失败")
+def ai_program_plan(program_id: str, background_tasks: BackgroundTasks, req: ProgramPlanRequest):
+    """据 问诊 + baseline 表现 异步生成方案：先置「生成中」，后台跑 VLM+生成。"""
+    result = _program.trigger_plan(program_id)
+    background_tasks.add_task(_program.run_plan_worker, program_id)
     return result
 
 
 @app.get("/api/ai/program/{program_id}")
 def ai_program_get(program_id: str):
-    """疗程全景（当前阶段方案 + 训练项）。"""
+    """疗程全景（当前阶段方案 + 训练项 + 训练状态）。"""
     result = _program.view_program(program_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="疗程不存在")
+    return result
+
+
+@app.post("/api/ai/program/{program_id}/progress")
+def ai_program_progress(program_id: str):
+    """K4：做完本轮训练 → 大模型据表现决定进阶/保持/回退/转诊/结业，并推进疗程。"""
+    from .program import progression as _prog
+    result = _prog.decide_and_apply(program_id)
     if result is None:
         raise HTTPException(status_code=404, detail="疗程不存在")
     return result
@@ -516,10 +552,14 @@ async def assess_motion(
     session_id: str = Form(...),
     standard_video_id: str = Form(...),
     user_video: UploadFile = File(...),
+    program_id: str | None = Form(None),
+    stage_no: int | None = Form(None),
+    video_id: str | None = Form(None),
+    purpose: str = Form("training"),
 ):
     """
-    提交动作评估任务（异步）。
-    立即返回 {task_id}，前端通过 /api/assess/status/{task_id} 轮询结果。
+    提交动作评估任务（异步）。立即返回 {task_id}，前端轮询 /api/assess/status/{task_id}。
+    可选 program_id/stage_no/video_id/purpose 把评估绑定到康复方案训练项。
     """
     # 确认标准视频存在（快速校验，避免任务创建后才发现找不到）
     if ensure_playable_mp4_path(standard_video_id) is None:
@@ -537,8 +577,8 @@ async def assess_motion(
     upload_bytes(object_key, content, content_type=user_video.content_type or "video/mp4")
 
     logger.info(
-        "[ASSESS] 收到上传 session=%s standard=%s size=%dKB",
-        session_id, standard_video_id, len(content) // 1024,
+        "[ASSESS] 收到上传 session=%s standard=%s program=%s size=%dKB",
+        session_id, standard_video_id, program_id, len(content) // 1024,
     )
 
     # 兜底：如果会话不在内存，尝试从磁盘恢复
@@ -550,7 +590,11 @@ async def assess_motion(
             logger.warning("[ASSESS] session_id=%s 不存在，使用空会话兜底", session_id)
             _sessions[session_id] = _new_state()
 
-    task_id = create_task(session_id, standard_video_id, object_key)
+    task_id = create_task(
+        session_id, standard_video_id, object_key,
+        program_id=program_id, stage_no=stage_no,
+        video_id=video_id or standard_video_id, purpose=purpose,
+    )
     background_tasks.add_task(_run_assessment, task_id)
 
     logger.info("[ASSESS] 任务已创建 task_id=%s", task_id)

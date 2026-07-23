@@ -24,6 +24,7 @@ from ..models import (
     StrategySession,
 )
 from .util import call_json_llm, make_json_llm
+from ..policy.body_parts import is_canonical, joints_prompt_list, normalize_body_region
 
 logger = logging.getLogger(__name__)
 
@@ -223,7 +224,11 @@ class SeedExtract(_M):
 _SEED_SYSTEM = (
     "你是康复问诊的开场收集器。读入至今的对话，抽取『主诉种子』并以 JSON 输出："
     "body_region(部位)、chief_complaint(主诉)、onset(起病多久)、mechanism(诱因:无外伤/扭伤/术后)、"
-    "goal(康复目标)、quick_redflag(是否有需立即就医的明显危险信号)。"
+    "goal(康复目标)、quick_redflag(是否有需立即就医的明显危险信号)。\n"
+    f"**body_region 必须且只能是以下标准部位之一**：{joints_prompt_list()}。"
+    "用户说「脖子/颈椎」→颈部，「膝盖/右膝」→膝关节，「肩膀」→肩部，「胯/髋关节」→髋部，"
+    "「脚踝」→踝关节，「腰/腰椎」→腰部，「手肘」→肘部。"
+    "禁止输出「脖子」「膝盖」等口语或带左右侧别的写法；无法归入上述七项时 body_region 置 null 并在 next_question 追问部位。\n"
     "若部位/主诉/起病三者尚不全，给一句自然、通俗、单句的 next_question 继续询问最关键的缺口；"
     "信息已足够则 next_question 置空。不下诊断，只输出 JSON。"
 )
@@ -237,6 +242,7 @@ def extract_seed(session: StrategySession, conversation_text: str,
     llm = make_json_llm(temperature=0.2, max_tokens=600)
     user = (
         f"【已知种子】{session.seed.model_dump()}\n\n"
+        f"【标准部位白名单】{joints_prompt_list()}\n\n"
         f"【对话】\n{conversation_text}\n\n"
         '请输出 JSON：{"body_region":...,"chief_complaint":...,"onset":...,'
         '"mechanism":...,"goal":...,"quick_redflag":false,"next_question":...}'
@@ -251,12 +257,22 @@ def extract_seed(session: StrategySession, conversation_text: str,
         except Exception:  # noqa: BLE001
             res = SeedExtract()
 
-    # 合并进 session.seed（只补空，不覆盖已确认项）
+    # 部位强制归一到标准七选一（小模型偶发仍写「脖子」时兜底）
+    if res.body_region:
+        res.body_region = normalize_body_region(res.body_region)
+
+    # 合并进 session.seed（只补空，不覆盖已确认项）；已有非标准部位也纠正一次
     s = session.seed
+    if s.body_region and not is_canonical(s.body_region):
+        fixed = normalize_body_region(s.body_region)
+        if fixed:
+            s.body_region = fixed
     for field in ("body_region", "chief_complaint", "onset", "mechanism", "goal"):
         val = getattr(res, field)
         if val and not getattr(s, field):
             setattr(s, field, val)
+        elif field == "body_region" and val and s.body_region and not is_canonical(s.body_region):
+            s.body_region = val
     if res.quick_redflag:
         s.quick_redflag = True
     if trace is not None:

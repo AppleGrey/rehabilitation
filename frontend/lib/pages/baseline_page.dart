@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/program_api.dart';
 import '../services/program_store.dart';
@@ -7,7 +6,7 @@ import '../theme/app_theme.dart';
 import 'program_page.dart';
 import 'rehab_video_page.dart';
 
-/// 问诊后先出几个基线动作让用户试跟做，再据表现 + 问诊生成正式方案。
+/// 问诊后先出几个基线动作让用户试跟做（录完只存档），再点「生成方案」由后台批量处理并出方案。
 class BaselinePage extends StatefulWidget {
   final String sessionId;
 
@@ -21,6 +20,7 @@ class _BaselinePageState extends State<BaselinePage> {
   String? _programId;
   String _message = '';
   List<Map<String, dynamic>> _videos = [];
+  Set<String> _recorded = {};
   String? _error;
   bool _loading = true;
   bool _generating = false;
@@ -54,17 +54,33 @@ class _BaselinePageState extends State<BaselinePage> {
     }
   }
 
+  Future<void> _refreshRecorded() async {
+    final pid = _programId;
+    if (pid == null) return;
+    try {
+      final v = await ProgramApi.get(pid);
+      final rec = ((v['baseline'] as Map<String, dynamic>?)?['recorded'] as List<dynamic>? ?? [])
+          .map((e) => e.toString())
+          .toSet();
+      if (mounted) setState(() => _recorded = rec);
+    } catch (_) {}
+  }
+
   void _tryVideo(Map<String, dynamic> v) {
     final vid = v['video_id'] as String?;
-    if (vid == null) return;
-    Navigator.of(context).push(MaterialPageRoute<void>(
-      builder: (ctx) => RehabVideoPage(
-        onBack: () => Navigator.of(ctx).pop(),
-        videoId: vid,
-        sessionId: widget.sessionId,
-        videoTitle: '基线试跟做',
-      ),
-    ));
+    if (vid == null || _programId == null) return;
+    Navigator.of(context)
+        .push(MaterialPageRoute<void>(
+          builder: (ctx) => RehabVideoPage(
+            onBack: () => Navigator.of(ctx).pop(),
+            videoId: vid,
+            sessionId: widget.sessionId,
+            videoTitle: '基线试跟做',
+            uploadMode: 'baseline',
+            programId: _programId,
+          ),
+        ))
+        .then((_) => _refreshRecorded());
   }
 
   Future<void> _generate() async {
@@ -72,8 +88,7 @@ class _BaselinePageState extends State<BaselinePage> {
     if (pid == null || _generating) return;
     setState(() => _generating = true);
     try {
-      final baseline = await _collectBaselineResults();
-      await ProgramApi.generatePlan(pid, baseline: baseline.isEmpty ? null : baseline);
+      await ProgramApi.generatePlan(pid); // 异步：后台处理基线视频 + 生成方案
       await ProgramStore.saveCurrent(pid, widget.sessionId);
       if (!mounted) return;
       Navigator.of(context).pushReplacement(MaterialPageRoute<void>(
@@ -84,30 +99,6 @@ class _BaselinePageState extends State<BaselinePage> {
       setState(() => _generating = false);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('生成方案失败：$e')));
     }
-  }
-
-  /// 从本地记录的评估任务里，收集已完成的基线跟做表现，回喂给方案生成。
-  Future<List<Map<String, dynamic>>> _collectBaselineResults() async {
-    final prefs = await SharedPreferences.getInstance();
-    final out = <Map<String, dynamic>>[];
-    for (final v in _videos) {
-      final vid = v['video_id'] as String?;
-      if (vid == null) continue;
-      final taskId = prefs.getString('assess_task_${widget.sessionId}_$vid');
-      if (taskId == null) continue;
-      final task = await ProgramApi.assessStatus(taskId);
-      if (task == null || task['status'] != 'done') continue;
-      final a = task['assessment'];
-      if (a is! Map) continue;
-      final findings = (a['key_findings'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
-      out.add({
-        'video_id': vid,
-        'overall_score': a['overall_score'],
-        'range_of_motion': a['range_of_motion'],
-        'notes': findings.isNotEmpty ? findings.join('；') : (task['summary'] ?? ''),
-      });
-    }
-    return out;
   }
 
   @override
@@ -140,8 +131,8 @@ class _BaselinePageState extends State<BaselinePage> {
                           width: 20, height: 20,
                           child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(Colors.white)),
                         )
-                      : const Text('根据我的情况生成康复方案',
-                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                      : Text(_recorded.isEmpty ? '直接生成康复方案' : '根据我的情况生成康复方案',
+                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
                 ),
               ),
             ),
@@ -168,10 +159,7 @@ class _BaselinePageState extends State<BaselinePage> {
       children: [
         Container(
           padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: AppTheme.primaryLight,
-            borderRadius: BorderRadius.circular(12),
-          ),
+          decoration: BoxDecoration(color: AppTheme.primaryLight, borderRadius: BorderRadius.circular(12)),
           child: Row(children: [
             const Icon(Icons.tips_and_updates, color: AppTheme.primaryDark, size: 20),
             const SizedBox(width: 10),
@@ -197,9 +185,9 @@ class _BaselinePageState extends State<BaselinePage> {
   }
 
   Widget _videoCard(Map<String, dynamic> v) {
-    final title = v['title'] as String? ?? v['video_id'] as String? ?? '动作';
-    final diff = v['difficulty'];
-    final dur = v['duration_seconds'];
+    final vid = v['video_id'] as String? ?? '';
+    final title = v['title'] as String? ?? vid;
+    final done = _recorded.contains(vid);
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
@@ -211,8 +199,12 @@ class _BaselinePageState extends State<BaselinePage> {
       child: Row(children: [
         Container(
           width: 44, height: 44,
-          decoration: BoxDecoration(color: AppTheme.primaryLight, borderRadius: BorderRadius.circular(10)),
-          child: const Icon(Icons.self_improvement, color: AppTheme.primary),
+          decoration: BoxDecoration(
+            color: done ? const Color(0xFFE8F6F1) : AppTheme.primaryLight,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(done ? Icons.check_circle : Icons.self_improvement,
+              color: done ? AppTheme.success : AppTheme.primary),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -220,16 +212,14 @@ class _BaselinePageState extends State<BaselinePage> {
             Text(title, maxLines: 1, overflow: TextOverflow.ellipsis,
                 style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
             const SizedBox(height: 4),
-            Text([
-              if (diff != null) '难度 $diff',
-              if (dur != null) '${dur}s',
-            ].join(' · '), style: const TextStyle(fontSize: 12, color: AppTheme.textTertiary)),
+            Text(done ? '已跟做 ✓' : (v['difficulty'] != null ? '难度 ${v['difficulty']}' : '未跟做'),
+                style: TextStyle(fontSize: 12, color: done ? AppTheme.success : AppTheme.textTertiary)),
           ]),
         ),
         TextButton.icon(
           onPressed: () => _tryVideo(v),
-          icon: const Icon(Icons.play_arrow, size: 18),
-          label: const Text('试跟做'),
+          icon: Icon(done ? Icons.replay : Icons.play_arrow, size: 18),
+          label: Text(done ? '重做' : '试跟做'),
           style: TextButton.styleFrom(foregroundColor: AppTheme.primary),
         ),
       ]),

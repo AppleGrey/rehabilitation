@@ -73,6 +73,45 @@ func (h *Handler) Get(c *gin.Context) {
 	c.JSON(http.StatusOK, prog)
 }
 
+type setStatusReq struct {
+	Status string `json:"status"`
+}
+
+func (h *Handler) SetStatus(c *gin.Context) {
+	programID := strings.TrimSpace(c.Param("id"))
+	var in setStatusReq
+	if err := c.ShouldBindJSON(&in); err != nil || strings.TrimSpace(in.Status) == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"detail": "status required"})
+		return
+	}
+	if err := h.repo.SetStatus(c.Request.Context(), programID, in.Status); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"detail": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"program_id": programID, "status": in.Status})
+}
+
+type saveDecisionReq struct {
+	StageNo   int            `json:"stage_no"`
+	Decision  string         `json:"decision"`
+	Rationale string         `json:"rationale"`
+	Metrics   map[string]any `json:"metrics"`
+}
+
+func (h *Handler) SaveDecision(c *gin.Context) {
+	programID := strings.TrimSpace(c.Param("id"))
+	var in saveDecisionReq
+	if err := c.ShouldBindJSON(&in); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"detail": err.Error()})
+		return
+	}
+	if err := h.repo.SaveDecision(c.Request.Context(), programID, in.StageNo, in.Decision, in.Rationale, in.Metrics); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"detail": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"ok": true})
+}
+
 // PlayUpload 流式播放用户跟练上传视频（by assessment task_id），支持 Range。
 func (h *Handler) PlayUpload(c *gin.Context) {
 	taskID := strings.TrimSpace(c.Param("task_id"))

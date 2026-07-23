@@ -19,6 +19,24 @@ from ..models import (
     StrategyTree,
     StrategyTreeNode,
 )
+from .body_parts import question_fingerprint
+
+
+def _asked_fps(session: StrategySession) -> set[str]:
+    return {question_fingerprint(q) for q in (session.asked_question_texts or []) if q}
+
+
+def _is_asked_question(node: StrategyTreeNode, session: StrategySession) -> bool:
+    fp = question_fingerprint(node.question_text)
+    if not fp:
+        return False
+    asked = _asked_fps(session)
+    if fp in asked:
+        return True
+    for old in asked:
+        if old and min(len(fp), len(old)) >= 8 and (fp in old or old in fp):
+            return True
+    return False
 
 
 # ─────────────────── 不确定性 / 信息增益 ───────────────────
@@ -142,7 +160,9 @@ def _burden(node: StrategyTreeNode) -> float:
 
 
 def _repetition(node: StrategyTreeNode, session: StrategySession) -> float:
-    """已问过 / 目标槽已 known 或 unknown → 惩罚。"""
+    """已问过问句 / 目标槽已 known 或 unknown → 惩罚。"""
+    if _is_asked_question(node, session):
+        return 1.0
     pen = 0.0
     for sid in node.target_slots:
         if sid in session.asked_slot_ids:
@@ -185,10 +205,12 @@ def pick_current_node(tree: StrategyTree, session: StrategySession) -> Optional[
     从可展示的 question 节点里选当前节点（§5.5）。
     规则：required==True 的「必问题」（S/P 缺口）直接置顶，绕过相对打分；
     否则取总分最高者。打分明细写回节点。
+    已答 / 已问同义问句硬排除。
     """
     candidates = [
         n for n in tree.question_nodes()
         if n.status in ("planned", "active")
+        and not _is_asked_question(n, session)
     ]
     if not candidates:
         return None
