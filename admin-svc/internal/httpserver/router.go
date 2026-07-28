@@ -36,6 +36,7 @@ func NewRouter(h *strategy.Handler, ph *program.Handler, staticDir, kgSvcURL, co
 		// 方案查看（直读库）+ 用户跟练视频列表
 		api.GET("/programs", ph.ListPrograms)
 		api.GET("/programs/:id", ph.GetProgram)
+		api.DELETE("/programs/:id", ph.DeleteProgram)
 		api.GET("/uploads", ph.ListUploads)
 	}
 

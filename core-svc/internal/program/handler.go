@@ -73,6 +73,58 @@ func (h *Handler) Get(c *gin.Context) {
 	c.JSON(http.StatusOK, prog)
 }
 
+func (h *Handler) GetBySession(c *gin.Context) {
+	sessionID := strings.TrimSpace(c.Param("session_id"))
+	if sessionID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"detail": "session_id required"})
+		return
+	}
+	prog, err := h.repo.GetLatestBySession(c.Request.Context(), sessionID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"detail": err.Error()})
+		return
+	}
+	if prog == nil {
+		c.JSON(http.StatusNotFound, gin.H{"detail": "program not found for session"})
+		return
+	}
+	c.JSON(http.StatusOK, prog)
+}
+
+func (h *Handler) List(c *gin.Context) {
+	limit := 50
+	if raw := c.Query("limit"); raw != "" {
+		if n, err := strconv.Atoi(raw); err == nil {
+			limit = n
+		}
+	}
+	sessionID := strings.TrimSpace(c.Query("session_id"))
+	items, err := h.repo.ListPrograms(c.Request.Context(), sessionID, limit)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"detail": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"programs": items})
+}
+
+func (h *Handler) Delete(c *gin.Context) {
+	programID := strings.TrimSpace(c.Param("id"))
+	if programID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"detail": "program id required"})
+		return
+	}
+	ok, err := h.repo.DeleteProgram(c.Request.Context(), programID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"detail": err.Error()})
+		return
+	}
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{"detail": "program not found"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"ok": true, "program_id": programID})
+}
+
 type setStatusReq struct {
 	Status string `json:"status"`
 }

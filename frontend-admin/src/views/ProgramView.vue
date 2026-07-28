@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { CORE_SVC_BASE, fetchProgram, fetchPrograms, type ProgramSummary } from '../api'
+import { CORE_SVC_BASE, deleteProgram, fetchProgram, fetchPrograms, type ProgramSummary } from '../api'
 
 const busy = ref(false)
 const error = ref('')
@@ -8,6 +8,7 @@ const programs = ref<ProgramSummary[]>([])
 const selectedId = ref('')
 const detail = ref<Record<string, any> | null>(null)
 const detailBusy = ref(false)
+const deleting = ref(false)
 
 async function load() {
   busy.value = true
@@ -17,6 +18,10 @@ async function load() {
     programs.value = data.programs || []
     if (programs.value.length && !selectedId.value) {
       void select(programs.value[0].program_id)
+    } else if (selectedId.value && !programs.value.some((p) => p.program_id === selectedId.value)) {
+      selectedId.value = programs.value[0]?.program_id || ''
+      detail.value = null
+      if (selectedId.value) void select(selectedId.value)
     }
   } catch (err) {
     error.value = String(err)
@@ -39,6 +44,25 @@ async function select(id: string) {
   }
 }
 
+async function removeSelected() {
+  const id = selectedId.value
+  if (!id || deleting.value) return
+  const name = detail.value?.condition || detail.value?.body_part || id.slice(0, 8)
+  if (!window.confirm(`确定删除方案「${name}」？此操作不可恢复。`)) return
+  deleting.value = true
+  error.value = ''
+  try {
+    await deleteProgram(id)
+    selectedId.value = ''
+    detail.value = null
+    await load()
+  } catch (err) {
+    error.value = String(err)
+  } finally {
+    deleting.value = false
+  }
+}
+
 function playSrc(url?: string): string {
   if (!url) return ''
   return url.startsWith('/core-svc') ? url : `${CORE_SVC_BASE}${url}`
@@ -55,9 +79,15 @@ function dosage(it: Record<string, any>): string {
 
 function statusLabel(s?: string): string {
   return (
-    { baseline_pending: '待基线', active: '进行中', refer: '已转诊', discharged: '已结业' }[
-      s || ''
-    ] || s || '—'
+    {
+      baseline_pending: '待基线',
+      generating: '生成中',
+      active: '进行中',
+      refer: '已转诊',
+      discharged: '已结业',
+    }[s || ''] ||
+    s ||
+    '—'
   )
 }
 
@@ -107,7 +137,17 @@ onMounted(load)
         <div v-if="detailBusy" class="empty">加载中…</div>
         <template v-else-if="detail">
           <section class="card">
-            <h2>{{ detail.condition || detail.body_part || '疗程' }}</h2>
+            <div class="detail-head">
+              <h2>{{ detail.condition || detail.body_part || '疗程' }}</h2>
+              <button
+                type="button"
+                class="btn danger"
+                :disabled="deleting"
+                @click="removeSelected"
+              >
+                {{ deleting ? '删除中…' : '删除方案' }}
+              </button>
+            </div>
             <div class="tags">
               <span class="chip">{{ detail.body_part || '—' }}</span>
               <span class="chip">状态：{{ statusLabel(detail.status) }}</span>
@@ -154,6 +194,10 @@ onMounted(load)
             </div>
           </section>
 
+          <section v-else-if="detail.status === 'generating'" class="card">
+            <p class="empty">方案生成中，完成后将显示训练动作。</p>
+          </section>
+
           <section v-else-if="detail.status === 'baseline_pending'" class="card">
             <p class="empty">该疗程尚在基线阶段，用户跟做后才会生成正式方案。</p>
           </section>
@@ -179,6 +223,8 @@ h1 { margin: 0 0 4px; font-size: 1.35rem; font-weight: 600; }
 .count { color: var(--muted); font-size: 0.85rem; }
 .btn { padding: 8px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--fg); font: inherit; cursor: pointer; }
 .btn:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); }
+.btn.danger { border-color: #5c2430; color: #f0a8b0; }
+.btn.danger:hover:not(:disabled) { border-color: #a33; color: #ffb4bc; }
 .banner.err { padding: 10px 12px; border-radius: 8px; background: #2a1518; border: 1px solid #5c2430; color: var(--red); font-size: 0.88rem; }
 .workspace { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(240px, 320px) 1fr; gap: 12px; }
 .list-panel, .detail-panel { min-height: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; overflow: auto; }
@@ -190,10 +236,13 @@ h1 { margin: 0 0 4px; font-size: 1.35rem; font-weight: 600; }
 .cond { font-weight: 600; font-size: 0.92rem; }
 .status { font-size: 0.72rem; color: var(--muted); }
 .status[data-s='active'] { color: var(--primary); }
+.status[data-s='generating'] { color: var(--yellow); }
 .status[data-s='refer'] { color: var(--yellow); }
 .row2 { display: flex; gap: 10px; margin-top: 4px; font-size: 0.75rem; color: var(--muted); }
 .row2 .id { font-family: Consolas, Menlo, monospace; }
 .detail-panel { padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.detail-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.detail-head h2 { margin: 0; font-size: 1.1rem; }
 .card { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
 .card h2 { margin: 0 0 8px; font-size: 1.1rem; }
 .card h3 { margin: 0 0 10px; font-size: 0.98rem; }

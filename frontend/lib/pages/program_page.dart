@@ -86,12 +86,13 @@ class _ProgramPageState extends State<ProgramPage> {
     final vid = item['video_id'] as String?;
     if (vid == null || vid.isEmpty) return;
     final stageNo = (_view?['current_stage_no'] as int?) ?? 1;
+    final sid = (_view?['session_id'] as String?) ?? widget.sessionId;
     Navigator.of(context)
         .push(MaterialPageRoute<void>(
           builder: (ctx) => RehabVideoPage(
             onBack: () => Navigator.of(ctx).pop(),
             videoId: vid,
-            sessionId: widget.sessionId,
+            sessionId: sid,
             videoTitle: '康复训练',
             uploadMode: 'training',
             programId: widget.programId,

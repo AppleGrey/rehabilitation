@@ -57,6 +57,16 @@ func (r *Repo) ListPrograms(ctx context.Context, limit int) ([]map[string]any, e
 	return out, rows.Err()
 }
 
+func (r *Repo) DeleteProgram(ctx context.Context, programID string) (bool, error) {
+	// 评估任务表无 FK；先清再删疗程（疗程子表已 ON DELETE CASCADE）
+	_, _ = r.pool.Exec(ctx, `DELETE FROM assessment_tasks WHERE program_id=$1::uuid`, programID)
+	tag, err := r.pool.Exec(ctx, `DELETE FROM rehab_programs WHERE id=$1::uuid`, programID)
+	if err != nil {
+		return false, fmt.Errorf("delete program: %w", err)
+	}
+	return tag.RowsAffected() > 0, nil
+}
+
 // GetProgram 顶层 + 当前分期最新方案 + 训练项（附 core-svc 播放 URL）。
 func (r *Repo) GetProgram(ctx context.Context, id string) (map[string]any, error) {
 	var (

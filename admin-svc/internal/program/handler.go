@@ -49,6 +49,24 @@ func (h *Handler) GetProgram(c *gin.Context) {
 	c.JSON(http.StatusOK, prog)
 }
 
+func (h *Handler) DeleteProgram(c *gin.Context) {
+	id := strings.TrimSpace(c.Param("id"))
+	if id == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"detail": "id required"})
+		return
+	}
+	ok, err := h.repo.DeleteProgram(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"detail": err.Error()})
+		return
+	}
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{"detail": "program not found"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"ok": true, "program_id": id})
+}
+
 func (h *Handler) ListUploads(c *gin.Context) {
 	limit := 50
 	if raw := c.Query("limit"); raw != "" {

@@ -6,7 +6,7 @@ import '../theme/app_theme.dart';
 import 'program_page.dart';
 import 'rehab_video_page.dart';
 
-/// 问诊后先出几个基线动作让用户试跟做（录完只存档），再点「生成方案」由后台批量处理并出方案。
+/// 问诊后先出几个基线动作让用户试跟做（录完只存档），再点「生成方案」才建库并异步出方案。
 class BaselinePage extends StatefulWidget {
   final String sessionId;
 
@@ -17,7 +17,6 @@ class BaselinePage extends StatefulWidget {
 }
 
 class _BaselinePageState extends State<BaselinePage> {
-  String? _programId;
   String _message = '';
   List<Map<String, dynamic>> _videos = [];
   Set<String> _recorded = {};
@@ -39,10 +38,13 @@ class _BaselinePageState extends State<BaselinePage> {
     try {
       final r = await ProgramApi.start(widget.sessionId);
       if (!mounted) return;
+      final rec = ((r['baseline'] as Map<String, dynamic>?)?['recorded'] as List<dynamic>? ?? [])
+          .map((e) => e.toString())
+          .toSet();
       setState(() {
-        _programId = r['program_id'] as String?;
-        _message = r['message'] as String? ?? '请先跟做以下动作，我会据此为你生成方案。';
+        _message = r['message'] as String? ?? '请先跟做以下动作（可选），再点下方生成方案。';
         _videos = (r['baseline_videos'] as List<dynamic>? ?? []).cast<Map<String, dynamic>>();
+        _recorded = rec;
         _loading = false;
       });
     } catch (e) {
@@ -55,11 +57,9 @@ class _BaselinePageState extends State<BaselinePage> {
   }
 
   Future<void> _refreshRecorded() async {
-    final pid = _programId;
-    if (pid == null) return;
     try {
-      final v = await ProgramApi.get(pid);
-      final rec = ((v['baseline'] as Map<String, dynamic>?)?['recorded'] as List<dynamic>? ?? [])
+      final r = await ProgramApi.start(widget.sessionId);
+      final rec = ((r['baseline'] as Map<String, dynamic>?)?['recorded'] as List<dynamic>? ?? [])
           .map((e) => e.toString())
           .toSet();
       if (mounted) setState(() => _recorded = rec);
@@ -68,7 +68,7 @@ class _BaselinePageState extends State<BaselinePage> {
 
   void _tryVideo(Map<String, dynamic> v) {
     final vid = v['video_id'] as String?;
-    if (vid == null || _programId == null) return;
+    if (vid == null) return;
     Navigator.of(context)
         .push(MaterialPageRoute<void>(
           builder: (ctx) => RehabVideoPage(
@@ -77,18 +77,19 @@ class _BaselinePageState extends State<BaselinePage> {
             sessionId: widget.sessionId,
             videoTitle: '基线试跟做',
             uploadMode: 'baseline',
-            programId: _programId,
+            programId: null, // 预览阶段尚未建方案，按 session 存草稿
           ),
         ))
         .then((_) => _refreshRecorded());
   }
 
   Future<void> _generate() async {
-    final pid = _programId;
-    if (pid == null || _generating) return;
+    if (_generating) return;
     setState(() => _generating = true);
     try {
-      await ProgramApi.generatePlan(pid); // 异步：后台处理基线视频 + 生成方案
+      final r = await ProgramApi.createAndGenerate(widget.sessionId);
+      final pid = r['program_id'] as String?;
+      if (pid == null || pid.isEmpty) throw Exception('未返回 program_id');
       await ProgramStore.saveCurrent(pid, widget.sessionId);
       if (!mounted) return;
       Navigator.of(context).pushReplacement(MaterialPageRoute<void>(
@@ -125,7 +126,7 @@ class _BaselinePageState extends State<BaselinePage> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     elevation: 0,
                   ),
-                  onPressed: _programId == null || _generating ? null : _generate,
+                  onPressed: _generating ? null : _generate,
                   child: _generating
                       ? const SizedBox(
                           width: 20, height: 20,
@@ -180,6 +181,12 @@ class _BaselinePageState extends State<BaselinePage> {
           )
         else
           ..._videos.map(_videoCard),
+        const SizedBox(height: 8),
+        const Padding(
+          padding: EdgeInsets.fromLTRB(4, 4, 4, 0),
+          child: Text('跟做完成后可写感受，生成方案时会一并参考。',
+              style: TextStyle(fontSize: 12, color: AppTheme.textTertiary)),
+        ),
       ],
     );
   }

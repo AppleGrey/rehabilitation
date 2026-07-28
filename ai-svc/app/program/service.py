@@ -28,7 +28,47 @@ def _profile_and_impression(session) -> tuple[dict, list[dict]]:
 
 # ─────────────────── 建疗程 + baseline 视频 ───────────────────
 
+def preview_baseline(session) -> Optional[dict]:
+    """问诊后进入基线页：只返回推荐试跟做视频，**不建库**。"""
+    from ..assessment import tasks as _tasks
+    from ..followup.policy.body_parts import normalize_body_region
+
+    profile, impression = _profile_and_impression(session)
+    raw_part = profile.get("target_joint") or (session.seed.body_region if session.seed else "") or "目标部位"
+    body_part = normalize_body_region(str(raw_part)) or raw_part
+    if profile.get("target_joint") != body_part and body_part != "目标部位":
+        profile["target_joint"] = body_part
+
+    start_stage = staging.start_stage(profile)
+    baseline_metas = video_select.select_baseline_videos(profile, n=3)
+    baseline_videos = [as_video_brief(v) for v in baseline_metas]
+    recorded = _tasks.list_session_baseline_video_ids(session.session_id)
+    return {
+        "session_id": session.session_id,
+        "status": "preview",
+        "start_stage": start_stage,
+        "start_stage_label": staging.STAGE_LABEL.get(start_stage, start_stage),
+        "baseline_videos": baseline_videos,
+        "baseline": {"recorded": recorded},
+        "body_part": body_part,
+        "condition": impression[0]["name"] if impression else body_part,
+        "message": "请先跟做以下动作（可选）。点下方生成后才会创建方案占位，AI 生成完成后变为进行中。",
+    }
+
+
 def start_program(session) -> Optional[dict]:
+    """兼容旧调用：等同 preview（不再隐式建库）。真正建库见 create_and_generate。"""
+    return preview_baseline(session)
+
+
+def create_and_generate(session, *, client_baseline: list[dict] | None = None) -> Optional[dict]:
+    """
+    用户点击「直接/根据情况生成方案」时调用：
+    1) 建疗程占位 status=generating
+    2) 把该会话下草稿基线任务挂到 program
+    3) 返回 program_id；后台 worker 生成完成后 → active
+    """
+    from ..assessment import tasks as _tasks
     from ..followup.policy.body_parts import normalize_body_region
 
     profile, impression = _profile_and_impression(session)
@@ -39,7 +79,6 @@ def start_program(session) -> Optional[dict]:
     condition = impression[0]["name"] if impression else body_part
     goal = session.seed.goal if session.seed else ""
 
-    start_stage = staging.start_stage(profile)
     baseline_metas = video_select.select_baseline_videos(profile, n=3)
     baseline_videos = [as_video_brief(v) for v in baseline_metas]
 
@@ -49,23 +88,35 @@ def start_program(session) -> Optional[dict]:
     )
     if not program_id:
         return None
+
+    # 立刻占位为「生成中」（不再停留在 baseline_pending 当「已有方案」）
+    core_client.set_status(program_id, "generating")
+    _tasks.attach_program_for_session_baselines(session.session_id, program_id)
+    if client_baseline:
+        _merge_client_feelings(program_id, client_baseline)
+
     return {
-        "program_id": program_id, "status": "baseline_pending",
-        "start_stage": start_stage, "start_stage_label": staging.STAGE_LABEL.get(start_stage, start_stage),
-        "baseline_videos": baseline_videos,
-        "message": "请先跟做以下动作（跟做完点完成即可返回），我会据此为你生成方案。",
+        "program_id": program_id,
+        "status": "generating",
+        "message": "方案生成中，完成后将变为进行中。",
     }
 
 
-def record_baseline(program_id: str, video_id: str, user_video_key: str) -> Optional[str]:
-    """基线试跟做录制完：只存档（不评分），生成方案时再批量处理。返回 task_id。"""
+def record_baseline(program_id: str | None, video_id: str, user_video_key: str,
+                    *, session_id: str | None = None, user_notes: str | None = None) -> Optional[str]:
+    """基线试跟做：可在尚无 program 时按 session 存草稿；有 program 则直接绑定。"""
     from ..assessment import tasks as _tasks
-    prog = core_client.get_program(program_id)
-    session_id = (prog or {}).get("session_id") or program_id
+    sid = session_id
+    if program_id:
+        prog = core_client.get_program(program_id)
+        sid = (prog or {}).get("session_id") or session_id or program_id
+    if not sid:
+        return None
     try:
         return _tasks.create_task(
-            session_id, video_id, user_video_key,
+            str(sid), video_id, user_video_key,
             program_id=program_id, video_id=video_id, purpose="baseline", status="recorded",
+            user_notes=user_notes,
         )
     except Exception:
         logger.exception("[PROGRAM] 记录 baseline 失败")
@@ -74,20 +125,49 @@ def record_baseline(program_id: str, video_id: str, user_video_key: str) -> Opti
 
 # ─────────────────── 生成方案（异步：先占位，再后台出方案）───────────────────
 
-def trigger_plan(program_id: str) -> dict:
+def trigger_plan(program_id: str, *, client_baseline: list[dict] | None = None) -> dict:
     """置为「生成中」占位并立即返回；真正的方案由后台 worker 生成。"""
+    if client_baseline:
+        _merge_client_feelings(program_id, client_baseline)
     core_client.set_status(program_id, "generating")
     return {"program_id": program_id, "status": "generating"}
 
 
+def _merge_client_feelings(program_id: str, baseline: list[dict]) -> None:
+    """把客户端传来的 notes（用户感受）写回对应 baseline 任务。"""
+    from ..assessment import tasks as _tasks
+    by_vid = {
+        str(b.get("video_id")): str(b.get("notes") or "").strip()
+        for b in baseline if b.get("video_id") and str(b.get("notes") or "").strip()
+    }
+    if not by_vid:
+        return
+    for t in _tasks.list_tasks(program_id, "baseline"):
+        vid = str(t.get("video_id") or "")
+        note = by_vid.get(vid)
+        if note and t.get("task_id"):
+            _tasks.update_task(t["task_id"], user_notes=note)
+
+
 def run_plan_worker(program_id: str) -> None:
-    """后台：对基线视频跑 VLM（定性，为方案服务）→ 汇总 → 生成方案 → 落库(active)。"""
+    """后台：对基线视频跑 VLM → 汇总用户感受/训练感受 → 生成方案 → 落库(active)。"""
     from ..assessment import tasks as _tasks
     baseline_results = []
     for t in _tasks.list_tasks(program_id, "baseline"):
         insight = _process_baseline_task(t)
         if insight:
             baseline_results.append(insight)
+    for t in _tasks.list_tasks(program_id, "training"):
+        un = (t.get("user_notes") or "").strip()
+        if not un:
+            continue
+        vid = t.get("video_id") or t.get("standard_video_id")
+        baseline_results.append({
+            "video_id": vid,
+            "overall_score": None,
+            "range_of_motion": None,
+            "notes": f"用户训练感受：{un}",
+        })
     generate_stage_plan(program_id, baseline_results=baseline_results)
 
 
@@ -99,12 +179,19 @@ def _process_baseline_task(task: dict) -> Optional[dict]:
 
     std_id = task.get("video_id") or task.get("standard_video_id")
     usr_key = task.get("user_video_path")
+    user_feel = (task.get("user_notes") or "").strip()
     if not std_id or not usr_key:
+        if user_feel and std_id:
+            return {"video_id": std_id, "overall_score": None, "range_of_motion": None,
+                    "notes": f"用户感受：{user_feel}"}
         return None
     tmp = Path(tempfile.mkdtemp(prefix="baseline-"))
     try:
         std_key = ensure_playable_mp4_path(std_id)
         if not std_key:
+            if user_feel:
+                return {"video_id": std_id, "overall_score": None, "range_of_motion": None,
+                        "notes": f"用户感受：{user_feel}"}
             return None
         std_p, usr_p = tmp / "std.mp4", tmp / "usr.mp4"
         download_to_path(std_key, std_p)
@@ -117,14 +204,55 @@ def _process_baseline_task(task: dict) -> Optional[dict]:
             ("受限:" + "、".join(a.get("limitations") or [])) if a.get("limitations") else "",
             ("代偿:" + "、".join(a.get("compensations") or [])) if a.get("compensations") else "",
             ("建议侧重:" + "、".join(a.get("suggested_focus") or [])) if a.get("suggested_focus") else "",
+            (f"用户感受：{user_feel}" if user_feel else ""),
         ]))
         return {"video_id": std_id, "overall_score": None, "range_of_motion": None, "notes": notes}
     except Exception:  # noqa: BLE001
         logger.exception("[PROGRAM] baseline VLM 失败 task=%s", task.get("task_id"))
         _tasks.update_task(task["task_id"], status="error", error="baseline vlm failed")
+        if user_feel:
+            return {"video_id": std_id, "overall_score": None, "range_of_motion": None,
+                    "notes": f"用户感受：{user_feel}"}
         return None
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
+
+
+def view_program_by_session(session_id: str) -> Optional[dict]:
+    prog = core_client.get_program_by_session(session_id)
+    if not prog:
+        return None
+    pid = prog.get("program_id")
+    return view_program(str(pid)) if pid else prog
+
+
+def list_programs_by_session(session_id: str) -> list[dict]:
+    """某问诊会话下的全部疗程。"""
+    items = core_client.list_programs_by_session(session_id) or []
+    return _hydrate_program_list(items)
+
+
+def list_all_programs(limit: int = 50) -> list[dict]:
+    """全部疗程（演示/无账号场景：方案页直接拉库列表）。"""
+    items = core_client.list_programs(limit=limit) or []
+    return _hydrate_program_list(items)
+
+
+def _hydrate_program_list(items: list[dict]) -> list[dict]:
+    out = []
+    for it in items:
+        pid = it.get("program_id")
+        if not pid:
+            continue
+        full = view_program(str(pid))
+        out.append(full or it)
+    return out
+
+
+def delete_program(program_id: str) -> bool:
+    from ..assessment import tasks as _tasks
+    _tasks.delete_tasks_for_program(program_id)
+    return core_client.delete_program(program_id)
 
 
 def generate_stage_plan(program_id: str, baseline_results: Optional[list[dict]] = None,

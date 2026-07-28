@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -154,6 +155,90 @@ func (r *Repo) SaveStagePlan(ctx context.Context, programID string, in SavePlanI
 		return err
 	}
 	return tx.Commit(ctx)
+}
+
+// GetLatestBySession 取某问诊会话最近一条疗程（按创建时间倒序）。
+func (r *Repo) GetLatestBySession(ctx context.Context, sessionID string) (map[string]any, error) {
+	sessionID = strings.TrimSpace(sessionID)
+	if sessionID == "" {
+		return nil, nil
+	}
+	var id string
+	err := r.pool.QueryRow(ctx, `
+		SELECT id::text FROM rehab_programs
+		WHERE session_id=$1::uuid
+		ORDER BY created_at DESC
+		LIMIT 1
+	`, sessionID).Scan(&id)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("get by session: %w", err)
+	}
+	return r.GetProgram(ctx, id)
+}
+
+// ListPrograms 列出疗程；sessionID 非空时只返回该会话下的。
+func (r *Repo) ListPrograms(ctx context.Context, sessionID string, limit int) ([]map[string]any, error) {
+	if limit <= 0 {
+		limit = 50
+	}
+	if limit > 200 {
+		limit = 200
+	}
+	var (
+		rows pgx.Rows
+		err  error
+	)
+	if strings.TrimSpace(sessionID) != "" {
+		rows, err = r.pool.Query(ctx, `
+			SELECT id::text, status, COALESCE(condition,''), COALESCE(body_part,''), session_id::text,
+			       current_stage_no, created_at
+			FROM rehab_programs WHERE session_id=$1::uuid
+			ORDER BY created_at DESC LIMIT $2
+		`, sessionID, limit)
+	} else {
+		rows, err = r.pool.Query(ctx, `
+			SELECT id::text, status, COALESCE(condition,''), COALESCE(body_part,''), session_id::text,
+			       current_stage_no, created_at
+			FROM rehab_programs
+			ORDER BY created_at DESC LIMIT $1
+		`, limit)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("list programs: %w", err)
+	}
+	defer rows.Close()
+
+	out := make([]map[string]any, 0)
+	for rows.Next() {
+		var (
+			id, status, condition, bodyPart string
+			session                         *string
+			stageNo                         int
+			created                         interface{}
+		)
+		if err := rows.Scan(&id, &status, &condition, &bodyPart, &session, &stageNo, &created); err != nil {
+			return nil, err
+		}
+		item := map[string]any{
+			"program_id": id, "status": status, "condition": condition,
+			"body_part": bodyPart, "session_id": session, "current_stage_no": stageNo,
+			"created_at": created,
+		}
+		out = append(out, item)
+	}
+	return out, rows.Err()
+}
+
+func (r *Repo) DeleteProgram(ctx context.Context, programID string) (bool, error) {
+	_, _ = r.pool.Exec(ctx, `DELETE FROM assessment_tasks WHERE program_id=$1::uuid`, programID)
+	tag, err := r.pool.Exec(ctx, `DELETE FROM rehab_programs WHERE id=$1::uuid`, programID)
+	if err != nil {
+		return false, fmt.Errorf("delete program: %w", err)
+	}
+	return tag.RowsAffected() > 0, nil
 }
 
 // GetProgram 顶层信息 + 当前阶段最新方案 + 训练项（面向 C 端/ai-svc）。

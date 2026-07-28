@@ -290,16 +290,28 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
     }
   }
 
-  /// 基线/训练模式：录完只上传，然后直接返回上一界面（不弹分，由上层轮询/查看）。
+  /// 基线/训练模式：录完可写感受，再上传并返回。
   Future<void> _uploadAndReturn(String videoPath) async {
+    final notes = await _askFeelingNotes();
+    if (!mounted) return;
     setState(() => _phase = _Phase.uploading);
     try {
       final http.MultipartRequest req;
       if (widget.uploadMode == 'baseline') {
+        final pid = (widget.programId == null || widget.programId!.isEmpty)
+            ? 'draft'
+            : widget.programId!;
         req = http.MultipartRequest(
           'POST',
-          Uri.parse('$kBackendBase/api/ai/program/${widget.programId}/baseline'),
-        )..fields['video_id'] = widget.videoId ?? '';
+          Uri.parse('$kBackendBase/api/ai/program/$pid/baseline'),
+        )
+          ..fields['video_id'] = widget.videoId ?? '';
+        if (widget.sessionId != null && widget.sessionId!.isNotEmpty) {
+          req.fields['session_id'] = widget.sessionId!;
+        }
+        if (notes != null && notes.isNotEmpty) {
+          req.fields['user_notes'] = notes;
+        }
       } else {
         req = http.MultipartRequest(
           'POST',
@@ -311,6 +323,9 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
           ..fields['stage_no'] = '${widget.stageNo ?? 1}'
           ..fields['video_id'] = widget.videoId ?? ''
           ..fields['purpose'] = 'training';
+        if (notes != null && notes.isNotEmpty) {
+          req.fields['user_notes'] = notes;
+        }
       }
       req.files.add(await http.MultipartFile.fromPath(
           'user_video', videoPath, filename: 'user_training.mp4'));
@@ -325,6 +340,41 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
         _phase = _Phase.result;
       });
     }
+  }
+
+  /// 可选：写跟做/训练后的主观感受（疼痛、费力、卡顿等）。
+  Future<String?> _askFeelingNotes() async {
+    if (widget.uploadMode != 'baseline' && widget.uploadMode != 'training') {
+      return null;
+    }
+    final controller = TextEditingController();
+    final result = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('写一点感受（可选）'),
+        content: TextField(
+          controller: controller,
+          maxLines: 4,
+          decoration: const InputDecoration(
+            hintText: '例如：肩前侧有点酸、做到一半费力、活动比上次顺…',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(''),
+            child: const Text('跳过'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(controller.text.trim()),
+            child: const Text('提交'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    return result;
   }
 
   // ── 上传视频，拿到 task_id 后立刻进入轮询 ─────────────────────────────────

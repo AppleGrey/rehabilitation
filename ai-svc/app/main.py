@@ -411,13 +411,32 @@ class ProgramPlanRequest(BaseModel):
 
 @app.post("/api/ai/program/start")
 def ai_program_start(req: ProgramStartRequest):
-    """问诊完成 → 建疗程 + 返回 baseline 视频让用户先试跟做。"""
+    """问诊完成 → 仅预览 baseline 视频（不建库）。真正建库见 create-and-generate。"""
     session = _get_strategy_session(req.session_id)
     if session is None:
         raise HTTPException(status_code=404, detail="问诊会话不存在")
     result = _program.start_program(session)
     if result is None:
-        raise HTTPException(status_code=500, detail="建疗程失败（检查数据库）")
+        raise HTTPException(status_code=500, detail="预览基线失败")
+    return result
+
+
+class ProgramCreateGenerateRequest(BaseModel):
+    session_id: str
+    baseline: list[dict] | None = None
+
+
+@app.post("/api/ai/program/create-and-generate")
+def ai_program_create_and_generate(req: ProgramCreateGenerateRequest, background_tasks: BackgroundTasks):
+    """点击「生成方案」：建占位(generating) + 后台生成 → active。"""
+    session = _get_strategy_session(req.session_id)
+    if session is None:
+        raise HTTPException(status_code=404, detail="问诊会话不存在")
+    result = _program.create_and_generate(session, client_baseline=req.baseline)
+    if result is None:
+        raise HTTPException(status_code=500, detail="创建方案失败（检查 core-svc / 数据库）")
+    pid = result["program_id"]
+    background_tasks.add_task(_program.run_plan_worker, pid)
     return result
 
 
@@ -426,24 +445,48 @@ async def ai_program_baseline(
     program_id: str,
     video_id: str = Form(...),
     user_video: UploadFile = File(...),
+    user_notes: str | None = Form(None),
+    session_id: str | None = Form(None),
 ):
-    """基线试跟做：只上传存档（不评分），生成方案时再批量处理。"""
+    """基线试跟做：上传存档。program_id 为 draft/preview 时仅按 session 存草稿。"""
     suffix = Path(user_video.filename or "video.mp4").suffix or ".mp4"
     object_key = f"{UPLOAD_PREFIX}/{uuid.uuid4()}{suffix}"
     content = await user_video.read()
     upload_bytes(object_key, content, content_type=user_video.content_type or "video/mp4")
-    task_id = _program.record_baseline(program_id, video_id, object_key)
+    pid = None if program_id in ("draft", "preview", "_", "none", "") else program_id
+    task_id = _program.record_baseline(
+        pid, video_id, object_key,
+        session_id=(session_id or "").strip() or None,
+        user_notes=(user_notes or "").strip() or None,
+    )
     if task_id is None:
-        raise HTTPException(status_code=500, detail="记录基线失败")
+        raise HTTPException(status_code=500, detail="记录基线失败（需 session_id 或有效 program_id）")
     return {"task_id": task_id, "status": "recorded", "video_id": video_id}
 
 
 @app.post("/api/ai/program/{program_id}/plan")
 def ai_program_plan(program_id: str, background_tasks: BackgroundTasks, req: ProgramPlanRequest):
-    """据 问诊 + baseline 表现 异步生成方案：先置「生成中」，后台跑 VLM+生成。"""
-    result = _program.trigger_plan(program_id)
+    """已有疗程时：置「生成中」，后台跑 VLM+生成。"""
+    result = _program.trigger_plan(program_id, client_baseline=req.baseline)
     background_tasks.add_task(_program.run_plan_worker, program_id)
     return result
+
+
+@app.get("/api/ai/program/by-session/{session_id}")
+def ai_program_by_session(session_id: str):
+    """按问诊会话取最近一条疗程（用于结束页传送门 / 是否已有方案）。"""
+    result = _program.view_program_by_session(session_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="该问诊尚未生成康复方案")
+    return result
+
+
+@app.get("/api/ai/programs")
+def ai_programs_list(session_id: str | None = None, limit: int = 50):
+    """列出疗程；传 session_id 则只返回该问诊下的；否则返回最近全部。"""
+    if session_id:
+        return {"programs": _program.list_programs_by_session(session_id)}
+    return {"programs": _program.list_all_programs(limit=limit)}
 
 
 @app.get("/api/ai/program/{program_id}")
@@ -453,6 +496,15 @@ def ai_program_get(program_id: str):
     if result is None:
         raise HTTPException(status_code=404, detail="疗程不存在")
     return result
+
+
+@app.delete("/api/ai/program/{program_id}")
+def ai_program_delete(program_id: str):
+    """删除疗程（含评估任务）。"""
+    ok = _program.delete_program(program_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="疗程不存在或删除失败")
+    return {"ok": True, "program_id": program_id}
 
 
 @app.post("/api/ai/program/{program_id}/progress")
@@ -556,11 +608,25 @@ async def assess_motion(
     stage_no: int | None = Form(None),
     video_id: str | None = Form(None),
     purpose: str = Form("training"),
+    user_notes: str | None = Form(None),
 ):
     """
     提交动作评估任务（异步）。立即返回 {task_id}，前端轮询 /api/assess/status/{task_id}。
-    可选 program_id/stage_no/video_id/purpose 把评估绑定到康复方案训练项。
+    可选 program_id/stage_no/video_id/purpose/user_notes 把评估绑定到康复方案训练项。
     """
+    # 表单里的空串归一为 None（program_id 落到 UUID 列，空串会直接报错）
+    program_id = (program_id or "").strip() or None
+    video_id = (video_id or "").strip() or None
+    user_notes = (user_notes or "").strip() or None
+
+    # session_id 也是 UUID 列：方案页从本地历史进来时可能为空，回落到疗程绑定的问诊
+    session_id = (session_id or "").strip()
+    if not session_id and program_id:
+        prog = _program.core_client.get_program(program_id)
+        session_id = str((prog or {}).get("session_id") or "")
+    if not session_id:
+        session_id = str(uuid.uuid4())
+
     # 确认标准视频存在（快速校验，避免任务创建后才发现找不到）
     if ensure_playable_mp4_path(standard_video_id) is None:
         raise HTTPException(
@@ -594,6 +660,7 @@ async def assess_motion(
         session_id, standard_video_id, object_key,
         program_id=program_id, stage_no=stage_no,
         video_id=video_id or standard_video_id, purpose=purpose,
+        user_notes=user_notes,
     )
     background_tasks.add_task(_run_assessment, task_id)
 

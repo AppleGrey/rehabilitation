@@ -21,7 +21,9 @@ _SYSTEM = (
     "role(warmup/main/cooldown)、sets、reps 或 hold_seconds、frequency(如“每日2次”)、rest_seconds、"
     "load、pain_rule、notes。顺序体现 热身/活动度→主体→放松，难度贴合本阶段、循序渐进。\n"
     "3) precautions：注意/禁忌；exit_criteria：可判定的进阶达标条件。\n"
-    "4) 不诊断；只输出 JSON：{\"stage_type\":...,\"goals\":[...],\"summary_text\":...,\"items\":[...],"
+    "4) 【基线表现】里若出现「用户感受」「用户训练感受」，必须认真参考（疼痛、费力、卡顿、是否敢做等），"
+    "据此调整难度、剂量与注意事项，不可忽略。\n"
+    "5) 不诊断；只输出 JSON：{\"stage_type\":...,\"goals\":[...],\"summary_text\":...,\"items\":[...],"
     "\"precautions\":[...],\"exit_criteria\":[...],\"expected_duration_days\":14}。\n"
 )
 
@@ -29,7 +31,7 @@ _USER_TMPL = (
     "【当前分期】{stage_label}（{stage_type}）\n\n"
     "【临床印象】\n{impression}\n\n"
     "【用户画像】\n{profile}\n\n"
-    "【基线表现(用户先试跟做几个视频的评估，可能为空)】\n{baseline}\n\n"
+    "【基线/训练表现（含客观评估与用户主观感受，可能为空）】\n{baseline}\n\n"
     "【候选视频(仅可从中选 video_id)】\n{candidates}\n\n"
     "请为本阶段输出方案 JSON。"
 )

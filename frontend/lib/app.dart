@@ -39,6 +39,7 @@ class _AppNavigatorState extends State<AppNavigator> {
   int _currentPage = 0;
   int _bottomNavIndex = 2;
   bool _showBottomNav = true;
+  int _planRefreshTick = 0;
 
   String? _rehabVideoUrl;
   String? _rehabVideoId;
@@ -144,7 +145,10 @@ class _AppNavigatorState extends State<AppNavigator> {
         bottomNavigationBar: _showBottomNav
             ? NavBar(
                 currentIndex: _bottomNavIndex,
-                onTap: (i) => setState(() => _bottomNavIndex = i),
+                onTap: (i) => setState(() {
+                  _bottomNavIndex = i;
+                  if (i == 0) _planRefreshTick++;
+                }),
               )
             : null,
       ),
@@ -187,7 +191,7 @@ class _AppNavigatorState extends State<AppNavigator> {
     return IndexedStack(
       index: _bottomNavIndex,
       children: [
-        const PlanPage(),
+        PlanPage(refreshTick: _planRefreshTick),
         const ProgressPage(),
         ChatListPage(
           onOpenChat: (existing) => _navigateToChat(existing: existing),

@@ -6,9 +6,11 @@ import 'package:http/http.dart' as http;
 
 import '../theme/app_theme.dart';
 import '../config/api_config.dart';
+import '../services/program_api.dart';
 import 'baseline_page.dart';
 import 'chat_list_page.dart';
 import 'consult_report_page.dart';
+import 'program_page.dart';
 
 /// K1 策略树问诊页：对接 /api/ai/consult（SSE，事件 text/input_spec/progress/done）。
 /// 与旧 8 节点 ChatPage 并存，本页走图谱驱动的自适应问诊。
@@ -66,6 +68,8 @@ class _ConsultPageState extends State<ConsultPage> {
   bool _isSending = false;
   bool _isInitializing = true;
   bool _isDone = false;
+  /// 本会话已有方案时的 program_id（结束卡传送门）
+  String? _existingProgramId;
 
   @override
   void initState() {
@@ -109,6 +113,7 @@ class _ConsultPageState extends State<ConsultPage> {
       if (rv['is_done'] == true) {
         _isDone = true;
         _result = rv['result'] as Map<String, dynamic>?;
+        await _refreshExistingProgram();
       } else {
         final spec = rv['spec'] as Map<String, dynamic>?;
         if (spec != null) {
@@ -175,6 +180,10 @@ class _ConsultPageState extends State<ConsultPage> {
         _isDone = event['should_stop'] == true &&
             (event['outcome'] as String?) != 'continue';
         _spec = null;
+        if (_isDone) {
+          // ignore: unawaited_futures
+          _refreshExistingProgram();
+        }
         break;
       case 'error':
         final ai = _streaming ?? _appendAi();
@@ -183,6 +192,17 @@ class _ConsultPageState extends State<ConsultPage> {
     }
     if (mounted) setState(() {});
     _scrollToBottom();
+  }
+
+  Future<void> _refreshExistingProgram() async {
+    final sid = _sessionId;
+    if (sid == null) return;
+    final prog = await ProgramApi.bySession(sid);
+    if (!mounted) return;
+    final pid = prog?['program_id']?.toString();
+    setState(() {
+      _existingProgramId = ProgramApi.hasViewablePlan(prog) ? pid : null;
+    });
   }
 
   _Msg _appendAi() {
@@ -526,6 +546,28 @@ class _ConsultPageState extends State<ConsultPage> {
             ],
             const SizedBox(height: 14),
             if (!isRefer) ...[
+              if (_existingProgramId != null) ...[
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppTheme.primary,
+                      side: const BorderSide(color: AppTheme.primary),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
+                          builder: (_) => ProgramPage(
+                            programId: _existingProgramId!,
+                            sessionId: _sessionId,
+                          ),
+                        )),
+                    icon: const Icon(Icons.open_in_new, size: 18),
+                    label: const Text('查看我的康复方案', style: TextStyle(fontWeight: FontWeight.w600)),
+                  ),
+                ),
+                const SizedBox(height: 10),
+              ],
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
@@ -538,10 +580,19 @@ class _ConsultPageState extends State<ConsultPage> {
                   ),
                   onPressed: _sessionId == null
                       ? null
-                      : () => Navigator.of(context).push(MaterialPageRoute<void>(
-                          builder: (_) => BaselinePage(sessionId: _sessionId!))),
-                  icon: const Icon(Icons.assignment_turned_in, size: 18),
-                  label: const Text('生成我的康复方案', style: TextStyle(fontWeight: FontWeight.w600)),
+                      : () async {
+                          await Navigator.of(context).push(MaterialPageRoute<void>(
+                              builder: (_) => BaselinePage(sessionId: _sessionId!)));
+                          if (mounted) await _refreshExistingProgram();
+                        },
+                  icon: Icon(
+                    _existingProgramId != null ? Icons.refresh : Icons.assignment_turned_in,
+                    size: 18,
+                  ),
+                  label: Text(
+                    _existingProgramId != null ? '重新生成康复方案' : '生成我的康复方案',
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
                 ),
               ),
               const SizedBox(height: 10),

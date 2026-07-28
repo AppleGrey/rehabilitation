@@ -47,6 +47,7 @@ def _row_to_task(row: dict) -> dict:
         "stage_no": row.get("stage_no"),
         "video_id": row.get("video_id"),
         "purpose": row.get("purpose"),
+        "user_notes": row.get("user_notes") or "",
     }
 
 
@@ -60,6 +61,7 @@ def create_task(
     video_id: str | None = None,
     purpose: str = "training",
     status: str = "pending",
+    user_notes: str | None = None,
 ) -> str:
     """创建一个新的评估任务，返回 task_id。program_id/purpose 用于绑定康复方案训练/基线。"""
     task_id = str(uuid.uuid4())
@@ -69,11 +71,12 @@ def create_task(
             """
             INSERT INTO assessment_tasks (
                 task_id, session_id, standard_video_id, user_video_path,
-                status, program_id, stage_no, video_id, purpose, created_at, updated_at
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                status, program_id, stage_no, video_id, purpose, user_notes, created_at, updated_at
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """,
             (task_id, session_id, standard_video_id, user_video_path,
-             status, program_id, stage_no, video_id or standard_video_id, purpose, now, now),
+             status, program_id, stage_no, video_id or standard_video_id, purpose,
+             (user_notes or "").strip() or None, now, now),
         )
     return task_id
 
@@ -96,6 +99,53 @@ def list_tasks(program_id: str, purpose: str | None = None) -> list[dict]:
     except Exception:
         logger.exception("[TASK] 列出失败 program=%s", program_id)
         return []
+
+
+def attach_program_for_session_baselines(session_id: str, program_id: str) -> int:
+    """把会话下尚未绑定 program 的基线草稿任务挂到新疗程。"""
+    try:
+        with db_cursor() as cur:
+            cur.execute(
+                """
+                UPDATE assessment_tasks
+                SET program_id=%s, updated_at=%s
+                WHERE session_id=%s AND purpose='baseline'
+                  AND (program_id IS NULL OR program_id::text = '')
+                """,
+                (program_id, _now(), session_id),
+            )
+            return cur.rowcount or 0
+    except Exception:
+        logger.exception("[TASK] attach baseline 失败 session=%s", session_id)
+        return 0
+
+
+def list_session_baseline_video_ids(session_id: str) -> list[str]:
+    """预览阶段：按会话列出已录基线视频 id（program 尚未创建）。"""
+    try:
+        with db_cursor(commit=False) as cur:
+            cur.execute(
+                """
+                SELECT DISTINCT COALESCE(video_id, standard_video_id) AS vid
+                FROM assessment_tasks
+                WHERE session_id=%s AND purpose='baseline'
+                  AND (program_id IS NULL OR program_id::text = '')
+                  AND COALESCE(video_id, standard_video_id) IS NOT NULL
+                """,
+                (session_id,),
+            )
+            return [str(r["vid"]) for r in cur.fetchall() if r.get("vid")]
+    except Exception:
+        logger.exception("[TASK] 列会话基线失败 session=%s", session_id)
+        return []
+
+
+def delete_tasks_for_program(program_id: str) -> None:
+    try:
+        with db_cursor() as cur:
+            cur.execute("DELETE FROM assessment_tasks WHERE program_id=%s", (program_id,))
+    except Exception:
+        logger.exception("[TASK] 删除失败 program=%s", program_id)
 
 
 def latest_task(program_id: str, stage_no: int, video_id: str) -> dict | None:
@@ -145,6 +195,7 @@ def update_task(task_id: str, **kwargs) -> None:
         "assessment",
         "summary",
         "error",
+        "user_notes",
     }
     updates = {k: v for k, v in kwargs.items() if k in allowed}
     if not updates:

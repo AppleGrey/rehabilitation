@@ -101,6 +101,21 @@ export function fetchProgram(id: string) {
   return getJSON<Record<string, any>>(`/admin-api/programs/${encodeURIComponent(id)}`)
 }
 
+export async function deleteProgram(id: string) {
+  const resp = await fetch(`/admin-api/programs/${encodeURIComponent(id)}`, { method: 'DELETE' })
+  if (!resp.ok) {
+    let detail = `${resp.status} ${resp.statusText}`
+    try {
+      const body = await resp.json()
+      if (body?.detail) detail = String(body.detail)
+    } catch {
+      /* ignore */
+    }
+    throw new Error(detail)
+  }
+  return resp.json() as Promise<{ ok: boolean; program_id: string }>
+}
+
 export function fetchUploads(limit = 50) {
   return getJSON<{ uploads: UploadItem[] }>(`/admin-api/uploads?limit=${limit}`)
 }

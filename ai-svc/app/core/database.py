@@ -41,6 +41,7 @@ ALTER TABLE assessment_tasks ADD COLUMN IF NOT EXISTS program_id UUID;
 ALTER TABLE assessment_tasks ADD COLUMN IF NOT EXISTS stage_no INT;
 ALTER TABLE assessment_tasks ADD COLUMN IF NOT EXISTS video_id TEXT;
 ALTER TABLE assessment_tasks ADD COLUMN IF NOT EXISTS purpose TEXT DEFAULT 'training';
+ALTER TABLE assessment_tasks ADD COLUMN IF NOT EXISTS user_notes TEXT;
 
 CREATE INDEX IF NOT EXISTS idx_assessment_tasks_session_id
     ON assessment_tasks (session_id);

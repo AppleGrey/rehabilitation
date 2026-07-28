@@ -4,7 +4,7 @@
 /// - 真机：电脑局域网 IP，例如 `http://192.168.1.112:8000`
 const String kBackendBase = String.fromEnvironment(
   'BACKEND_BASE',
-  defaultValue: 'http://192.168.1.112:8000',
+  defaultValue: 'http://101.201.170.95:18000',
 );
 
 /// core-svc 根地址（视频列表 / 播放等业务边缘能力）。
@@ -13,7 +13,7 @@ const String kBackendBase = String.fromEnvironment(
 /// - 真机：电脑局域网 IP，例如 `http://192.168.1.112:8081`
 const String kCoreBase = String.fromEnvironment(
   'CORE_BASE',
-  defaultValue: 'http://192.168.1.112:8081',
+  defaultValue: 'http://101.201.170.95:18081',
 );
 
 /// 将后端返回的相对路径解析为绝对 URL。
