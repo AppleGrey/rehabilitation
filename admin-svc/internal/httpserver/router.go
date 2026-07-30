@@ -11,11 +11,12 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"rehabilitation/admin-svc/internal/ota"
 	"rehabilitation/admin-svc/internal/program"
 	"rehabilitation/admin-svc/internal/strategy"
 )
 
-func NewRouter(h *strategy.Handler, ph *program.Handler, staticDir, kgSvcURL, coreSvcURL string) *gin.Engine {
+func NewRouter(h *strategy.Handler, ph *program.Handler, oh *ota.Handler, staticDir, kgSvcURL, coreSvcURL string) *gin.Engine {
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery())
 	r.Use(corsMiddleware())
@@ -38,6 +39,12 @@ func NewRouter(h *strategy.Handler, ph *program.Handler, staticDir, kgSvcURL, co
 		api.GET("/programs/:id", ph.GetProgram)
 		api.DELETE("/programs/:id", ph.DeleteProgram)
 		api.GET("/uploads", ph.ListUploads)
+
+		// App OTA 发布
+		api.GET("/app/releases", oh.List)
+		api.POST("/app/releases", oh.Create)
+		api.POST("/app/releases/:id/publish", oh.Publish)
+		api.DELETE("/app/releases/:id", oh.Delete)
 	}
 
 	if kgSvcURL != "" {

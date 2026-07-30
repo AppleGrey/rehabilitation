@@ -13,7 +13,9 @@ import (
 
 	"rehabilitation/admin-svc/internal/config"
 	"rehabilitation/admin-svc/internal/httpserver"
+	"rehabilitation/admin-svc/internal/ota"
 	"rehabilitation/admin-svc/internal/program"
+	"rehabilitation/admin-svc/internal/storage"
 	"rehabilitation/admin-svc/internal/strategy"
 )
 
@@ -34,10 +36,23 @@ func main() {
 	}
 	log.Printf("[DB] postgres ready")
 
+	minioClient, err := storage.NewMinIO(cfg)
+	if err != nil {
+		log.Fatalf("minio: %v", err)
+	}
+	if err := minioClient.EnsureBucket(ctx); err != nil {
+		log.Fatalf("minio bucket: %v", err)
+	}
+
+	if err := ota.EnsureSchema(ctx, pool); err != nil {
+		log.Fatalf("ota schema: %v", err)
+	}
+
 	repo := strategy.NewRepo(pool)
 	handler := strategy.NewHandler(repo)
 	programHandler := program.NewHandler(program.NewRepo(pool))
-	router := httpserver.NewRouter(handler, programHandler, cfg.StaticDir, cfg.KgSvcURL, cfg.CoreSvcURL)
+	otaHandler := ota.NewHandler(ota.NewRepo(pool), minioClient)
+	router := httpserver.NewRouter(handler, programHandler, otaHandler, cfg.StaticDir, cfg.KgSvcURL, cfg.CoreSvcURL)
 
 	srv := &http.Server{
 		Addr:              cfg.HTTPAddr,

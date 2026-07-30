@@ -10,6 +10,7 @@ import 'pages/profile_center_page.dart';
 import 'pages/chat_list_page.dart';
 import 'pages/consult_page.dart';
 import 'pages/rehab_video_page.dart';
+import 'services/ota_updater.dart';
 import 'widgets/nav_bar.dart';
 
 class RehabilitationApp extends StatelessWidget {
@@ -40,6 +41,7 @@ class _AppNavigatorState extends State<AppNavigator> {
   int _bottomNavIndex = 2;
   bool _showBottomNav = true;
   int _planRefreshTick = 0;
+  bool _otaChecked = false;
 
   String? _rehabVideoUrl;
   String? _rehabVideoId;
@@ -49,6 +51,21 @@ class _AppNavigatorState extends State<AppNavigator> {
 
   // 首页「双击退出」记录上次返回键时间
   DateTime? _lastBackPress;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _autoCheckOta());
+  }
+
+  Future<void> _autoCheckOta() async {
+    if (_otaChecked || !mounted) return;
+    _otaChecked = true;
+    // 稍晚一点，避免与首屏抢焦点
+    await Future<void>.delayed(const Duration(milliseconds: 800));
+    if (!mounted) return;
+    await OtaUpdater.checkAndPrompt(context, manual: false);
+  }
 
   void _navigateToMain({int? tabIndex}) {
     setState(() {

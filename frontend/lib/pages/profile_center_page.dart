@@ -1,10 +1,50 @@
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+
+import '../services/ota_updater.dart';
 import '../theme/app_theme.dart';
 
-class ProfileCenterPage extends StatelessWidget {
+class ProfileCenterPage extends StatefulWidget {
   final VoidCallback onLogout;
 
   const ProfileCenterPage({super.key, required this.onLogout});
+
+  @override
+  State<ProfileCenterPage> createState() => _ProfileCenterPageState();
+}
+
+class _ProfileCenterPageState extends State<ProfileCenterPage> {
+  String _versionLabel = '';
+  bool _checking = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadVersion();
+  }
+
+  Future<void> _loadVersion() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      if (!mounted) return;
+      setState(() {
+        _versionLabel = '${info.version}+${info.buildNumber}';
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _versionLabel = '');
+    }
+  }
+
+  Future<void> _checkUpdate() async {
+    if (_checking) return;
+    setState(() => _checking = true);
+    try {
+      await OtaUpdater.checkAndPrompt(context, manual: true);
+    } finally {
+      if (mounted) setState(() => _checking = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,6 +99,16 @@ class ProfileCenterPage extends StatelessWidget {
               color: AppTheme.textSecondary,
             ),
           ),
+          if (_versionLabel.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              'v$_versionLabel',
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppTheme.textTertiary,
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -102,6 +152,11 @@ class ProfileCenterPage extends StatelessWidget {
               onTap: () {},
             ),
             _MenuItem(
+              icon: Icons.system_update,
+              title: _checking ? '正在检查更新…' : '检查更新',
+              onTap: _checking ? () {} : _checkUpdate,
+            ),
+            _MenuItem(
               icon: Icons.help_outline,
               title: '帮助与反馈',
               onTap: () {},
@@ -122,7 +177,7 @@ class ProfileCenterPage extends StatelessWidget {
           ]),
           const SizedBox(height: 24),
           OutlinedButton(
-            onPressed: onLogout,
+            onPressed: widget.onLogout,
             style: OutlinedButton.styleFrom(
               foregroundColor: AppTheme.error,
               side: const BorderSide(color: AppTheme.error),

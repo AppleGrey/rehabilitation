@@ -7,10 +7,11 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"rehabilitation/core-svc/internal/program"
+	"rehabilitation/core-svc/internal/ota"
 	"rehabilitation/core-svc/internal/video"
 )
 
-func NewRouter(videoHandler *video.Handler, programHandler *program.Handler) *gin.Engine {
+func NewRouter(videoHandler *video.Handler, programHandler *program.Handler, otaHandler *ota.Handler) *gin.Engine {
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery())
 	r.Use(corsMiddleware())
@@ -37,6 +38,10 @@ func NewRouter(videoHandler *video.Handler, programHandler *program.Handler) *gi
 	r.DELETE("/api/programs/:id", programHandler.Delete)
 	// 用户跟练上传视频播放（供后台经 /core-svc 代理）
 	r.GET("/api/uploads/:task_id/play", programHandler.PlayUpload)
+
+	// App OTA
+	r.GET("/api/app/update/check", otaHandler.Check)
+	r.GET("/api/app/releases/:id/download", otaHandler.Download)
 
 	return r
 }

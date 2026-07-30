@@ -15,7 +15,10 @@ import (
 	"rehabilitation/core-svc/internal/config"
 )
 
-const VideoPrefix = "videos"
+const (
+	VideoPrefix   = "videos"
+	AppReleasePrefix = "app-releases"
+)
 
 type MinIO struct {
 	client *minio.Client
@@ -106,6 +109,27 @@ func (m *MinIO) Stat(ctx context.Context, objectKey string) (*ObjectInfo, error)
 
 func (m *MinIO) GetObject(ctx context.Context, objectKey string, opts minio.GetObjectOptions) (*minio.Object, error) {
 	return m.client.GetObject(ctx, m.bucket, objectKey, opts)
+}
+
+func (m *MinIO) PutObject(ctx context.Context, objectKey string, reader io.Reader, size int64, contentType string) error {
+	opts := minio.PutObjectOptions{}
+	if contentType != "" {
+		opts.ContentType = contentType
+	}
+	_, err := m.client.PutObject(ctx, m.bucket, objectKey, reader, size, opts)
+	return err
+}
+
+func (m *MinIO) RemoveObject(ctx context.Context, objectKey string) error {
+	return m.client.RemoveObject(ctx, m.bucket, objectKey, minio.RemoveObjectOptions{})
+}
+
+func AppReleaseObjectKey(platform, versionName, fileName string) string {
+	safeName := path.Base(fileName)
+	if safeName == "" || safeName == "." {
+		safeName = "app.apk"
+	}
+	return path.Join(AppReleasePrefix, platform, versionName, safeName)
 }
 
 func mimeFromKey(objectKey string) string {

@@ -5,6 +5,7 @@ import KgRetrieveView from '../views/KgRetrieveView.vue'
 import VideoManageView from '../views/VideoManageView.vue'
 import ProgramView from '../views/ProgramView.vue'
 import UserVideoView from '../views/UserVideoView.vue'
+import AppReleaseView from '../views/AppReleaseView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -19,6 +20,7 @@ const router = createRouter({
         { path: 'videos', name: 'videos', component: VideoManageView },
         { path: 'programs', name: 'programs', component: ProgramView },
         { path: 'uploads', name: 'uploads', component: UserVideoView },
+        { path: 'releases', name: 'releases', component: AppReleaseView },
       ],
     },
   ],

@@ -119,3 +119,78 @@ export async function deleteProgram(id: string) {
 export function fetchUploads(limit = 50) {
   return getJSON<{ uploads: UploadItem[] }>(`/admin-api/uploads?limit=${limit}`)
 }
+
+// ── App OTA 版本发布 ──
+
+export interface AppRelease {
+  id: string
+  platform: string
+  version_name: string
+  version_code: number
+  force_update: boolean
+  changelog: string
+  object_key?: string | null
+  file_name?: string | null
+  file_size: number
+  content_type: string
+  status: string
+  published_at?: string | null
+  created_at: string
+  updated_at: string
+}
+
+export function fetchAppReleases(opts?: { platform?: string; limit?: number }) {
+  const params = new URLSearchParams()
+  if (opts?.platform) params.set('platform', opts.platform)
+  params.set('limit', String(opts?.limit ?? 50))
+  return getJSON<{ releases: AppRelease[] }>(`/admin-api/app/releases?${params}`)
+}
+
+export async function createAppRelease(form: FormData) {
+  const resp = await fetch('/admin-api/app/releases', { method: 'POST', body: form })
+  if (!resp.ok) {
+    let detail = `${resp.status} ${resp.statusText}`
+    try {
+      const body = await resp.json()
+      if (body?.detail) detail = String(body.detail)
+    } catch {
+      /* ignore */
+    }
+    throw new Error(detail)
+  }
+  return resp.json() as Promise<{ ok: boolean; release: AppRelease }>
+}
+
+export async function publishAppRelease(id: string) {
+  const resp = await fetch(`/admin-api/app/releases/${encodeURIComponent(id)}/publish`, {
+    method: 'POST',
+  })
+  if (!resp.ok) {
+    let detail = `${resp.status} ${resp.statusText}`
+    try {
+      const body = await resp.json()
+      if (body?.detail) detail = String(body.detail)
+    } catch {
+      /* ignore */
+    }
+    throw new Error(detail)
+  }
+  return resp.json() as Promise<{ ok: boolean; release: AppRelease }>
+}
+
+export async function deleteAppRelease(id: string) {
+  const resp = await fetch(`/admin-api/app/releases/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+  })
+  if (!resp.ok) {
+    let detail = `${resp.status} ${resp.statusText}`
+    try {
+      const body = await resp.json()
+      if (body?.detail) detail = String(body.detail)
+    } catch {
+      /* ignore */
+    }
+    throw new Error(detail)
+  }
+  return resp.json() as Promise<{ ok: boolean; id: string }>
+}

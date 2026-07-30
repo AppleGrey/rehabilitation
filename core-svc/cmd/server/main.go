@@ -13,6 +13,7 @@ import (
 
 	"rehabilitation/core-svc/internal/config"
 	"rehabilitation/core-svc/internal/httpserver"
+	"rehabilitation/core-svc/internal/ota"
 	"rehabilitation/core-svc/internal/program"
 	"rehabilitation/core-svc/internal/storage"
 	"rehabilitation/core-svc/internal/video"
@@ -53,7 +54,12 @@ func main() {
 	}
 	programHandler := program.NewHandler(program.NewRepo(pool), minioClient)
 
-	router := httpserver.NewRouter(handler, programHandler)
+	if err := ota.EnsureSchema(ctx, pool); err != nil {
+		log.Fatalf("ota schema: %v", err)
+	}
+	otaHandler := ota.NewHandler(ota.NewRepo(pool), minioClient)
+
+	router := httpserver.NewRouter(handler, programHandler, otaHandler)
 
 	srv := &http.Server{
 		Addr:              cfg.HTTPAddr,

@@ -11,6 +11,7 @@ import { RouterLink, RouterView } from 'vue-router'
       <RouterLink class="nav-link" to="/videos">视频库</RouterLink>
       <RouterLink class="nav-link" to="/programs">康复方案</RouterLink>
       <RouterLink class="nav-link" to="/uploads">用户跟练视频</RouterLink>
+      <RouterLink class="nav-link" to="/releases">App 版本</RouterLink>
     </nav>
     <div class="content">
       <RouterView />

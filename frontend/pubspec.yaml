@@ -47,6 +47,11 @@ dependencies:
   # 本地持久化（对话历史）
   shared_preferences: ^2.3.0
 
+  # OTA：读版本号 / 下载目录 / 调起安装
+  package_info_plus: ^8.3.0
+  path_provider: ^2.1.5
+  open_filex: ^4.7.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
