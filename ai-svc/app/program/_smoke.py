@@ -1,11 +1,13 @@
 """
-K2/K4 离线冒烟：桩掉 core-svc 客户端 / 视频库 / LLM / 评估任务（不连库、不调网络），
-验证 preview→录基线→建方案(generating)→后台出方案(active)→训练闭环→K4 进阶决策 的编排与结构。
+K2/K3/K4 离线冒烟：桩掉 core-svc 客户端 / 视频库 / kg-svc / LLM / 评估任务（不连库、不调网络），
+验证 preview→录基线→建方案(generating)→后台出方案(active)→训练闭环→K3 接地→K4 进阶决策。
     python -m app.program._smoke
 """
 from __future__ import annotations
 
-from . import core_client, plan_builder, progression, service, video_select
+from . import (
+    assessment_kg, core_client, kg_queries, plan_builder, progression, service, video_select,
+)
 from .models import StagePlan
 
 
@@ -71,6 +73,9 @@ def _install_stubs(store: dict):
             "video_id": k.get("video_id") or standard_video_id,
             "purpose": k.get("purpose", "training"), "status": k.get("status", "pending"),
             "user_notes": k.get("user_notes") or "", "assessment": None, "created_at": tid,
+            "pain_reported": k.get("pain_reported"),
+            "rom_target_ratio": None, "compensations": [], "meets_exit_criteria": None,
+            "kg_sources": [],
         })
         return tid
 
@@ -119,6 +124,22 @@ def _install_stubs(store: dict):
         "suggested_focus": ["股四头肌激活"],
     }
 
+    # ── K3：kg-svc 与视频元数据桩 ──
+    from ..media import video_metadata as _vm
+    _vm.load_video = lambda vid: next((v for v in _FAKE_VIDEOS if v["video_id"] == vid), None)
+    kg_queries.clear_cache()
+
+    def _fake_kg(query, **k):
+        store["kg_query"] = query
+        if not store.get("kg_up", True):
+            return "", []
+        return (
+            "膝关节屈曲正常范围 0-135°，本阶段目标屈曲≥90°。"
+            "常见代偿：躯干前倾、髋外展、足跟离地。参考 chunk-abc123 与 chunk-def456。",
+            ["chunk-abc123", "chunk-def456"],
+        )
+    kg_queries._retrieve = _fake_kg
+
     # ── core-svc 客户端桩（内存态）──
     store["prog"] = {
         "program_id": "prog-1", "session_id": _SESSION_ID,
@@ -138,7 +159,7 @@ def _install_stubs(store: dict):
         store["prog"]["status"] = "active"
         store["prog"]["current"] = {
             "stage": {"stage_no": payload["stage_no"], "stage_type": payload["stage_type"],
-                      "goals": payload["goals"]},
+                      "goals": payload["goals"], "exit_criteria": payload.get("exit_criteria") or []},
             "plan": {"summary_text": payload["summary_text"], "precautions": payload["precautions"]},
             "items": payload["items"],
         }
@@ -194,7 +215,8 @@ def main() -> None:
 
     print("3. record_baseline：无 program 时按 session 存草稿")
     tid = service.record_baseline(None, "V1", "uploads/x.mp4",
-                                  session_id=_SESSION_ID, user_notes="做的时候膝盖有点酸")
+                                  session_id=_SESSION_ID, user_notes="做的时候膝盖有点酸",
+                                  pain_reported=3)
     _check(tid is not None, "草稿基线任务已记录")
     _check(service.preview_baseline(sess)["baseline"]["recorded"] == ["V1"], "预览页回显「已跟做 V1」")
 
@@ -213,57 +235,112 @@ def main() -> None:
     vids = [it["video_id"] for it in payload["items"]]
     _check("V_NOT_CANDIDATE" not in vids and set(vids) <= {"V1", "V3"}, "训练项都来自候选、剔除非法")
     _check("用户感受" in store["plan_prompt"], "用户主观感受进入出方案提示词")
+    _check("自评疼痛 3/10" in store["plan_prompt"], "基线自评疼痛也进出方案提示词")
 
     view = service.view_program("prog-1")
     _check(view["status"] == "active", "疗程转 active")
     _check(view["baseline"]["recorded"] == ["V1"], "全景回显已录基线")
     _check(view["current"]["items"][0].get("training", {}).get("status") == "none", "训练项初始状态 none")
 
-    print("6. 训练闭环：跟练 → 评估中 → 已评")
+    print("6. K3 评估接地：KG 标准 + 达标条件进提示词")
+    g = assessment_kg.build_grounding("V1", program_id="prog-1")
+    _check("膝" in store["kg_query"] and "直腿抬高" in store["kg_query"],
+           "按 部位+动作 组 KG 查询")
+    _check("常见代偿" in g["text"] and "chunk-abc123" in g["sources"], "接地文本与来源就位")
+    _check("动作评分≥80" in g["text"], "本阶段达标条件一并注入")
+    _check(g["stage_type"] == "sub_acute", "带上当前分期")
+
+    raw = {"overall_score": 82, "rom_target_ratio": "88", "compensations": "躯干前倾",
+           "meets_exit_criteria": "否", "kg_sources": None}
+    norm = assessment_kg.normalize(raw, grounding=g, pain_reported=2)
+    _check(norm["rom_target_ratio"] == 0.88, "百分数 88 归一为 0.88")
+    _check(norm["compensations"] == ["躯干前倾"], "字符串代偿包成数组")
+    _check(norm["meets_exit_criteria"] is False and norm["pain_reported"] == 2, "达标/疼痛字段归一")
+    _check(norm["kg_sources"][:1] == ["chunk-abc123"] and norm["grounded"] is True, "来源留痕")
+
+    print("7. K3 降级：kg-svc 不可用时不阻断评估")
+    store["kg_up"] = False
+    kg_queries.clear_cache()
+    g0 = assessment_kg.build_grounding("V1", program_id=None)
+    _check(g0["text"] == "" and g0["sources"] == [], "无接地（调用方回落原提示词）")
+    n0 = assessment_kg.normalize({"overall_score": 70}, grounding=g0, pain_reported=None)
+    _check(n0["grounded"] is False and n0["rom_target_ratio"] is None, "无接地时扩展字段为空而非报错")
+    store["kg_up"] = True
+    kg_queries.clear_cache()
+
+    print("8. 训练闭环：跟练 → 评估中 → 已评（带接地指标）")
     from ..assessment import tasks as _t
     t_id = _t.create_task(_SESSION_ID, "V1", "uploads/t1.mp4",
-                          program_id="prog-1", stage_no=1, video_id="V1", purpose="training")
+                          program_id="prog-1", stage_no=1, video_id="V1", purpose="training",
+                          pain_reported=2)
     _check(service.view_program("prog-1")["current"]["items"][0]["training"]["status"] == "pending",
            "跟练后该项显示评估中")
-    _t.update_task(t_id, status="done", assessment={"overall_score": 82, "key_findings": ["幅度改善"]})
+    _t.update_task(t_id, status="done", assessment={"overall_score": 82, "key_findings": ["幅度改善"]},
+                   rom_target_ratio=0.88, compensations=[], meets_exit_criteria=True,
+                   kg_sources=["chunk-abc123"])
     _t.create_task(_SESSION_ID, "V3", "uploads/t2.mp4",
-                   program_id="prog-1", stage_no=1, video_id="V3", purpose="training")
-    _t.update_task("task-3", status="done", assessment={"overall_score": 78, "key_findings": ["略有代偿"]})
+                   program_id="prog-1", stage_no=1, video_id="V3", purpose="training",
+                   pain_reported=3)
+    _t.update_task("task-3", status="done", assessment={"overall_score": 78, "key_findings": ["略有代偿"]},
+                   rom_target_ratio=0.86, compensations=["躯干前倾"])
     it0 = service.view_program("prog-1")["current"]["items"][0]["training"]
     _check(it0["status"] == "done" and it0["overall_score"] == 82, "评估完成后回显分数")
+    _check(it0["rom_target_ratio"] == 0.88 and it0["grounded"] is True, "全景回显接地指标")
 
-    print("7. K4 进阶决策：advance → 下一分期方案")
+    print("9. K4 进阶决策：advance → 下一分期方案")
     store["next_decision"] = "advance"
     res = progression.decide_and_apply("prog-1")
+    m = res["metrics"]
     _check(res["decision"] == "advance", "LLM 判定进阶")
-    _check(res["metrics"]["items_assessed"] == 2 and res["metrics"]["avg_overall_score"] == 80.0,
-           "本轮训练指标已汇总（2 项，均分 80）")
+    _check(m["items_assessed"] == 2 and m["avg_overall_score"] == 80.0, "均分 80")
+    _check(m["rom_ratio_avg"] == 0.87 and m["pain_max"] == 3, "ROM 达标度与疼痛已进汇总")
+    _check(m["compensations"] == ["躯干前倾"] and m["adherence"] == 1.0, "代偿与依从性已进汇总")
+    _check("rom_ratio_avg" in store["decide_prompt"], "接地指标进入决策提示词")
     _check(store["saved_payload"]["stage_type"] == "strengthen"
            and store["saved_payload"]["stage_no"] == 2, "进阶到强化期并出新方案")
+    _check("仍存在代偿" in store["plan_prompt"], "上一阶段表现承接进新方案（§5.4）")
     _check(store["decision"]["decision"] == "advance", "决策已留痕 core-svc")
 
-    print("8. K4 安全兜底：出现危险信号强制 refer")
-    _t.update_task(t_id, assessment={"overall_score": 40, "safety_notes": ["夜间静息痛加重"]})
+    print("10. K4 护栏：LLM 说进阶但指标不达标 → 降为 hold")
+    _t.update_task(t_id, rom_target_ratio=0.60, assessment={"overall_score": 62})
+    _t.update_task("task-3", rom_target_ratio=0.55, assessment={"overall_score": 58})
+    store["next_decision"] = "advance"
+    res_g = progression.decide_and_apply("prog-1")
+    _check(res_g["decision"] == "hold", "评分/活动度未达阈值时护栏拦下进阶")
+    _check("未达" in res_g["rationale"], "理由说明卡在哪个指标")
+
+    print("11. K4 硬闸门：疼痛显著加重 → regress（不问 LLM）")
+    _t.update_task(t_id, pain_reported=7)
+    store["next_decision"] = "advance"
+    res_p = progression.decide_and_apply("prog-1")
+    _check(res_p["decision"] == "regress" and res_p["metrics"]["pain_max"] == 7, "疼痛 7/10 直接回退")
+
+    print("12. K4 安全兜底：出现危险信号强制 refer")
+    _t.update_task(t_id, pain_reported=2,
+                   assessment={"overall_score": 40, "safety_notes": ["夜间静息痛加重"]})
     store["next_decision"] = "advance"      # 即使 LLM 说进阶也必须被覆盖
     res2 = progression.decide_and_apply("prog-1")
     _check(res2["decision"] == "refer", "命中安全信号强制转诊")
     _check(store["prog"]["status"] == "refer", "疗程状态置 refer")
 
-    print("9. K4 结业：回归期 advance → discharge")
+    print("13. K4 结业：回归期 advance → discharge")
     store["prog"]["current"]["stage"]["stage_type"] = "return"
     store["next_decision"] = "advance"
-    _t.update_task(t_id, assessment={"overall_score": 92, "key_findings": ["动作标准"]})
+    _t.update_task(t_id, assessment={"overall_score": 92, "key_findings": ["动作标准"]},
+                   rom_target_ratio=0.95)
+    _t.update_task("task-3", assessment={"overall_score": 90}, rom_target_ratio=0.93,
+                   compensations=[])
     res3 = progression.decide_and_apply("prog-1")
     _check(res3["decision"] == "advance" and store["prog"]["status"] == "discharged",
            "回归期再进阶即结业")
 
-    print("10. 兜底：候选为空 → fallback")
+    print("14. 兜底：候选为空 → fallback")
     p2, src = plan_builder.build_stage_plan(
         stage_type="sub_acute", stage_no=1, impression=[], profile=profile,
         baseline=[], candidates=[], kg_context="")
     _check(src == "fallback" and isinstance(p2, StagePlan), "无候选走 fallback")
 
-    print("\n[OK] K2/K4 离线冒烟全部通过")
+    print("\n[OK] K2/K3/K4 离线冒烟全部通过")
 
 
 if __name__ == "__main__":

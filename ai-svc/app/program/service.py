@@ -103,7 +103,8 @@ def create_and_generate(session, *, client_baseline: list[dict] | None = None) -
 
 
 def record_baseline(program_id: str | None, video_id: str, user_video_key: str,
-                    *, session_id: str | None = None, user_notes: str | None = None) -> Optional[str]:
+                    *, session_id: str | None = None, user_notes: str | None = None,
+                    pain_reported: int | None = None) -> Optional[str]:
     """基线试跟做：可在尚无 program 时按 session 存草稿；有 program 则直接绑定。"""
     from ..assessment import tasks as _tasks
     sid = session_id
@@ -116,7 +117,7 @@ def record_baseline(program_id: str | None, video_id: str, user_video_key: str,
         return _tasks.create_task(
             str(sid), video_id, user_video_key,
             program_id=program_id, video_id=video_id, purpose="baseline", status="recorded",
-            user_notes=user_notes,
+            user_notes=user_notes, pain_reported=pain_reported,
         )
     except Exception:
         logger.exception("[PROGRAM] 记录 baseline 失败")
@@ -149,6 +150,18 @@ def _merge_client_feelings(program_id: str, baseline: list[dict]) -> None:
             _tasks.update_task(t["task_id"], user_notes=note)
 
 
+def _subjective(task: dict) -> str:
+    """把用户自评（文字感受 + 0-10 疼痛）拼成一句，供出方案时参考。"""
+    bits = []
+    note = (task.get("user_notes") or "").strip()
+    if note:
+        bits.append(note)
+    pain = task.get("pain_reported")
+    if pain is not None:
+        bits.append(f"自评疼痛 {pain}/10")
+    return "；".join(bits)
+
+
 def run_plan_worker(program_id: str) -> None:
     """后台：对基线视频跑 VLM → 汇总用户感受/训练感受 → 生成方案 → 落库(active)。"""
     from ..assessment import tasks as _tasks
@@ -158,7 +171,7 @@ def run_plan_worker(program_id: str) -> None:
         if insight:
             baseline_results.append(insight)
     for t in _tasks.list_tasks(program_id, "training"):
-        un = (t.get("user_notes") or "").strip()
+        un = _subjective(t)
         if not un:
             continue
         vid = t.get("video_id") or t.get("standard_video_id")
@@ -179,7 +192,7 @@ def _process_baseline_task(task: dict) -> Optional[dict]:
 
     std_id = task.get("video_id") or task.get("standard_video_id")
     usr_key = task.get("user_video_path")
-    user_feel = (task.get("user_notes") or "").strip()
+    user_feel = _subjective(task)
     if not std_id or not usr_key:
         if user_feel and std_id:
             return {"video_id": std_id, "overall_score": None, "range_of_motion": None,
@@ -304,10 +317,18 @@ def view_program(program_id: str) -> Optional[dict]:
             continue
         t = _tasks.latest_task(program_id, stage_no, vid)
         if t:
-            assess = t.get("assessment") or {}
+            assess = t.get("assessment") if isinstance(t.get("assessment"), dict) else {}
             it["training"] = {
                 "task_id": t.get("task_id"), "status": t.get("status"),
-                "overall_score": assess.get("overall_score") if isinstance(assess, dict) else None,
+                "overall_score": assess.get("overall_score"),
+                # K3 接地结果（列优先，回落到 assessment JSONB）
+                "rom_target_ratio": t.get("rom_target_ratio") if t.get("rom_target_ratio") is not None
+                else assess.get("rom_target_ratio"),
+                "compensations": t.get("compensations") or assess.get("compensations") or [],
+                "meets_exit_criteria": t.get("meets_exit_criteria")
+                if t.get("meets_exit_criteria") is not None else assess.get("meets_exit_criteria"),
+                "pain_reported": t.get("pain_reported"),
+                "grounded": bool(t.get("kg_sources") or assess.get("kg_sources")),
             }
         else:
             it["training"] = {"status": "none"}

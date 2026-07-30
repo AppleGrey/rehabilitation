@@ -291,16 +291,21 @@ class _ProgramPageState extends State<ProgramPage> {
 
     Widget action;
     if (tstatus == 'done') {
-      action = Row(children: [
-        if (score != null)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(color: const Color(0xFFE8F6F1), borderRadius: BorderRadius.circular(8)),
-            child: Text('$score 分', style: const TextStyle(fontSize: 12, color: AppTheme.primaryDark, fontWeight: FontWeight.w600)),
-          ),
-        const Spacer(),
-        TextButton(onPressed: () => _viewResult(training), child: const Text('查看结果')),
-        TextButton(onPressed: () => _train(it), child: const Text('重做')),
+      final rom = training['rom_target_ratio'];
+      final comps = (training['compensations'] as List<dynamic>? ?? []);
+      action = Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Wrap(spacing: 6, runSpacing: 6, children: [
+          if (score != null) _badge('$score 分', const Color(0xFFE8F6F1), AppTheme.primaryDark),
+          if (rom != null)
+            _badge('活动度 ${((rom as num) * 100).round()}%', const Color(0xFFEFF4FF), AppTheme.primaryDark),
+          if (comps.isNotEmpty)
+            _badge('代偿 ${comps.length} 处', const Color(0xFFFFF3E0), AppTheme.warning),
+        ]),
+        Row(children: [
+          const Spacer(),
+          TextButton(onPressed: () => _viewResult(training), child: const Text('查看结果')),
+          TextButton(onPressed: () => _train(it), child: const Text('重做')),
+        ]),
       ]);
     } else if (tstatus == 'pending' || tstatus == 'processing') {
       action = Row(children: const [
@@ -384,15 +389,33 @@ class _ProgramPageState extends State<ProgramPage> {
         );
     final findings = (a['key_findings'] as List<dynamic>? ?? []).map((e) => e.toString()).toList();
     final corrections = (a['corrections'] as List<dynamic>? ?? []).map((e) => e.toString()).toList();
+    final comps = (a['compensations'] as List<dynamic>? ?? []).map((e) => e.toString()).toList();
+    final romRatio = a['rom_target_ratio'];
+    final pain = a['pain_reported'];
+    final meets = a['meets_exit_criteria'];
+    final grounded = (a['kg_sources'] as List<dynamic>? ?? []).isNotEmpty;
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
       child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Text('动作评估', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+        Row(children: [
+          const Text('动作评估', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+          const SizedBox(width: 8),
+          if (grounded) _chip('已对照知识图谱标准'),
+        ]),
         const SizedBox(height: 12),
         row('综合评分', a['overall_score']),
         row('姿势准确度', a['posture_score']),
         row('关节活动范围', a['range_of_motion']),
         row('动作节奏', a['rhythm_score']),
+        if (romRatio != null)
+          row('活动度达标度', '${(( romRatio as num) * 100).round()}%（相对本阶段目标）'),
+        if (pain != null) row('自评疼痛', '$pain / 10'),
+        if (meets != null) row('本阶段达标', meets == true ? '已达标' : '未达标'),
+        if (comps.isNotEmpty) ...[
+          const SizedBox(height: 10),
+          const Text('观察到的代偿', style: TextStyle(fontSize: 12, color: AppTheme.textTertiary)),
+          ...comps.map((f) => Text('• $f', style: const TextStyle(fontSize: 13, color: AppTheme.warning, height: 1.5))),
+        ],
         if (findings.isNotEmpty) ...[
           const SizedBox(height: 10),
           const Text('关键发现', style: TextStyle(fontSize: 12, color: AppTheme.textTertiary)),
@@ -439,6 +462,12 @@ class _ProgramPageState extends State<ProgramPage> {
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
         decoration: BoxDecoration(color: AppTheme.primaryLight, borderRadius: BorderRadius.circular(8)),
         child: Text(text, style: const TextStyle(fontSize: 11, color: AppTheme.primaryDark, fontWeight: FontWeight.w600)),
+      );
+
+  Widget _badge(String text, Color bg, Color fg) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(8)),
+        child: Text(text, style: TextStyle(fontSize: 12, color: fg, fontWeight: FontWeight.w600)),
       );
 
   Widget _goalChip(String text) => Container(

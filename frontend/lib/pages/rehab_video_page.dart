@@ -290,10 +290,12 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
     }
   }
 
-  /// 基线/训练模式：录完可写感受，再上传并返回。
+  /// 基线/训练模式：录完可写感受 + 自评疼痛，再上传并返回。
   Future<void> _uploadAndReturn(String videoPath) async {
-    final notes = await _askFeelingNotes();
+    final feel = await _askFeelingNotes();
     if (!mounted) return;
+    final notes = feel?.notes ?? '';
+    final pain = feel?.pain;
     setState(() => _phase = _Phase.uploading);
     try {
       final http.MultipartRequest req;
@@ -309,9 +311,6 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
         if (widget.sessionId != null && widget.sessionId!.isNotEmpty) {
           req.fields['session_id'] = widget.sessionId!;
         }
-        if (notes != null && notes.isNotEmpty) {
-          req.fields['user_notes'] = notes;
-        }
       } else {
         req = http.MultipartRequest(
           'POST',
@@ -323,10 +322,9 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
           ..fields['stage_no'] = '${widget.stageNo ?? 1}'
           ..fields['video_id'] = widget.videoId ?? ''
           ..fields['purpose'] = 'training';
-        if (notes != null && notes.isNotEmpty) {
-          req.fields['user_notes'] = notes;
-        }
       }
+      if (notes.isNotEmpty) req.fields['user_notes'] = notes;
+      if (pain != null) req.fields['pain_reported'] = '$pain';
       req.files.add(await http.MultipartFile.fromPath(
           'user_video', videoPath, filename: 'user_training.mp4'));
       final streamed = await req.send().timeout(const Duration(minutes: 2));
@@ -342,35 +340,76 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
     }
   }
 
-  /// 可选：写跟做/训练后的主观感受（疼痛、费力、卡顿等）。
-  Future<String?> _askFeelingNotes() async {
+  /// 可选：写跟做/训练后的主观感受 + 0-10 自评疼痛。
+  /// 疼痛是进阶/回退的关键闸门（视觉评估看不出来），所以单独用滑块采集。
+  Future<({String notes, int? pain})?> _askFeelingNotes() async {
     if (widget.uploadMode != 'baseline' && widget.uploadMode != 'training') {
       return null;
     }
     final controller = TextEditingController();
-    final result = await showDialog<String>(
+    double pain = 0;
+    bool painTouched = false;
+    final result = await showDialog<({String notes, int? pain})>(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        title: const Text('写一点感受（可选）'),
-        content: TextField(
-          controller: controller,
-          maxLines: 4,
-          decoration: const InputDecoration(
-            hintText: '例如：肩前侧有点酸、做到一半费力、活动比上次顺…',
-            border: OutlineInputBorder(),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) => AlertDialog(
+          title: const Text('说说刚才的感受'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(children: [
+                  const Text('这个动作有多疼？', style: TextStyle(fontSize: 14)),
+                  const Spacer(),
+                  Text(painTouched ? '${pain.round()} / 10' : '未选',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: painTouched ? AppTheme.primary : AppTheme.textTertiary,
+                      )),
+                ]),
+                Slider(
+                  value: pain,
+                  min: 0,
+                  max: 10,
+                  divisions: 10,
+                  label: '${pain.round()}',
+                  onChanged: (v) => setLocal(() {
+                    pain = v;
+                    painTouched = true;
+                  }),
+                ),
+                const Text('0 = 完全不疼，3 以内可继续，超过 3 建议降低强度',
+                    style: TextStyle(fontSize: 11.5, color: AppTheme.textTertiary)),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: controller,
+                  maxLines: 3,
+                  decoration: const InputDecoration(
+                    labelText: '其他感受（可选）',
+                    hintText: '例如：肩前侧有点酸、做到一半费力、比上次顺…',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ],
+            ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop((notes: '', pain: null)),
+              child: const Text('跳过'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(ctx).pop((
+                notes: controller.text.trim(),
+                pain: painTouched ? pain.round() : null,
+              )),
+              child: const Text('提交'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(''),
-            child: const Text('跳过'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(ctx).pop(controller.text.trim()),
-            child: const Text('提交'),
-          ),
-        ],
       ),
     );
     controller.dispose();

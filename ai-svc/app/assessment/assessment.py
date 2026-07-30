@@ -59,6 +59,39 @@ ASSESSMENT_TEMPLATE = """\
 不要输出任何解释、分析过程或多余文字，仅输出合法的 JSON 对象。
 """
 
+# 训练评估（K3 接地版）：把 KG 的 ROM 参考值 / 常见代偿 / 本阶段达标条件注入提示词，
+# 让 VLM 不再凭空打分，并额外输出可用于进阶决策的结构化字段。
+ASSESSMENT_KG_TEMPLATE = """\
+你是一位专业的运动康复评估师，精通人体解剖学和康复训练动作标准。
+你将收到一段拼接视频，请严格注意：
+- 视频 0:00 ~ {standard_duration}s 为标准动作演示
+- 视频 {standard_duration} ~ {total_duration}s 为用户跟练
+
+以下是本动作的权威参考资料，**评估时必须以它为准**（若资料与你的先验冲突，以资料为准；
+资料未覆盖的维度再用你的专业判断）：
+--- 参考资料开始 ---
+{kg_context}
+--- 参考资料结束 ---
+
+请先观看标准动作片段记住动作要领，再对比用户动作片段进行评估，输出严格 JSON：
+- overall_score: 整数，0-100 综合评分
+- posture_score: 整数，0-100 姿势准确度
+- range_of_motion: 整数，0-100 关节活动范围完成度
+- rhythm_score: 整数，0-100 动作节奏/流畅度
+- rom_target_ratio: 0~1 之间的小数，用户实际活动度 ÷ 参考资料给出的本阶段目标活动度；
+  资料未给出目标值时，按标准演示动作的幅度作为分母估算
+- compensations: 字符串数组，0-3 条，**只写参考资料里提到的代偿模式中你确实观察到的**，
+  没有观察到就给空数组，不要为了凑数编造
+- meets_exit_criteria: 布尔值，对照上面「进阶达标条件」判断本次是否已达标；
+  没有给出达标条件时输出 false
+- key_findings: 字符串数组，2-4 条关键发现
+- corrections: 字符串数组，1-3 条具体纠正建议
+- safety_notes: 字符串数组，0-2 条安全提醒（仅在观察到需就医的危险信号时才填）
+- encouragement: 字符串，1 句鼓励话语
+
+不要输出任何解释、分析过程或多余文字，仅输出合法的 JSON 对象。
+"""
+
 # 基线试跟做：不打分，只输出「对生成康复方案有用」的定性信息。
 BASELINE_TEMPLATE = """\
 你是一位专业的运动康复评估师。你将收到一段拼接视频：
@@ -330,8 +363,12 @@ def evaluate_motion(
     user_video_path: Path,
     *,
     template: str = ASSESSMENT_TEMPLATE,
+    kg_context: str = "",
 ) -> dict:
-    """调用 qwen3.6-plus 对标准视频和用户视频进行对比评估（template 决定打分/基线定性）。"""
+    """调用 qwen3.6-plus 对标准视频和用户视频进行对比评估（template 决定打分/基线定性）。
+
+    kg_context：K3 接地文本（ROM 参考值/常见代偿/达标条件），仅 ASSESSMENT_KG_TEMPLATE 会用到。
+    """
     api_key = DASHSCOPE_API_KEY
     if not api_key:
         raise ValueError("DASHSCOPE_API_KEY 环境变量未设置")
@@ -350,6 +387,7 @@ def evaluate_motion(
         system_prompt = template.format(
             standard_duration=f"{std_dur:.1f}",
             total_duration=f"{total_dur:.1f}",
+            kg_context=kg_context,
         )
 
         content_parts = [
@@ -481,3 +519,17 @@ def evaluate_baseline(
 ) -> dict:
     """基线试做的定性评估（为生成方案服务，不打分）。"""
     return evaluate_motion(standard_video_path, user_video_path, template=BASELINE_TEMPLATE)
+
+
+def evaluate_motion_grounded(
+    standard_video_path: Path,
+    user_video_path: Path,
+    kg_context: str,
+) -> dict:
+    """K3：带 KG 接地的训练评估。kg_context 为空则回落到无接地的原打分提示词。"""
+    if not (kg_context or "").strip():
+        return evaluate_motion(standard_video_path, user_video_path)
+    return evaluate_motion(
+        standard_video_path, user_video_path,
+        template=ASSESSMENT_KG_TEMPLATE, kg_context=kg_context,
+    )
