@@ -103,6 +103,20 @@ def load_all_videos() -> list[dict]:
         return []
 
 
+def load_video(video_id: str) -> dict | None:
+    """按 video_id 取单条元数据。"""
+    if not video_id:
+        return None
+    try:
+        with db_cursor(commit=False) as cur:
+            cur.execute("SELECT metadata FROM videos WHERE video_id = %s", (video_id,))
+            row = cur.fetchone()
+        return dict(row["metadata"]) if row else None
+    except Exception:
+        logger.exception("[VIDEO] 读取元数据失败: %s", video_id)
+        return None
+
+
 def count_videos() -> int:
     try:
         with db_cursor(commit=False) as cur:

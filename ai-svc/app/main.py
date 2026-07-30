@@ -59,7 +59,7 @@ from .consult.state import (
     ConsultState,
 )
 from .media.matching import ensure_playable_mp4_path
-from .assessment.assessment import evaluate_motion
+from .assessment.assessment import evaluate_motion_grounded
 from .core.config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, DEEPSEEK_MODEL
 from .core.config import ASSETS_DIR as _ASSETS_DIR
 from .consult.sessions import load_session, save_session
@@ -447,6 +447,7 @@ async def ai_program_baseline(
     user_video: UploadFile = File(...),
     user_notes: str | None = Form(None),
     session_id: str | None = Form(None),
+    pain_reported: int | None = Form(None),
 ):
     """基线试跟做：上传存档。program_id 为 draft/preview 时仅按 session 存草稿。"""
     suffix = Path(user_video.filename or "video.mp4").suffix or ".mp4"
@@ -458,6 +459,7 @@ async def ai_program_baseline(
         pid, video_id, object_key,
         session_id=(session_id or "").strip() or None,
         user_notes=(user_notes or "").strip() or None,
+        pain_reported=None if pain_reported is None else max(0, min(int(pain_reported), 10)),
     )
     if task_id is None:
         raise HTTPException(status_code=500, detail="记录基线失败（需 session_id 或有效 program_id）")
@@ -553,9 +555,27 @@ def _run_assessment(task_id: str) -> None:
         download_to_path(standard_key, standard_video_path)
         download_to_path(user_video_key, user_video_path)
 
+        # K3：先取该动作的 KG 权威标准（ROM 参考值 / 常见代偿 / 本阶段达标条件）。
+        # 拿不到就是空接地，evaluate_motion_grounded 会自动回落到原打分提示词。
+        from .program import assessment_kg as _akg
+        grounding = _akg.build_grounding(
+            task.get("video_id") or standard_video_id,
+            program_id=task.get("program_id"),
+        )
+        if grounding["text"]:
+            logger.info("[TASK] KG 接地就绪 task_id=%s chars=%d sources=%d",
+                        task_id, len(grounding["text"]), len(grounding["sources"]))
+
         # VLM 评估
-        assessment = evaluate_motion(standard_video_path, user_video_path)
-        logger.info("[TASK] VLM完成: task_id=%s overall=%s", task_id, assessment.get("overall_score"))
+        assessment = evaluate_motion_grounded(
+            standard_video_path, user_video_path, grounding["text"],
+        )
+        assessment = _akg.normalize(
+            assessment, grounding=grounding, pain_reported=task.get("pain_reported"),
+        )
+        logger.info("[TASK] VLM完成: task_id=%s overall=%s rom_ratio=%s 代偿=%d",
+                    task_id, assessment.get("overall_score"),
+                    assessment.get("rom_target_ratio"), len(assessment.get("compensations") or []))
 
         # 获取对话历史（允许失败）
         state = _get_session(session_id) or {}
@@ -589,7 +609,13 @@ def _run_assessment(task_id: str) -> None:
         summary_text = str(getattr(resp, "content", "") or "").strip()
         logger.info("[TASK] LLM总结完成: task_id=%s 字数=%d", task_id, len(summary_text))
 
-        update_task(task_id, status="done", assessment=assessment, summary=summary_text)
+        update_task(
+            task_id, status="done", assessment=assessment, summary=summary_text,
+            rom_target_ratio=assessment.get("rom_target_ratio"),
+            compensations=assessment.get("compensations") or [],
+            meets_exit_criteria=assessment.get("meets_exit_criteria"),
+            kg_sources=assessment.get("kg_sources") or [],
+        )
 
     except Exception as exc:  # noqa: BLE001
         logger.exception("[TASK] 处理失败: task_id=%s", task_id)
@@ -609,10 +635,12 @@ async def assess_motion(
     video_id: str | None = Form(None),
     purpose: str = Form("training"),
     user_notes: str | None = Form(None),
+    pain_reported: int | None = Form(None),
 ):
     """
     提交动作评估任务（异步）。立即返回 {task_id}，前端轮询 /api/assess/status/{task_id}。
     可选 program_id/stage_no/video_id/purpose/user_notes 把评估绑定到康复方案训练项。
+    pain_reported(0-10) 为用户跟练后的自评疼痛，是进阶/回退的关键闸门（视觉看不出）。
     """
     # 表单里的空串归一为 None（program_id 落到 UUID 列，空串会直接报错）
     program_id = (program_id or "").strip() or None
@@ -661,6 +689,7 @@ async def assess_motion(
         program_id=program_id, stage_no=stage_no,
         video_id=video_id or standard_video_id, purpose=purpose,
         user_notes=user_notes,
+        pain_reported=None if pain_reported is None else max(0, min(int(pain_reported), 10)),
     )
     background_tasks.add_task(_run_assessment, task_id)
 

@@ -48,6 +48,12 @@ def _row_to_task(row: dict) -> dict:
         "video_id": row.get("video_id"),
         "purpose": row.get("purpose"),
         "user_notes": row.get("user_notes") or "",
+        # K3 评估接地字段
+        "rom_target_ratio": row.get("rom_target_ratio"),
+        "compensations": row.get("compensations") or [],
+        "meets_exit_criteria": row.get("meets_exit_criteria"),
+        "kg_sources": row.get("kg_sources") or [],
+        "pain_reported": row.get("pain_reported"),
     }
 
 
@@ -62,6 +68,7 @@ def create_task(
     purpose: str = "training",
     status: str = "pending",
     user_notes: str | None = None,
+    pain_reported: int | None = None,
 ) -> str:
     """创建一个新的评估任务，返回 task_id。program_id/purpose 用于绑定康复方案训练/基线。"""
     task_id = str(uuid.uuid4())
@@ -71,12 +78,13 @@ def create_task(
             """
             INSERT INTO assessment_tasks (
                 task_id, session_id, standard_video_id, user_video_path,
-                status, program_id, stage_no, video_id, purpose, user_notes, created_at, updated_at
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                status, program_id, stage_no, video_id, purpose, user_notes,
+                pain_reported, created_at, updated_at
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """,
             (task_id, session_id, standard_video_id, user_video_path,
              status, program_id, stage_no, video_id or standard_video_id, purpose,
-             (user_notes or "").strip() or None, now, now),
+             (user_notes or "").strip() or None, pain_reported, now, now),
         )
     return task_id
 
@@ -196,7 +204,13 @@ def update_task(task_id: str, **kwargs) -> None:
         "summary",
         "error",
         "user_notes",
+        "rom_target_ratio",
+        "compensations",
+        "meets_exit_criteria",
+        "kg_sources",
+        "pain_reported",
     }
+    jsonb_fields = {"assessment", "compensations", "kg_sources"}
     updates = {k: v for k, v in kwargs.items() if k in allowed}
     if not updates:
         return
@@ -204,12 +218,8 @@ def update_task(task_id: str, **kwargs) -> None:
     sets: list[str] = []
     values: list[Any] = []
     for key, val in updates.items():
-        if key == "assessment":
-            sets.append(f"{key} = %s")
-            values.append(Jsonb(val) if val is not None else None)
-        else:
-            sets.append(f"{key} = %s")
-            values.append(val)
+        sets.append(f"{key} = %s")
+        values.append(Jsonb(val) if (key in jsonb_fields and val is not None) else val)
     sets.append("updated_at = %s")
     values.append(_now())
     values.append(task_id)

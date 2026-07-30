@@ -33,6 +33,12 @@ CREATE TABLE IF NOT EXISTS assessment_tasks (
     stage_no INT,
     video_id TEXT,
     purpose TEXT DEFAULT 'training',   -- baseline / training
+    -- K3 评估接地：VLM 对照 KG 标准给出的结构化结果 + 用户自评疼痛
+    rom_target_ratio DOUBLE PRECISION,
+    compensations JSONB,
+    meets_exit_criteria BOOLEAN,
+    kg_sources JSONB,
+    pain_reported INT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -42,6 +48,11 @@ ALTER TABLE assessment_tasks ADD COLUMN IF NOT EXISTS stage_no INT;
 ALTER TABLE assessment_tasks ADD COLUMN IF NOT EXISTS video_id TEXT;
 ALTER TABLE assessment_tasks ADD COLUMN IF NOT EXISTS purpose TEXT DEFAULT 'training';
 ALTER TABLE assessment_tasks ADD COLUMN IF NOT EXISTS user_notes TEXT;
+ALTER TABLE assessment_tasks ADD COLUMN IF NOT EXISTS rom_target_ratio DOUBLE PRECISION;
+ALTER TABLE assessment_tasks ADD COLUMN IF NOT EXISTS compensations JSONB;
+ALTER TABLE assessment_tasks ADD COLUMN IF NOT EXISTS meets_exit_criteria BOOLEAN;
+ALTER TABLE assessment_tasks ADD COLUMN IF NOT EXISTS kg_sources JSONB;
+ALTER TABLE assessment_tasks ADD COLUMN IF NOT EXISTS pain_reported INT;
 
 CREATE INDEX IF NOT EXISTS idx_assessment_tasks_session_id
     ON assessment_tasks (session_id);
