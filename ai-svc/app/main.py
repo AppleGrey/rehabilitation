@@ -28,7 +28,7 @@ logging.basicConfig(
     datefmt="%H:%M:%S",
 )
 
-from fastapi import BackgroundTasks, FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import BackgroundTasks, Depends, FastAPI, File, Form, Header, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -103,6 +103,26 @@ app.add_middleware(
 ASSETS_DIR = _ASSETS_DIR
 ASSETS_DIR.mkdir(parents=True, exist_ok=True)
 app.mount("/assets", StaticFiles(directory=str(ASSETS_DIR)), name="assets")
+
+# ── 登录态 ────────────────────────────────────────────────────────────────────
+# 用户体系与令牌签发都在 core-svc；ai-svc 只解令牌拿 user_id，用于方案归属与列表过滤。
+from .core import auth as _auth  # noqa: E402
+
+
+def current_user_id(authorization: str | None = Header(None)) -> str:
+    """需要登录的接口用。未登录 / 令牌无效 → 401。"""
+    return _auth.require_user_id(authorization)
+
+
+def optional_user_id(authorization: str | None = Header(None)) -> str | None:
+    """可选登录态：拿不到就是 None，由业务自行决定是否放行。"""
+    return _auth.user_id_from(authorization)
+
+
+def _assert_owns(program_id: str, user_id: str) -> None:
+    if not _program.owns_program(program_id, user_id):
+        raise HTTPException(status_code=404, detail="疗程不存在")
+
 
 # ── 内存会话缓存（同时持久化到 PostgreSQL） ───────────────────────────────────
 _sessions: dict[str, ConsultState] = {}
@@ -332,7 +352,7 @@ class ConsultRequest(BaseModel):
 
 
 @app.get("/api/ai/consult/new")
-def ai_consult_new():
+def ai_consult_new(user_id: str = Depends(current_user_id)):
     """新建策略树问诊会话，返回 session_id 与开场事件。"""
     sid = str(uuid.uuid4())
     session, events = _planner.new_session(sid)
@@ -341,7 +361,7 @@ def ai_consult_new():
 
 
 @app.post("/api/ai/consult")
-async def ai_consult(req: ConsultRequest):
+async def ai_consult(req: ConsultRequest, user_id: str = Depends(current_user_id)):
     """策略树问诊一轮对话（SSE）。事件类型：text / input_spec / progress / done。"""
     import asyncio
 
@@ -372,7 +392,7 @@ async def ai_consult(req: ConsultRequest):
 
 
 @app.get("/api/ai/session/{session_id}/strategy")
-def ai_strategy_snapshot(session_id: str):
+def ai_strategy_snapshot(session_id: str, user_id: str = Depends(current_user_id)):
     """C 端问诊报告：拉取该会话最新一条策略树快照。"""
     snap = _fp.load_latest_snapshot(session_id)
     if snap is None:
@@ -381,7 +401,7 @@ def ai_strategy_snapshot(session_id: str):
 
 
 @app.get("/api/ai/consult/{session_id}/state")
-def ai_consult_state(session_id: str):
+def ai_consult_state(session_id: str, user_id: str = Depends(current_user_id)):
     """问诊「展示态」：供前端退出重进恢复结论卡片/预选项/是否结束。"""
     session = _get_strategy_session(session_id)
     if session is None:
@@ -410,7 +430,7 @@ class ProgramPlanRequest(BaseModel):
 
 
 @app.post("/api/ai/program/start")
-def ai_program_start(req: ProgramStartRequest):
+def ai_program_start(req: ProgramStartRequest, user_id: str = Depends(current_user_id)):
     """问诊完成 → 仅预览 baseline 视频（不建库）。真正建库见 create-and-generate。"""
     session = _get_strategy_session(req.session_id)
     if session is None:
@@ -427,12 +447,16 @@ class ProgramCreateGenerateRequest(BaseModel):
 
 
 @app.post("/api/ai/program/create-and-generate")
-def ai_program_create_and_generate(req: ProgramCreateGenerateRequest, background_tasks: BackgroundTasks):
-    """点击「生成方案」：建占位(generating) + 后台生成 → active。"""
+def ai_program_create_and_generate(
+    req: ProgramCreateGenerateRequest,
+    background_tasks: BackgroundTasks,
+    user_id: str = Depends(current_user_id),
+):
+    """点击「生成方案」：建占位(generating) + 后台生成 → active。疗程归属当前登录用户。"""
     session = _get_strategy_session(req.session_id)
     if session is None:
         raise HTTPException(status_code=404, detail="问诊会话不存在")
-    result = _program.create_and_generate(session, client_baseline=req.baseline)
+    result = _program.create_and_generate(session, client_baseline=req.baseline, user_id=user_id)
     if result is None:
         raise HTTPException(status_code=500, detail="创建方案失败（检查 core-svc / 数据库）")
     pid = result["program_id"]
@@ -448,13 +472,16 @@ async def ai_program_baseline(
     user_notes: str | None = Form(None),
     session_id: str | None = Form(None),
     pain_reported: int | None = Form(None),
+    user_id: str = Depends(current_user_id),
 ):
     """基线试跟做：上传存档。program_id 为 draft/preview 时仅按 session 存草稿。"""
+    pid = None if program_id in ("draft", "preview", "_", "none", "") else program_id
+    if pid:
+        _assert_owns(pid, user_id)
     suffix = Path(user_video.filename or "video.mp4").suffix or ".mp4"
     object_key = f"{UPLOAD_PREFIX}/{uuid.uuid4()}{suffix}"
     content = await user_video.read()
     upload_bytes(object_key, content, content_type=user_video.content_type or "video/mp4")
-    pid = None if program_id in ("draft", "preview", "_", "none", "") else program_id
     task_id = _program.record_baseline(
         pid, video_id, object_key,
         session_id=(session_id or "").strip() or None,
@@ -467,33 +494,47 @@ async def ai_program_baseline(
 
 
 @app.post("/api/ai/program/{program_id}/plan")
-def ai_program_plan(program_id: str, background_tasks: BackgroundTasks, req: ProgramPlanRequest):
+def ai_program_plan(program_id: str, background_tasks: BackgroundTasks,
+                    req: ProgramPlanRequest, user_id: str = Depends(current_user_id)):
     """已有疗程时：置「生成中」，后台跑 VLM+生成。"""
+    _assert_owns(program_id, user_id)
     result = _program.trigger_plan(program_id, client_baseline=req.baseline)
     background_tasks.add_task(_program.run_plan_worker, program_id)
     return result
 
 
 @app.get("/api/ai/program/by-session/{session_id}")
-def ai_program_by_session(session_id: str):
+def ai_program_by_session(session_id: str, user_id: str = Depends(current_user_id)):
     """按问诊会话取最近一条疗程（用于结束页传送门 / 是否已有方案）。"""
     result = _program.view_program_by_session(session_id)
     if result is None:
         raise HTTPException(status_code=404, detail="该问诊尚未生成康复方案")
+    _assert_owns(str(result.get("program_id") or ""), user_id)
     return result
 
 
 @app.get("/api/ai/programs")
-def ai_programs_list(session_id: str | None = None, limit: int = 50):
-    """列出疗程；传 session_id 则只返回该问诊下的；否则返回最近全部。"""
+def ai_programs_list(session_id: str | None = None, limit: int = 50,
+                     user_id: str = Depends(current_user_id)):
+    """列出当前登录用户的疗程；传 session_id 则只返回该问诊下的。"""
     if session_id:
-        return {"programs": _program.list_programs_by_session(session_id)}
-    return {"programs": _program.list_all_programs(limit=limit)}
+        items = _program.list_programs_by_session(session_id)
+        items = [it for it in items if _owned_by(it, user_id)]
+        return {"programs": items}
+    return {"programs": _program.list_all_programs(limit=limit, user_id=user_id)}
+
+
+def _owned_by(item: dict, user_id: str) -> bool:
+    """列表项归属判断。无主的历史数据放行，属于别人的过滤掉。"""
+    owner = item.get("user_id")
+    owner = str(owner).strip() if isinstance(owner, str) else ""
+    return owner == "" or owner == user_id
 
 
 @app.get("/api/ai/program/{program_id}")
-def ai_program_get(program_id: str):
+def ai_program_get(program_id: str, user_id: str = Depends(current_user_id)):
     """疗程全景（当前阶段方案 + 训练项 + 训练状态）。"""
+    _assert_owns(program_id, user_id)
     result = _program.view_program(program_id)
     if result is None:
         raise HTTPException(status_code=404, detail="疗程不存在")
@@ -501,8 +542,9 @@ def ai_program_get(program_id: str):
 
 
 @app.delete("/api/ai/program/{program_id}")
-def ai_program_delete(program_id: str):
+def ai_program_delete(program_id: str, user_id: str = Depends(current_user_id)):
     """删除疗程（含评估任务）。"""
+    _assert_owns(program_id, user_id)
     ok = _program.delete_program(program_id)
     if not ok:
         raise HTTPException(status_code=404, detail="疗程不存在或删除失败")
@@ -510,8 +552,9 @@ def ai_program_delete(program_id: str):
 
 
 @app.post("/api/ai/program/{program_id}/progress")
-def ai_program_progress(program_id: str):
+def ai_program_progress(program_id: str, user_id: str = Depends(current_user_id)):
     """K4：做完本轮训练 → 大模型据表现决定进阶/保持/回退/转诊/结业，并推进疗程。"""
+    _assert_owns(program_id, user_id)
     from .program import progression as _prog
     result = _prog.decide_and_apply(program_id)
     if result is None:
@@ -636,6 +679,7 @@ async def assess_motion(
     purpose: str = Form("training"),
     user_notes: str | None = Form(None),
     pain_reported: int | None = Form(None),
+    user_id: str = Depends(current_user_id),
 ):
     """
     提交动作评估任务（异步）。立即返回 {task_id}，前端轮询 /api/assess/status/{task_id}。
@@ -646,6 +690,8 @@ async def assess_motion(
     program_id = (program_id or "").strip() or None
     video_id = (video_id or "").strip() or None
     user_notes = (user_notes or "").strip() or None
+    if program_id:
+        _assert_owns(program_id, user_id)
 
     # session_id 也是 UUID 列：方案页从本地历史进来时可能为空，回落到疗程绑定的问诊
     session_id = (session_id or "").strip()
@@ -698,7 +744,7 @@ async def assess_motion(
 
 
 @app.get("/api/assess/status/{task_id}")
-def assess_status(task_id: str):
+def assess_status(task_id: str, user_id: str = Depends(current_user_id)):
     """
     查询评估任务状态。
 
@@ -715,6 +761,9 @@ def assess_status(task_id: str):
     task = load_task(task_id)
     if task is None:
         raise HTTPException(status_code=404, detail=f"任务 {task_id} 不存在")
+    # 绑定了疗程的任务按疗程归属校验；草稿基线任务尚无疗程，只要求登录。
+    if task.get("program_id"):
+        _assert_owns(str(task["program_id"]), user_id)
     return {
         "task_id": task["task_id"],
         "status": task["status"],

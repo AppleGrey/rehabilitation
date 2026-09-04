@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import '../config/api_config.dart';
+import '../services/auth_store.dart';
 import '../theme/app_theme.dart';
 
 /// 「问诊过程与结果」：读取策略树最新快照，展示临床方向、已采集信息、安全排查与进度。
@@ -35,7 +36,8 @@ class _ConsultReportPageState extends State<ConsultReportPage> {
     });
     try {
       final resp = await http
-          .get(Uri.parse('$kBackendBase/api/ai/session/${widget.sessionId}/strategy'))
+          .get(Uri.parse('$kBackendBase/api/ai/session/${widget.sessionId}/strategy'),
+              headers: AuthStore.headers())
           .timeout(const Duration(seconds: 15));
       if (!mounted) return;
       if (resp.statusCode == 200) {

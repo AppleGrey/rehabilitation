@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import { getToken } from '../auth'
 
 const baseUrl = ref('/kg-svc')
 const query = ref('网球肘患者握物时常见的代偿模式是什么？')
@@ -26,6 +27,12 @@ function normalizedBase() {
   return baseUrl.value.replace(/\/+$/, '')
 }
 
+/** /kg-svc 代理现在也要管理员令牌。 */
+function kgHeaders(extra?: Record<string, string>): Record<string, string> {
+  const token = getToken()
+  return { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(extra || {}) }
+}
+
 function estTokens(text: string) {
   if (!text) return 0
   const cjk = (text.match(/[\u4e00-\u9fff]/g) || []).length
@@ -39,7 +46,7 @@ async function checkHealth() {
   healthLabel.value = '检查中…'
   healthInfo.value = ''
   try {
-    const res = await fetch(`${normalizedBase()}/health`)
+    const res = await fetch(`${normalizedBase()}/health`, { headers: kgHeaders() })
     const data = await res.json()
     if (!res.ok) throw new Error(JSON.stringify(data))
     const miss = (data.config_missing || []).join(', ') || '无'
@@ -86,7 +93,7 @@ async function doRetrieve() {
   try {
     const res = await fetch(`${normalizedBase()}/kg/retrieve`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json; charset=utf-8' },
+      headers: kgHeaders({ 'Content-Type': 'application/json; charset=utf-8' }),
       body: JSON.stringify(body),
       signal: controller.signal,
     })

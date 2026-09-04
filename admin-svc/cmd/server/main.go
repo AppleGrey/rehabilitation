@@ -11,6 +11,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"rehabilitation/admin-svc/internal/auth"
 	"rehabilitation/admin-svc/internal/config"
 	"rehabilitation/admin-svc/internal/httpserver"
 	"rehabilitation/admin-svc/internal/ota"
@@ -52,7 +53,21 @@ func main() {
 	handler := strategy.NewHandler(repo)
 	programHandler := program.NewHandler(program.NewRepo(pool))
 	otaHandler := ota.NewHandler(ota.NewRepo(pool), minioClient)
-	router := httpserver.NewRouter(handler, programHandler, otaHandler, cfg.StaticDir, cfg.KgSvcURL, cfg.CoreSvcURL)
+
+	if cfg.JWTSecret == config.DefaultJWTSecret {
+		log.Printf("[AUTH] 警告：正在使用默认 JWT_SECRET，请在 .env 中设置与 core-svc 相同的随机值")
+	}
+	router := httpserver.NewRouter(httpserver.Deps{
+		Strategy:     handler,
+		Program:      programHandler,
+		OTA:          otaHandler,
+		Auth:         auth.NewHandler(cfg.CoreSvcURL),
+		Guard:        auth.NewGuard([]byte(cfg.JWTSecret), pool),
+		StaticDir:    cfg.StaticDir,
+		KgSvcURL:     cfg.KgSvcURL,
+		CoreSvcURL:   cfg.CoreSvcURL,
+		ServiceToken: cfg.ServiceToken,
+	})
 
 	srv := &http.Server{
 		Addr:              cfg.HTTPAddr,

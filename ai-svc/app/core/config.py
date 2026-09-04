@@ -29,8 +29,13 @@ DASHSCOPE_MODEL: str = os.getenv("DASHSCOPE_MODEL", "qwen3.6-plus")
 # kg-svc（LightRAG 康复知识图谱检索服务，只检索不生成）
 KG_SVC_URL: str = os.getenv("KG_SVC_URL", "http://127.0.0.1:8010")
 
-# core-svc（Go 核心服务：视频内容 + 康复方案存储）。ai-svc 生成方案后调它落库。
+# core-svc（Go 核心服务：视频内容 + 康复方案存储 + 用户认证）。ai-svc 生成方案后调它落库。
 CORE_SVC_URL: str = os.getenv("CORE_SVC_URL", "http://127.0.0.1:8081")
+
+# 认证：JWT_SECRET 必须与 core-svc / admin-svc 完全一致，否则 ai-svc 解不开 App 令牌。
+# SERVICE_TOKEN 是 ai-svc → core-svc 的内部调用凭证（core-svc 侧 X-Service-Token）。
+JWT_SECRET: str = os.getenv("JWT_SECRET", "dev-insecure-secret-change-me")
+SERVICE_TOKEN: str = os.getenv("SERVICE_TOKEN", "dev-service-token")
 
 # PostgreSQL（默认本地无密码）
 DATABASE_URL: str = os.getenv(

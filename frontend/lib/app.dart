@@ -9,7 +9,10 @@ import 'pages/knowledge_page.dart';
 import 'pages/profile_center_page.dart';
 import 'pages/chat_list_page.dart';
 import 'pages/consult_page.dart';
+import 'pages/login_page.dart';
 import 'pages/rehab_video_page.dart';
+import 'services/auth_api.dart';
+import 'services/auth_store.dart';
 import 'services/ota_updater.dart';
 import 'widgets/nav_bar.dart';
 
@@ -22,13 +25,49 @@ class RehabilitationApp extends StatelessWidget {
       title: '运动康复',
       theme: AppTheme.theme,
       debugShowCheckedModeBanner: false,
-      home: const AppNavigator(),
+      home: const AuthGate(),
     );
   }
 }
 
+/// 登录闸门：未登录一律停在登录页。
+/// 方案、问诊、评估全部按 user_id 归属，没有登录态就没有「我的」可言。
+class AuthGate extends StatefulWidget {
+  const AuthGate({super.key});
+
+  @override
+  State<AuthGate> createState() => _AuthGateState();
+}
+
+class _AuthGateState extends State<AuthGate> {
+  late bool _loggedIn = AuthStore.isLoggedIn;
+
+  @override
+  void initState() {
+    super.initState();
+    if (_loggedIn) _revalidate();
+  }
+
+  /// 本地有令牌时后台核一次：被停用或令牌过期就退回登录页。
+  Future<void> _revalidate() async {
+    await AuthApi.me();
+    if (!mounted) return;
+    if (!AuthStore.isLoggedIn) setState(() => _loggedIn = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_loggedIn) {
+      return LoginPage(onSuccess: () => setState(() => _loggedIn = true));
+    }
+    return AppNavigator(onLoggedOut: () => setState(() => _loggedIn = false));
+  }
+}
+
 class AppNavigator extends StatefulWidget {
-  const AppNavigator({super.key});
+  final VoidCallback onLoggedOut;
+
+  const AppNavigator({super.key, required this.onLoggedOut});
 
   @override
   State<AppNavigator> createState() => _AppNavigatorState();
@@ -214,13 +253,7 @@ class _AppNavigatorState extends State<AppNavigator> {
           onOpenChat: (existing) => _navigateToChat(existing: existing),
         ),
         const KnowledgePage(),
-        ProfileCenterPage(onLogout: () {
-          setState(() {
-            _currentPage = 0;
-            _showBottomNav = true;
-            _bottomNavIndex = 2;
-          });
-        }),
+        ProfileCenterPage(onLogout: widget.onLoggedOut),
       ],
     );
   }

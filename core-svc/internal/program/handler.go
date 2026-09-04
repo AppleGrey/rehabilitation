@@ -99,7 +99,8 @@ func (h *Handler) List(c *gin.Context) {
 		}
 	}
 	sessionID := strings.TrimSpace(c.Query("session_id"))
-	items, err := h.repo.ListPrograms(c.Request.Context(), sessionID, limit)
+	userID := strings.TrimSpace(c.Query("user_id"))
+	items, err := h.repo.ListPrograms(c.Request.Context(), sessionID, userID, limit)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"detail": err.Error()})
 		return

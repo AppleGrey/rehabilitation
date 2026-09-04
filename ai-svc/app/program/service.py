@@ -61,10 +61,11 @@ def start_program(session) -> Optional[dict]:
     return preview_baseline(session)
 
 
-def create_and_generate(session, *, client_baseline: list[dict] | None = None) -> Optional[dict]:
+def create_and_generate(session, *, client_baseline: list[dict] | None = None,
+                        user_id: str | None = None) -> Optional[dict]:
     """
     用户点击「直接/根据情况生成方案」时调用：
-    1) 建疗程占位 status=generating
+    1) 建疗程占位 status=generating（归属到 user_id）
     2) 把该会话下草稿基线任务挂到 program
     3) 返回 program_id；后台 worker 生成完成后 → active
     """
@@ -85,6 +86,7 @@ def create_and_generate(session, *, client_baseline: list[dict] | None = None) -
     program_id = core_client.create_program(
         session_id=session.session_id, condition=condition, body_part=body_part,
         goal=goal, profile=profile, impression=impression, baseline_videos=baseline_videos,
+        user_id=user_id,
     )
     if not program_id:
         return None
@@ -245,10 +247,26 @@ def list_programs_by_session(session_id: str) -> list[dict]:
     return _hydrate_program_list(items)
 
 
-def list_all_programs(limit: int = 50) -> list[dict]:
-    """全部疗程（演示/无账号场景：方案页直接拉库列表）。"""
-    items = core_client.list_programs(limit=limit) or []
+def list_all_programs(limit: int = 50, *, user_id: str | None = None) -> list[dict]:
+    """疗程列表。user_id 非空时只返回该用户名下的（C 端方案页走这条）。"""
+    items = core_client.list_programs(limit=limit, user_id=user_id) or []
     return _hydrate_program_list(items)
+
+
+def owns_program(program_id: str, user_id: str | None) -> bool:
+    """
+    归属校验。规则刻意保守：
+      - 疗程有主且就是本人 → 放行
+      - 疗程无主（用户体系上线前的历史数据）→ 放行，避免旧数据在 App 里直接消失
+      - 疗程属于别人 → 拒绝
+    """
+    if not user_id:
+        return False
+    prog = core_client.get_program(program_id)
+    if not prog:
+        return False
+    owner = (prog.get("user_id") or "").strip() if isinstance(prog.get("user_id"), str) else ""
+    return owner == "" or owner == user_id
 
 
 def _hydrate_program_list(items: list[dict]) -> list[dict]:

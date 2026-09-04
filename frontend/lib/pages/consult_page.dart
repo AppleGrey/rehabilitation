@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 
 import '../theme/app_theme.dart';
 import '../config/api_config.dart';
+import '../services/auth_store.dart';
 import '../services/program_api.dart';
 import 'baseline_page.dart';
 import 'chat_list_page.dart';
@@ -104,7 +105,8 @@ class _ConsultPageState extends State<ConsultPage> {
     if (sid == null) return;
     try {
       final resp = await http
-          .get(Uri.parse('$kBackendBase/api/ai/consult/$sid/state'))
+          .get(Uri.parse('$kBackendBase/api/ai/consult/$sid/state'),
+              headers: AuthStore.headers())
           .timeout(const Duration(seconds: 8));
       if (resp.statusCode != 200) return;
       final data = jsonDecode(utf8.decode(resp.bodyBytes)) as Map<String, dynamic>;
@@ -129,7 +131,7 @@ class _ConsultPageState extends State<ConsultPage> {
   Future<void> _newSession() async {
     try {
       final resp = await http
-          .get(Uri.parse('$kBackendBase/api/ai/consult/new'))
+          .get(Uri.parse('$kBackendBase/api/ai/consult/new'), headers: AuthStore.headers())
           .timeout(const Duration(seconds: 10));
       if (resp.statusCode == 200) {
         final data = jsonDecode(resp.body) as Map<String, dynamic>;
@@ -234,6 +236,7 @@ class _ConsultPageState extends State<ConsultPage> {
         Uri.parse('$kBackendBase/api/ai/consult'),
       )
         ..headers['Content-Type'] = 'application/json'
+        ..headers.addAll(AuthStore.headers())
         ..body = jsonEncode({'session_id': _sessionId, 'user_message': userText});
 
       final streamed = await request.send().timeout(const Duration(seconds: 40));

@@ -6,6 +6,7 @@ import {
   deleteAppRelease,
   fetchAppReleases,
   publishAppRelease,
+  withToken,
   type AppRelease,
 } from '../api'
 
@@ -46,7 +47,7 @@ function fmtDate(s?: string | null) {
 }
 
 function downloadUrl(id: string) {
-  return `${CORE_SVC_BASE}/api/app/releases/${encodeURIComponent(id)}/download`
+  return withToken(`${CORE_SVC_BASE}/api/app/releases/${encodeURIComponent(id)}/download`)
 }
 
 async function load() {

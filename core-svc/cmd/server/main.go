@@ -11,6 +11,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"rehabilitation/core-svc/internal/auth"
 	"rehabilitation/core-svc/internal/config"
 	"rehabilitation/core-svc/internal/httpserver"
 	"rehabilitation/core-svc/internal/ota"
@@ -59,7 +60,24 @@ func main() {
 	}
 	otaHandler := ota.NewHandler(ota.NewRepo(pool), minioClient)
 
-	router := httpserver.NewRouter(handler, programHandler, otaHandler)
+	// ── 认证 ──
+	if err := auth.EnsureSchema(ctx, pool); err != nil {
+		log.Fatalf("auth schema: %v", err)
+	}
+	if cfg.JWTSecret == config.DefaultJWTSecret {
+		log.Printf("[AUTH] 警告：正在使用默认 JWT_SECRET，请在 .env 中设置一个随机值（并让 admin-svc / ai-svc 保持一致）")
+	}
+	authRepo := auth.NewRepo(pool)
+	if err := auth.SeedSuperAdmin(ctx, pool, cfg.SuperAdminPhone, cfg.SuperAdminPassword); err != nil {
+		log.Printf("[AUTH] 超级管理员初始化失败（可稍后手动处理）：%v", err)
+	}
+	secret := []byte(cfg.JWTSecret)
+	authHandler := auth.NewHandler(authRepo, secret,
+		time.Duration(cfg.JWTTTLHours)*time.Hour,
+		time.Duration(cfg.JWTAdminTTLHours)*time.Hour)
+	guard := auth.NewGuard(secret, cfg.ServiceToken, authRepo)
+
+	router := httpserver.NewRouter(handler, programHandler, otaHandler, authHandler, guard)
 
 	srv := &http.Server{
 		Addr:              cfg.HTTPAddr,

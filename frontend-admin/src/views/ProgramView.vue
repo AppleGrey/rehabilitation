@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { CORE_SVC_BASE, deleteProgram, fetchProgram, fetchPrograms, type ProgramSummary } from '../api'
+import { CORE_SVC_BASE, deleteProgram, fetchProgram, fetchPrograms, withToken, type ProgramSummary } from '../api'
 
 const busy = ref(false)
 const error = ref('')
@@ -65,7 +65,7 @@ async function removeSelected() {
 
 function playSrc(url?: string): string {
   if (!url) return ''
-  return url.startsWith('/core-svc') ? url : `${CORE_SVC_BASE}${url}`
+  return withToken(url.startsWith('/core-svc') ? url : `${CORE_SVC_BASE}${url}`)
 }
 
 function dosage(it: Record<string, any>): string {

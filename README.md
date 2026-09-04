@@ -128,6 +128,8 @@ flutter build web --release --dart-define=BACKEND_BASE=
 # Android APK
 flutter build apk --release --dart-define=BACKEND_BASE=http://你的后端IP:8000
 
+flutter build apk --release --build-name=1.0.2 --build-number=3
+
 # Windows 桌面
 flutter build windows --release --dart-define=BACKEND_BASE=http://127.0.0.1:8000
 ```
@@ -174,3 +176,64 @@ mapping_node  ──── 视频映射 + 生成推荐说明  →  END
 | POST | `/api/assess/motion` | 提交动作评估（异步） |
 | GET  | `/api/assess/status/{task_id}` | 查询评估结果 |
 | GET  | `/api/health` | 健康检查 |
+
+---
+
+## 用户体系与鉴权
+
+用户表、密码哈希、令牌签发全在 **core-svc**；admin-svc 与 ai-svc 只做验签。
+三个服务的 `JWT_SECRET` 必须完全一致，否则彼此的令牌解不开。
+
+### 配置
+
+在根目录 `.env` 里设置（`.env.example` 已列出）：
+
+```ini
+JWT_SECRET=<用 openssl rand -hex 32 生成>
+JWT_TTL_HOURS=720          # App 端令牌 30 天
+JWT_ADMIN_TTL_HOURS=12     # 管理端令牌 12 小时
+SERVICE_TOKEN=<随机值>      # ai-svc/admin-svc 访问 core-svc 内部接口的凭证
+SUPERADMIN_PHONE=13800000000
+SUPERADMIN_PASSWORD=admin12345
+```
+
+### 首次启动
+
+core-svc 启动时会建 `users` 表；若库里**一个超级管理员都没有**，就按上面两个环境变量创建一个
+（已存在则跳过，不会重置密码）。启动日志里会打印：
+
+```
+[AUTH] 已创建超级管理员 138****0000 —— 请尽快登录管理平台修改初始密码
+```
+
+用它登录管理平台（admin-svc 的 `/login`），在「用户管理」里创建其他管理员。
+**管理平台不开放注册**，管理员只能由超级管理员手动创建。
+
+### 角色与权限
+
+| 角色 | 能做什么 |
+|---|---|
+| `user` | App 注册即得。只能看/操作自己名下的疗程 |
+| `admin` | 登录管理平台；查看所有用户与方案、停启用账号、重置用户密码 |
+| `superadmin` | 管理员的全部权限 + 创建管理员 / 把管理员降级为普通用户 |
+
+停用账号或降级管理员**立刻生效**——鉴权中间件每次请求都会回库核一次状态，不用等令牌过期。
+
+### 接口边界
+
+| 范围 | 鉴权 |
+|---|---|
+| core-svc `/api/videos/*`、`/api/app/update/check`、`/api/auth/{register,login}` | 公开 |
+| core-svc `/api/auth/{me,password}` | 需登录 |
+| core-svc `/api/programs/*`、`/api/uploads/*` | 服务令牌（ai-svc）或管理员 |
+| core-svc `/api/admin/*` | 管理员；创建/降级管理员需超管 |
+| admin-svc `/admin-api/*`（除 login）、`/core-svc/*`、`/kg-svc/*` 代理 | 管理员 |
+| ai-svc `/api/ai/*`、`/api/assess/*` | 需登录，且疗程要归属本人 |
+
+### 已知限制
+
+- 无短信验证码、无找回密码、无第三方登录。
+- 令牌是无状态 JWT：改密码会给当前设备换发新令牌，但**其他设备上的旧令牌仍有效到过期**。
+- 没有登录限流 / 失败锁定。
+
+细节与其余待补功能见 [docs/完成度盘点与待补功能v0.1.md](docs/完成度盘点与待补功能v0.1.md)。

@@ -13,6 +13,7 @@ func EnsureSchema(ctx context.Context, pool *pgxpool.Pool) error {
 CREATE TABLE IF NOT EXISTS rehab_programs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     session_id UUID,
+    user_id UUID,
     condition TEXT,
     body_part TEXT,
     goal TEXT,
@@ -25,6 +26,9 @@ CREATE TABLE IF NOT EXISTS rehab_programs (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS idx_rehab_programs_session ON rehab_programs (session_id);
+-- 用户体系上线前的疗程没有归属，user_id 保持 NULL：C 端不返回，后台标为「历史数据」。
+ALTER TABLE rehab_programs ADD COLUMN IF NOT EXISTS user_id UUID;
+CREATE INDEX IF NOT EXISTS idx_rehab_programs_user ON rehab_programs (user_id, created_at DESC);
 
 CREATE TABLE IF NOT EXISTS program_stages (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

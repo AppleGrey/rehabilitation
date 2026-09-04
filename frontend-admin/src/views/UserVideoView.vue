@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { CORE_SVC_BASE, fetchUploads, type UploadItem } from '../api'
+import { CORE_SVC_BASE, fetchUploads, withToken, type UploadItem } from '../api'
 
 const busy = ref(false)
 const error = ref('')
@@ -26,7 +26,7 @@ async function load() {
 
 function playSrc(url?: string): string {
   if (!url) return ''
-  return url.startsWith('/core-svc') ? url : `${CORE_SVC_BASE}${url}`
+  return withToken(url.startsWith('/core-svc') ? url : `${CORE_SVC_BASE}${url}`)
 }
 
 function fmtDate(s?: string | null): string {

@@ -9,7 +9,7 @@ from typing import Optional
 
 import httpx
 
-from ..core.config import CORE_SVC_URL
+from ..core.config import CORE_SVC_URL, SERVICE_TOKEN
 
 logger = logging.getLogger(__name__)
 
@@ -20,18 +20,25 @@ def _base() -> str:
     return CORE_SVC_URL.rstrip("/")
 
 
+def _headers() -> dict:
+    """core-svc 的 /api/programs* 只放行内部服务令牌或管理员。"""
+    return {"X-Service-Token": SERVICE_TOKEN}
+
+
 def create_program(*, session_id: Optional[str], condition: str, body_part: str,
                    goal: str, profile: dict, impression: list[dict],
-                   baseline_videos: list[dict]) -> Optional[str]:
-    """建疗程（core-svc），返回 program_id。"""
+                   baseline_videos: list[dict],
+                   user_id: Optional[str] = None) -> Optional[str]:
+    """建疗程（core-svc），返回 program_id。user_id 为空则该疗程无归属（老数据同理）。"""
     payload = {
         "session_id": session_id or "",
+        "user_id": user_id or "",
         "condition": condition, "body_part": body_part, "goal": goal,
         "profile": profile, "impression": impression,
         "baseline": {"videos": baseline_videos, "results": []},
     }
     try:
-        with httpx.Client(timeout=_TIMEOUT) as client:
+        with httpx.Client(timeout=_TIMEOUT, headers=_headers()) as client:
             r = client.post(f"{_base()}/api/programs", json=payload)
             r.raise_for_status()
             return r.json().get("program_id")
@@ -43,7 +50,7 @@ def create_program(*, session_id: Optional[str], condition: str, body_part: str,
 def save_stage_plan(program_id: str, plan_payload: dict) -> Optional[dict]:
     """把已生成的阶段方案 POST 给 core-svc 落库；返回 core-svc 回读的疗程全景。"""
     try:
-        with httpx.Client(timeout=_TIMEOUT) as client:
+        with httpx.Client(timeout=_TIMEOUT, headers=_headers()) as client:
             r = client.post(f"{_base()}/api/programs/{program_id}/plan", json=plan_payload)
             r.raise_for_status()
             return r.json()
@@ -54,7 +61,7 @@ def save_stage_plan(program_id: str, plan_payload: dict) -> Optional[dict]:
 
 def get_program(program_id: str) -> Optional[dict]:
     try:
-        with httpx.Client(timeout=_TIMEOUT) as client:
+        with httpx.Client(timeout=_TIMEOUT, headers=_headers()) as client:
             r = client.get(f"{_base()}/api/programs/{program_id}")
             if r.status_code == 404:
                 return None
@@ -67,7 +74,7 @@ def get_program(program_id: str) -> Optional[dict]:
 
 def get_program_by_session(session_id: str) -> Optional[dict]:
     try:
-        with httpx.Client(timeout=_TIMEOUT) as client:
+        with httpx.Client(timeout=_TIMEOUT, headers=_headers()) as client:
             r = client.get(f"{_base()}/api/programs/by-session/{session_id}")
             if r.status_code == 404:
                 return None
@@ -80,7 +87,7 @@ def get_program_by_session(session_id: str) -> Optional[dict]:
 
 def list_programs_by_session(session_id: str) -> list[dict]:
     try:
-        with httpx.Client(timeout=_TIMEOUT) as client:
+        with httpx.Client(timeout=_TIMEOUT, headers=_headers()) as client:
             r = client.get(f"{_base()}/api/programs", params={"session_id": session_id, "limit": 50})
             if r.status_code == 404:
                 return []
@@ -92,10 +99,14 @@ def list_programs_by_session(session_id: str) -> list[dict]:
         return []
 
 
-def list_programs(limit: int = 50) -> list[dict]:
+def list_programs(limit: int = 50, *, user_id: Optional[str] = None) -> list[dict]:
+    """列疗程。user_id 非空时只返回该用户的（C 端一定会带）。"""
+    params: dict = {"limit": limit}
+    if user_id:
+        params["user_id"] = user_id
     try:
-        with httpx.Client(timeout=_TIMEOUT) as client:
-            r = client.get(f"{_base()}/api/programs", params={"limit": limit})
+        with httpx.Client(timeout=_TIMEOUT, headers=_headers()) as client:
+            r = client.get(f"{_base()}/api/programs", params=params)
             r.raise_for_status()
             data = r.json()
             return list(data.get("programs") or [])
@@ -106,7 +117,7 @@ def list_programs(limit: int = 50) -> list[dict]:
 
 def delete_program(program_id: str) -> bool:
     try:
-        with httpx.Client(timeout=_TIMEOUT) as client:
+        with httpx.Client(timeout=_TIMEOUT, headers=_headers()) as client:
             r = client.delete(f"{_base()}/api/programs/{program_id}")
             if r.status_code == 404:
                 return False
@@ -119,7 +130,7 @@ def delete_program(program_id: str) -> bool:
 
 def set_status(program_id: str, status: str) -> bool:
     try:
-        with httpx.Client(timeout=_TIMEOUT) as client:
+        with httpx.Client(timeout=_TIMEOUT, headers=_headers()) as client:
             r = client.post(f"{_base()}/api/programs/{program_id}/status", json={"status": status})
             r.raise_for_status()
             return True
@@ -131,7 +142,7 @@ def set_status(program_id: str, status: str) -> bool:
 def save_decision(program_id: str, *, stage_no: int, decision: str,
                   rationale: str, metrics: dict) -> bool:
     try:
-        with httpx.Client(timeout=_TIMEOUT) as client:
+        with httpx.Client(timeout=_TIMEOUT, headers=_headers()) as client:
             r = client.post(f"{_base()}/api/programs/{program_id}/decision", json={
                 "stage_no": stage_no, "decision": decision,
                 "rationale": rationale, "metrics": metrics,

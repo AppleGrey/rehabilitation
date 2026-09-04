@@ -22,6 +22,7 @@ func NewRepo(pool *pgxpool.Pool) *Repo {
 
 type CreateProgramInput struct {
 	SessionID  string           `json:"session_id"`
+	UserID     string           `json:"user_id"`
 	Condition  string           `json:"condition"`
 	BodyPart   string           `json:"body_part"`
 	Goal       string           `json:"goal"`
@@ -89,10 +90,10 @@ func (r *Repo) CreateProgram(ctx context.Context, in CreateProgramInput) (string
 	var id string
 	err := r.pool.QueryRow(ctx, `
 		INSERT INTO rehab_programs
-			(session_id, condition, body_part, goal, status, current_stage_no, profile, impression, baseline)
-		VALUES (NULLIF($1,'')::uuid, $2, $3, $4, 'baseline_pending', 1, $5, $6, $7)
+			(session_id, user_id, condition, body_part, goal, status, current_stage_no, profile, impression, baseline)
+		VALUES (NULLIF($1,'')::uuid, NULLIF($2,'')::uuid, $3, $4, $5, 'baseline_pending', 1, $6, $7, $8)
 		RETURNING id::text
-	`, in.SessionID, in.Condition, in.BodyPart, in.Goal,
+	`, in.SessionID, strings.TrimSpace(in.UserID), in.Condition, in.BodyPart, in.Goal,
 		jsonb(in.Profile), jsonb(in.Impression), jsonb(in.Baseline)).Scan(&id)
 	if err != nil {
 		return "", fmt.Errorf("create program: %w", err)
@@ -179,33 +180,23 @@ func (r *Repo) GetLatestBySession(ctx context.Context, sessionID string) (map[st
 	return r.GetProgram(ctx, id)
 }
 
-// ListPrograms 列出疗程；sessionID 非空时只返回该会话下的。
-func (r *Repo) ListPrograms(ctx context.Context, sessionID string, limit int) ([]map[string]any, error) {
+// ListPrograms 列出疗程；sessionID / userID 非空时按其过滤（可叠加）。
+// userID 为空表示不限归属——这条路径只有服务令牌和管理员能走到，C 端一定会带上 user_id。
+func (r *Repo) ListPrograms(ctx context.Context, sessionID, userID string, limit int) ([]map[string]any, error) {
 	if limit <= 0 {
 		limit = 50
 	}
 	if limit > 200 {
 		limit = 200
 	}
-	var (
-		rows pgx.Rows
-		err  error
-	)
-	if strings.TrimSpace(sessionID) != "" {
-		rows, err = r.pool.Query(ctx, `
-			SELECT id::text, status, COALESCE(condition,''), COALESCE(body_part,''), session_id::text,
-			       current_stage_no, created_at
-			FROM rehab_programs WHERE session_id=$1::uuid
-			ORDER BY created_at DESC LIMIT $2
-		`, sessionID, limit)
-	} else {
-		rows, err = r.pool.Query(ctx, `
-			SELECT id::text, status, COALESCE(condition,''), COALESCE(body_part,''), session_id::text,
-			       current_stage_no, created_at
-			FROM rehab_programs
-			ORDER BY created_at DESC LIMIT $1
-		`, limit)
-	}
+	rows, err := r.pool.Query(ctx, `
+		SELECT id::text, status, COALESCE(condition,''), COALESCE(body_part,''), session_id::text,
+		       current_stage_no, created_at, user_id::text
+		FROM rehab_programs
+		WHERE ($1 = '' OR session_id = $1::uuid)
+		  AND ($2 = '' OR user_id = $2::uuid)
+		ORDER BY created_at DESC LIMIT $3
+	`, strings.TrimSpace(sessionID), strings.TrimSpace(userID), limit)
 	if err != nil {
 		return nil, fmt.Errorf("list programs: %w", err)
 	}
@@ -215,17 +206,17 @@ func (r *Repo) ListPrograms(ctx context.Context, sessionID string, limit int) ([
 	for rows.Next() {
 		var (
 			id, status, condition, bodyPart string
-			session                         *string
+			session, user                   *string
 			stageNo                         int
 			created                         interface{}
 		)
-		if err := rows.Scan(&id, &status, &condition, &bodyPart, &session, &stageNo, &created); err != nil {
+		if err := rows.Scan(&id, &status, &condition, &bodyPart, &session, &stageNo, &created, &user); err != nil {
 			return nil, err
 		}
 		item := map[string]any{
 			"program_id": id, "status": status, "condition": condition,
 			"body_part": bodyPart, "session_id": session, "current_stage_no": stageNo,
-			"created_at": created,
+			"created_at": created, "user_id": user,
 		}
 		out = append(out, item)
 	}
@@ -244,15 +235,17 @@ func (r *Repo) DeleteProgram(ctx context.Context, programID string) (bool, error
 // GetProgram 顶层信息 + 当前阶段最新方案 + 训练项（面向 C 端/ai-svc）。
 func (r *Repo) GetProgram(ctx context.Context, programID string) (map[string]any, error) {
 	var (
-		id, status                    string
-		condition, bodyPart, sessionID *string
-		currentStageNo                int
-		profile, impression, baseline []byte
+		id, status                             string
+		condition, bodyPart, sessionID, userID *string
+		currentStageNo                         int
+		profile, impression, baseline          []byte
 	)
 	err := r.pool.QueryRow(ctx, `
-		SELECT id::text, status, condition, body_part, session_id::text, current_stage_no, profile, impression, baseline
+		SELECT id::text, status, condition, body_part, session_id::text, user_id::text,
+		       current_stage_no, profile, impression, baseline
 		FROM rehab_programs WHERE id=$1::uuid
-	`, programID).Scan(&id, &status, &condition, &bodyPart, &sessionID, &currentStageNo, &profile, &impression, &baseline)
+	`, programID).Scan(&id, &status, &condition, &bodyPart, &sessionID, &userID,
+		&currentStageNo, &profile, &impression, &baseline)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, nil
@@ -266,6 +259,7 @@ func (r *Repo) GetProgram(ctx context.Context, programID string) (map[string]any
 		"condition":        condition,
 		"body_part":        bodyPart,
 		"session_id":       sessionID,
+		"user_id":          userID,
 		"current_stage_no": currentStageNo,
 		"profile":          decodeJSON(profile, map[string]any{}),
 		"impression":       decodeJSON(impression, []any{}),

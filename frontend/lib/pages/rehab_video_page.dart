@@ -10,6 +10,7 @@ import 'package:video_player/video_player.dart';
 
 import '../theme/app_theme.dart';
 import '../config/api_config.dart';
+import '../services/auth_store.dart';
 
 // ── 阶段 ─────────────────────────────────────────────────────────────────────
 //  loading  →  watching  →  preview  →  countdown  →  recording
@@ -325,6 +326,7 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
       }
       if (notes.isNotEmpty) req.fields['user_notes'] = notes;
       if (pain != null) req.fields['pain_reported'] = '$pain';
+      req.headers.addAll(AuthStore.headers());
       req.files.add(await http.MultipartFile.fromPath(
           'user_video', videoPath, filename: 'user_training.mp4'));
       final streamed = await req.send().timeout(const Duration(minutes: 2));
@@ -436,6 +438,7 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
       )
         ..fields['session_id'] = sid
         ..fields['standard_video_id'] = vid
+        ..headers.addAll(AuthStore.headers())
         ..files.add(await http.MultipartFile.fromPath(
           'user_video',
           videoPath,
@@ -504,7 +507,8 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
   Future<Map<String, dynamic>?> _fetchTaskStatus(String taskId) async {
     try {
       final resp = await http
-          .get(Uri.parse('$kBackendBase/api/assess/status/$taskId'))
+          .get(Uri.parse('$kBackendBase/api/assess/status/$taskId'),
+              headers: AuthStore.headers())
           .timeout(const Duration(seconds: 10));
       if (resp.statusCode == 200) {
         return jsonDecode(resp.body) as Map<String, dynamic>;
