@@ -47,6 +47,31 @@ env/
 ENV/
 
 # =========================
+# Node / Vue (frontend-admin)
+# =========================
+node_modules/
+frontend-admin/dist/
+frontend-admin/.vite/
+*.tsbuildinfo
+
+# =========================
+# Go (core-svc / admin-svc)
+# =========================
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+admin-svc/bin/
+core-svc/bin/
+
+# =========================
+# frp (local tunnel binaries / config)
+# =========================
+frp/
+
+# =========================
 # Flutter / Dart (frontend)
 # =========================
 frontend/.dart_tool/

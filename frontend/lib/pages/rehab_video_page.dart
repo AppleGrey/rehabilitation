@@ -8,9 +8,11 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:video_player/video_player.dart';
 
-import '../theme/app_theme.dart';
 import '../config/api_config.dart';
+import '../pose/follow_models.dart';
 import '../services/auth_store.dart';
+import '../theme/app_theme.dart';
+import '../widgets/follow_live_stage.dart';
 
 // ── 阶段 ─────────────────────────────────────────────────────────────────────
 //  loading  →  watching  →  preview  →  countdown  →  recording
@@ -100,10 +102,12 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
   VideoPlayerController? _videoCtrl;
   bool _videoReady = false;
   String? _videoLoadError;
-  Offset? _pipPos; // 录制时演示小窗位置（null = 默认右上角，拖动后记住）
 
-  // ── 摄像头 ───────────────────────────────────────────────────────────────
+  // ── 摄像头与实时规则 ─────────────────────────────────────────────────────
   CameraController? _camCtrl;
+  final _liveKey = GlobalKey<FollowLiveStageState>();
+  MotionStandard? _rule;
+  String? _ruleNote;
   bool _pageDisposed = false;
 
   // ── 倒计时 ───────────────────────────────────────────────────────────────
@@ -199,7 +203,48 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
     _videoCtrl?.pause();
     await _initCamera();
     if (!mounted) return;
+    await _loadMotionRule();
+    if (!mounted) return;
+    _startDemoLoop();
     setState(() => _phase = _Phase.preview);
+  }
+
+  Future<void> _loadMotionRule() async {
+    final videoId = widget.videoId;
+    if (videoId == null || videoId.isEmpty) {
+      _rule = null;
+      _ruleNote = '该动作尚未配置实时评分';
+      return;
+    }
+    try {
+      final response = await http
+          .get(Uri.parse('$kBackendBase/api/motion-rules/$videoId'))
+          .timeout(const Duration(seconds: 8));
+      if (!mounted) return;
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final raw = data['rule'] as Map<String, dynamic>? ?? data;
+        final rule = MotionStandard.fromJson(raw);
+        final enabled = rule.metrics.any((metric) => metric.enabled);
+        _rule = enabled ? rule : null;
+        _ruleNote = enabled ? null : '该动作尚未配置实时评分';
+      } else {
+        _rule = null;
+        _ruleNote = '该动作尚未配置实时评分';
+      }
+    } catch (_) {
+      _rule = null;
+      _ruleNote = '实时评分规则未加载，本次只显示骨架';
+    }
+  }
+
+  void _startDemoLoop() {
+    final video = _videoCtrl;
+    if (video == null || !_videoReady) return;
+    video.setVolume(0);
+    video.setLooping(true);
+    video.seekTo(Duration.zero);
+    video.play();
   }
 
   // ── 初始化摄像头 ─────────────────────────────────────────────────────────
@@ -232,6 +277,8 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
       _phase = _Phase.countdown;
     });
 
+    _startDemoLoop();
+
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (t) async {
       if (_countdownValue > 1) {
         setState(() => _countdownValue--);
@@ -247,16 +294,11 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
   Future<void> _startRecording() async {
     if (_camCtrl == null || !_camCtrl!.value.isInitialized) return;
     try {
-      // 倒计时结束、正式开始录制时再播放演示小窗，方便对照跟做。
-      // 静音 + 循环 + 从头播放；静音避免演示声音被摄像头麦克风录入用户视频。
-      final v = _videoCtrl;
-      if (v != null && _videoReady) {
-        v.setVolume(0);
-        v.setLooping(true);
-        v.seekTo(Duration.zero);
-        v.play();
-      }
-      await _camCtrl!.startVideoRecording();
+      _startDemoLoop();
+      await _liveKey.currentState?.releaseStreamForRecording();
+      await _camCtrl!.startVideoRecording(
+        onAvailable: (image) => _liveKey.currentState?.handleFrame(image),
+      );
       setState(() => _phase = _Phase.recording);
     } catch (e) {
       setState(() {
@@ -567,9 +609,7 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
       body: switch (_phase) {
         _Phase.loading   => const Center(child: CircularProgressIndicator(color: AppTheme.primary)),
         _Phase.watching  => _buildWatching(),
-        _Phase.preview   => _buildCameraPreview(showStartRecordButton: true),
-        _Phase.countdown => _buildCountdown(),
-        _Phase.recording => _buildRecording(),
+        _Phase.preview || _Phase.countdown || _Phase.recording => _buildLiveSession(),
         _Phase.uploading => _buildUploading(),
         _Phase.polling   => _buildPolling(),
         _Phase.result    => _buildResult(),
@@ -702,108 +742,41 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
     );
   }
 
-  // ── 摄像头预览（preview 阶段）────────────────────────────────────────────
-
-  Widget _buildCameraPreview({required bool showStartRecordButton}) {
+  Widget _buildLiveSession() {
+    final camera = _camCtrl;
+    final video = _videoCtrl;
+    final aspect = video != null && video.value.aspectRatio > 0
+        ? video.value.aspectRatio
+        : 0.75;
     return Stack(
       fit: StackFit.expand,
       children: [
-        if (_camCtrl != null && _camCtrl!.value.isInitialized)
-          CameraPreview(_camCtrl!),
-        Positioned(
-          left: 16,
-          right: 16,
-          bottom: 20,
-          child: SafeArea(
-            top: false,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  '摄像头已就绪，调整好位置后点击「开始录制」',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 13,
-                    shadows: [Shadow(blurRadius: 4, color: Colors.black)],
-                  ),
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                    ),
-                    onPressed: _startCountdown,
-                    icon: const Icon(Icons.videocam, size: 20),
-                    label: const Text(
-                      '开始录制',
-                      style:
-                          TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+        if (camera != null && camera.value.isInitialized)
+          FollowLiveStage(
+            key: _liveKey,
+            camera: camera,
+            rule: _rule,
+            note: _ruleNote,
+            demoAspect: aspect,
+            demo: video != null && _videoReady ? VideoPlayer(video) : null,
+          )
+        else
+          const Center(
+            child: Text('正在连接摄像头…', style: TextStyle(color: Colors.white70)),
           ),
-        ),
-      ],
-    );
-  }
-
-  // ── 倒计时 ────────────────────────────────────────────────────────────────
-
-  Widget _buildCountdown() {
-    return LayoutBuilder(
-      builder: (context, constraints) => Stack(
-        fit: StackFit.expand,
-        children: [
-          if (_camCtrl != null && _camCtrl!.value.isInitialized)
-            CameraPreview(_camCtrl!),
+        if (_phase == _Phase.countdown)
           Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  '$_countdownValue',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 120,
-                    fontWeight: FontWeight.bold,
-                    shadows: [Shadow(blurRadius: 8, color: Colors.black)],
-                  ),
-                ),
-                const Text(
-                  '准备开始录制…',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 18,
-                    shadows: [Shadow(blurRadius: 4, color: Colors.black)],
-                  ),
-                ),
-              ],
+            child: Text(
+              '$_countdownValue',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 120,
+                fontWeight: FontWeight.bold,
+                shadows: [Shadow(blurRadius: 8, color: Colors.black)],
+              ),
             ),
           ),
-          _buildDemoPip(constraints.biggest),
-        ],
-      ),
-    );
-  }
-
-  // ── 录制中 ────────────────────────────────────────────────────────────────
-
-  Widget _buildRecording() {
-    return LayoutBuilder(
-      builder: (context, constraints) => Stack(
-        fit: StackFit.expand,
-        children: [
-          if (_camCtrl != null && _camCtrl!.value.isInitialized)
-            CameraPreview(_camCtrl!),
+        if (_phase == _Phase.recording)
           Positioned(
             top: 16,
             left: 0,
@@ -820,127 +793,52 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
                   children: [
                     Icon(Icons.fiber_manual_record, color: Colors.white, size: 14),
                     SizedBox(width: 6),
-                    Text(
-                      '录制中',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    Text('录制中', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
                   ],
                 ),
               ),
             ),
           ),
-          Positioned(
-            left: 16,
-            right: 16,
-            bottom: 20,
-            child: SafeArea(
-              top: false,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    '正在录制，请参照演示视频做动作\n完成后点击下方按钮',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 13,
-                      shadows: [Shadow(blurRadius: 4, color: Colors.black)],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
+        Positioned(
+          left: 16,
+          right: 16,
+          bottom: 20,
+          child: SafeArea(
+            top: false,
+            child: _phase == _Phase.recording
+                ? SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF4CAF50),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       onPressed: _stopAndUpload,
                       icon: const Icon(Icons.check_circle, size: 20),
-                      label: const Text(
-                        '训练完成',
-                        style:
-                            TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-                      ),
+                      label: const Text('训练完成', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
                     ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          _buildDemoPip(constraints.biggest),
-        ],
-      ),
-    );
-  }
-
-  // ── 演示视频小窗（录制 / 倒计时阶段叠加，可拖动） ────────────────────────
-
-  Widget _buildDemoPip(Size area) {
-    final v = _videoCtrl;
-    if (v == null || !_videoReady) return const SizedBox.shrink();
-
-    final aspect = v.value.aspectRatio > 0 ? v.value.aspectRatio : 16 / 9;
-    final pipW = area.width * 0.30;
-    final pipH = pipW / aspect;
-    final maxX = (area.width - pipW).clamp(0.0, double.infinity).toDouble();
-    final maxY = (area.height - pipH).clamp(0.0, double.infinity).toDouble();
-    final defaultX = (maxX - 16).clamp(0.0, maxX).toDouble();
-    final pos = _pipPos ?? Offset(defaultX, 16);
-
-    return Positioned(
-      left: pos.dx.clamp(0.0, maxX).toDouble(),
-      top: pos.dy.clamp(0.0, maxY).toDouble(),
-      child: GestureDetector(
-        onPanUpdate: (details) {
-          final cur = _pipPos ?? pos;
-          final nx = (cur.dx + details.delta.dx).clamp(0.0, maxX).toDouble();
-          final ny = (cur.dy + details.delta.dy).clamp(0.0, maxY).toDouble();
-          setState(() => _pipPos = Offset(nx, ny));
-        },
-        child: Container(
-          width: pipW,
-          height: pipH,
-          clipBehavior: Clip.antiAlias,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white70, width: 2),
-            boxShadow: const [
-              BoxShadow(color: Colors.black54, blurRadius: 8, offset: Offset(0, 2)),
-            ],
-          ),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              VideoPlayer(v),
-              Positioned(
-                top: 4,
-                left: 4,
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.55),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: const Text(
-                    '演示',
-                    style: TextStyle(color: Colors.white, fontSize: 11),
-                  ),
-                ),
-              ),
-            ],
+                  )
+                : _phase == _Phase.preview
+                ? SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: _startCountdown,
+                      icon: const Icon(Icons.videocam, size: 20),
+                      label: const Text('开始录制', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                    ),
+                  )
+                : const SizedBox.shrink(),
           ),
         ),
-      ),
+      ],
     );
   }
 

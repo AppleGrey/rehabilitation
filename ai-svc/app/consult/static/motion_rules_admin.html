@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>动作实时评分规则</title>
+  <style>
+    :root { color-scheme: light; font-family: "Segoe UI", "PingFang SC", sans-serif; }
+    body { margin: 0; background: #f4f6f8; color: #1c2834; }
+    header { padding: 20px 28px 8px; }
+    header p { margin: 6px 0 0; color: #5c6b78; }
+    main { display: grid; grid-template-columns: 320px 1fr; gap: 16px; padding: 16px 28px 32px; }
+    section { background: white; border-radius: 12px; padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+    ul { list-style: none; padding: 0; margin: 0; max-height: 70vh; overflow: auto; }
+    li { padding: 10px 8px; border-bottom: 1px solid #eef2f5; cursor: pointer; }
+    li.active { background: #e8f5f2; }
+    .tag { float: right; font-size: 12px; color: #0d8a6a; }
+    .tag.off { color: #9aa6b2; }
+    label { display: block; font-size: 13px; margin: 10px 0 4px; }
+    input, select, textarea { width: 100%; box-sizing: border-box; padding: 8px; border: 1px solid #d5dee6; border-radius: 8px; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .actions { display: flex; gap: 8px; margin-top: 14px; }
+    button { border: 0; border-radius: 8px; padding: 10px 14px; cursor: pointer; }
+    button.primary { background: #12806a; color: white; }
+    button.danger { background: #fdecea; color: #b42318; }
+    #message { min-height: 1.2em; color: #12806a; }
+    #message.error { color: #b42318; }
+    @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>动作实时评分规则</h1>
+    <p>这里改的是跟做时的实时分数，和训练结束后的视觉大模型评分互不影响。没有规则的动作，跟做时只显示骨架。</p>
+  </header>
+  <main>
+    <section>
+      <input id="filter" placeholder="搜索动作或编号" />
+      <ul id="actions"></ul>
+    </section>
+    <section>
+      <h2 id="heading">请选择一个动作</h2>
+      <div class="row">
+        <div><label>动作名称</label><input id="title" /></div>
+        <div><label>指标名称</label><input id="metricName" /></div>
+      </div>
+      <div class="row">
+        <div>
+          <label>计算方式</label>
+          <select id="kind">
+            <option value="segment_to_axis">两点相对竖直方向的夹角</option>
+            <option value="angle_3point">三个关节点的夹角</option>
+          </select>
+        </div>
+        <div>
+          <label>角度含义</label>
+          <select id="output">
+            <option value="degrees_from_down">相对竖直向下，抬得越高角度越大</option>
+            <option value="degrees_from_vertical">与竖直线的夹角，最大 90°</option>
+            <option value="abs_degrees_from_vertical">竖直线夹角的绝对值</option>
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <div><label>起点 / 顶点</label><select id="from"></select></div>
+        <div><label>终点</label><select id="to"></select></div>
+      </div>
+      <div class="row">
+        <div><label>合格线</label><input id="pass" type="number" step="1" value="40" /></div>
+        <div>
+          <label>合格比较</label>
+          <select id="passOp"><option value="gte">大于等于</option><option value="lte">小于等于</option></select>
+        </div>
+      </div>
+      <div class="row">
+        <div><label>优秀线</label><input id="excellent" type="number" step="1" value="50" /></div>
+        <div><label>回到起始的复位线</label><input id="reset" type="number" step="1" value="15" /></div>
+      </div>
+      <div class="row">
+        <div><label>最低可见度 0–1</label><input id="visibility" type="number" step="0.05" value="0.45" /></div>
+        <div><label>保持毫秒</label><input id="hold" type="number" step="50" value="300" /></div>
+      </div>
+      <label>没做到时的提示</label>
+      <input id="hint" value="请再接近合格线一些" />
+      <label>结构化规则 JSON。改完可直接保存，表单和这里会互相覆盖。</label>
+      <textarea id="json" rows="14"></textarea>
+      <p id="message"></p>
+      <div class="actions">
+        <button class="primary" id="save" type="button">保存规则</button>
+        <button id="sync" type="button">用表单更新 JSON</button>
+        <button class="danger" id="remove" type="button">删除规则</button>
+      </div>
+    </section>
+  </main>
+  <script>
+    const landmarks = ["nose","left_shoulder","right_shoulder","left_elbow","right_elbow","left_wrist","right_wrist","left_hip","right_hip","left_knee","right_knee","left_ankle","right_ankle","mid_shoulder","mid_hip"];
+    const actionsEl = document.querySelector("#actions");
+    const message = document.querySelector("#message");
+    let actions = [];
+    let current = null;
+
+    for (const id of ["from", "to"]) {
+      const select = document.querySelector("#" + id);
+      for (const name of landmarks) {
+        const option = document.createElement("option");
+        option.value = name;
+        option.textContent = name;
+        select.appendChild(option);
+      }
+    }
+    document.querySelector("#from").value = "right_hip";
+    document.querySelector("#to").value = "right_ankle";
+
+    function say(text, error) {
+      message.textContent = text || "";
+      message.className = error ? "error" : "";
+    }
+
+    function formRule() {
+      const kind = document.querySelector("#kind").value;
+      const from = document.querySelector("#from").value;
+      const to = document.querySelector("#to").value;
+      const definition = kind === "angle_3point"
+        ? { kind, output: document.querySelector("#output").value, from: null, to: null, points: ["left_hip", "left_knee", "left_ankle"] }
+        : { kind, output: document.querySelector("#output").value, from, to, points: [] };
+      return {
+        title_cn: document.querySelector("#title").value || current,
+        min_visibility: Number(document.querySelector("#visibility").value),
+        metrics: [{
+          id: "primary",
+          name_cn: document.querySelector("#metricName").value || "主动作",
+          enabled: true,
+          weight: 1,
+          definition,
+          pass: { op: document.querySelector("#passOp").value, value: Number(document.querySelector("#pass").value) },
+          excellent: { op: document.querySelector("#passOp").value, value: Number(document.querySelector("#excellent").value) },
+          attempt: { op: document.querySelector("#passOp").value, value: Number(document.querySelector("#pass").value) / 2 },
+          reset: { op: document.querySelector("#passOp").value === "gte" ? "lte" : "gte", value: Number(document.querySelector("#reset").value) },
+          fail_hint: document.querySelector("#hint").value
+        }],
+        rep_logic: { required_metric_ids: ["primary"], hold_ms: Number(document.querySelector("#hold").value) }
+      };
+    }
+
+    function fillForm(rule) {
+      const metric = (rule.metrics || [])[0] || {};
+      const definition = metric.definition || {};
+      document.querySelector("#title").value = rule.title_cn || "";
+      document.querySelector("#metricName").value = metric.name_cn || "";
+      document.querySelector("#kind").value = definition.kind || "segment_to_axis";
+      document.querySelector("#output").value = definition.output || "degrees_from_down";
+      if (definition.from) document.querySelector("#from").value = definition.from;
+      if (definition.to) document.querySelector("#to").value = definition.to;
+      const pass = metric.pass || {};
+      document.querySelector("#passOp").value = pass.op || "gte";
+      document.querySelector("#pass").value = pass.value ?? 40;
+      document.querySelector("#excellent").value = (metric.excellent || {}).value ?? 50;
+      document.querySelector("#reset").value = (metric.reset || {}).value ?? 15;
+      document.querySelector("#visibility").value = rule.min_visibility ?? 0.45;
+      document.querySelector("#hold").value = (rule.rep_logic || {}).hold_ms ?? 300;
+      document.querySelector("#hint").value = metric.fail_hint || "";
+      document.querySelector("#json").value = JSON.stringify(rule, null, 2);
+    }
+
+    function render(filter) {
+      actionsEl.innerHTML = "";
+      const text = (filter || "").trim();
+      for (const action of actions) {
+        const blob = action.video_id + action.title + (action.joint || "");
+        if (text && !blob.includes(text)) continue;
+        const item = document.createElement("li");
+        if (action.video_id === current) item.className = "active";
+        item.innerHTML = `${action.title}<div style="color:#7b8792;font-size:12px">${action.joint || ""} ${action.video_id}</div><span class="tag ${action.has_rule ? "" : "off"}">${action.has_rule ? "已有规则" : "未配置"}</span>`;
+        item.onclick = () => select(action.video_id);
+        actionsEl.appendChild(item);
+      }
+    }
+
+    async function select(videoId) {
+      current = videoId;
+      render(document.querySelector("#filter").value);
+      document.querySelector("#heading").textContent = videoId;
+      const response = await fetch("/api/motion-rules/" + encodeURIComponent(videoId));
+      if (response.status === 404) {
+        document.querySelector("#title").value = (actions.find(item => item.video_id === videoId) || {}).title || videoId;
+        document.querySelector("#metricName").value = "主动作";
+        document.querySelector("#json").value = JSON.stringify(formRule(), null, 2);
+        say("这个动作还没有规则。保存后，跟做时才会按这里的标准打分。");
+        return;
+      }
+      if (!response.ok) {
+        say(await response.text(), true);
+        return;
+      }
+      const data = await response.json();
+      fillForm(data.rule);
+      say("已载入当前规则。");
+    }
+
+    document.querySelector("#filter").oninput = (event) => render(event.target.value);
+    document.querySelector("#sync").onclick = () => {
+      if (!current) return;
+      document.querySelector("#json").value = JSON.stringify(formRule(), null, 2);
+      say("已用表单生成 JSON。多条指标请直接改 JSON。");
+    };
+    document.querySelector("#save").onclick = async () => {
+      if (!current) return;
+      let rule;
+      try { rule = JSON.parse(document.querySelector("#json").value); }
+      catch (error) { say("JSON 无法解析", true); return; }
+      const response = await fetch("/api/admin/motion-rules/" + encodeURIComponent(current), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(rule)
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) { say(data.detail || "保存失败", true); return; }
+      fillForm(data.rule);
+      const action = actions.find(item => item.video_id === current);
+      if (action) action.has_rule = true;
+      render(document.querySelector("#filter").value);
+      say("已保存。下次跟做会按这份规则打分。");
+    };
+    document.querySelector("#remove").onclick = async () => {
+      if (!current) return;
+      const response = await fetch("/api/admin/motion-rules/" + encodeURIComponent(current), { method: "DELETE" });
+      if (!response.ok) { say("删除失败", true); return; }
+      const action = actions.find(item => item.video_id === current);
+      if (action) action.has_rule = false;
+      render(document.querySelector("#filter").value);
+      say("已删除。这个动作跟做时只显示骨架。");
+    };
+
+    fetch("/api/admin/motion-rules").then(response => response.json()).then(data => {
+      actions = data.actions || [];
+      render("");
+    }).catch(() => say("动作列表加载失败", true));
+  </script>
+</body>
+</html>
