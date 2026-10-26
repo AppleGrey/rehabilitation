@@ -63,6 +63,7 @@ from .config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, DEEPSEEK_MODEL
 from .sessions import load_session, save_session
 from .tasks import UPLOADS_DIR, create_task, load_task, update_task
 from .questionnaire import build_questionnaire_report
+from .motion_rule_routes import router as motion_rule_router
 
 logger = logging.getLogger(__name__)
 
@@ -78,6 +79,7 @@ app.add_middleware(
 ASSETS_DIR = Path(__file__).parent.parent / "assets"
 ASSETS_DIR.mkdir(exist_ok=True)
 app.mount("/assets", StaticFiles(directory=str(ASSETS_DIR)), name="assets")
+app.include_router(motion_rule_router)
 
 # ── 内存会话缓存（同时持久化到磁盘） ──────────────────────────────────────────
 _sessions: dict[str, ConsultState] = {}

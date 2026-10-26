@@ -38,6 +38,9 @@ dependencies:
   # 摄像头录制
   camera: ^0.11.1
 
+  # 端上姿态估计，跟做时画骨架并按动作规则打分
+  google_mlkit_pose_detection: ^0.14.1
+
   # AI 对话 & 网络
   http: ^1.2.2
 
