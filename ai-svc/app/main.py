@@ -657,6 +657,7 @@ def _run_assessment(task_id: str) -> None:
             api_key=consult_cfg.api_key,  # type: ignore[arg-type]
             base_url=consult_cfg.base_url,
             temperature=0.4,
+            extra_body={"enable_thinking": consult_cfg.enable_thinking},
         )
         resp = llm.invoke(
             [SystemMessage(content="你是专业的运动康复 AI。"),

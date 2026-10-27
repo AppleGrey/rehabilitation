@@ -332,6 +332,7 @@ def generate_stage_plan(program_id: str, baseline_results: Optional[list[dict]] 
 
 def view_program(program_id: str) -> Optional[dict]:
     from ..assessment import tasks as _tasks
+    from ..media.video_metadata import load_video
     view = core_client.get_program(program_id)
     if not view:
         return None
@@ -349,6 +350,10 @@ def view_program(program_id: str) -> Optional[dict]:
         vid = it.get("video_id")
         if not vid:
             continue
+        meta = load_video(vid) or {}
+        name = str(meta.get("action_name") or meta.get("description_cn") or "").strip()
+        if name:
+            it["title"] = name
         t = _tasks.latest_task(program_id, stage_no, vid)
         if t:
             assess = t.get("assessment") if isinstance(t.get("assessment"), dict) else {}
@@ -363,6 +368,7 @@ def view_program(program_id: str) -> Optional[dict]:
                 if t.get("meets_exit_criteria") is not None else assess.get("meets_exit_criteria"),
                 "pain_reported": t.get("pain_reported"),
                 "grounded": bool(t.get("kg_sources") or assess.get("kg_sources")),
+                "created_at": t.get("created_at"),
             }
         else:
             it["training"] = {"status": "none"}

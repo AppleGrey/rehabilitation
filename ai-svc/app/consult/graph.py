@@ -56,6 +56,7 @@ def _consult_llm() -> ChatOpenAI:
         base_url=cfg.base_url,
         temperature=cfg.temperature,
         streaming=True,
+        extra_body={"enable_thinking": cfg.enable_thinking},
     )
 
 

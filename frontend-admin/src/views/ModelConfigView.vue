@@ -83,6 +83,12 @@ async function save(draft: Draft) {
       model: draft.model.trim(),
     }
     if (draft.api_key.trim()) body.api_key = draft.api_key.trim()
+    const maxTokens = Number(draft.max_tokens)
+    if (!Number.isFinite(maxTokens) || maxTokens < 256 || maxTokens > 32768) {
+      error.value = '最大输出 token 需要在 256 到 32768 之间'
+      saving.value = ''
+      return
+    }
     if (draft.id === 'consult') {
       const temperature = Number(draft.temperature)
       if (!Number.isFinite(temperature) || temperature < 0 || temperature > 2) {
@@ -91,10 +97,12 @@ async function save(draft: Draft) {
         return
       }
       body.temperature = temperature
+      body.max_tokens = maxTokens
+      body.enable_thinking = draft.enable_thinking
     }
     if (draft.id === 'vision') {
       body.enable_thinking = draft.enable_thinking
-      body.max_tokens = Number(draft.max_tokens)
+      body.max_tokens = maxTokens
       body.concat_standard_video = draft.concat_standard_video
     }
     const saved = await saveLlmConfig(draft.id, body)
@@ -117,7 +125,7 @@ onMounted(load)
     <header class="page-head">
       <div>
         <h1>配置管理</h1>
-        <p class="sub">问诊和视觉大模型的密钥、接口地址、模型名称保存在数据库里。问诊可以设置温度。视觉评估默认只上传用户视频，需要对照演示时再打开拼接。保存后无需重启服务。</p>
+        <p class="sub">问诊和视觉大模型的密钥、接口地址、模型名称保存在数据库里。问诊可以设置温度和建树输出上限。视觉评估默认只上传用户视频，需要对照演示时再打开拼接。保存后无需重启服务。</p>
       </div>
       <button type="button" class="ghost" :disabled="busy" @click="load">刷新</button>
     </header>
@@ -146,10 +154,21 @@ onMounted(load)
         <span>模型名称</span>
         <input v-model="draft.model" type="text" spellcheck="false" />
       </label>
-      <label v-if="draft.id === 'consult'">
-        <span>温度</span>
-        <input v-model.number="draft.temperature" type="number" min="0" max="2" step="0.1" />
-      </label>
+      <template v-if="draft.id === 'consult'">
+        <label>
+          <span>温度</span>
+          <input v-model.number="draft.temperature" type="number" min="0" max="2" step="0.1" />
+        </label>
+        <label class="check">
+          <input v-model="draft.enable_thinking" type="checkbox" />
+          <span>开启思考。建树只要最终 JSON 时保持关闭，否则思考会占用最大输出 token。</span>
+        </label>
+        <label>
+          <span>最大输出 token</span>
+          <input v-model.number="draft.max_tokens" type="number" min="256" max="32768" step="256" />
+        </label>
+        <p class="sub">建树时思考和正文共用这个额度。接口允许的最大值是 32768，模型若拒绝再往下调。</p>
+      </template>
       <template v-if="draft.id === 'vision'">
         <label class="check">
           <input v-model="draft.concat_standard_video" type="checkbox" />

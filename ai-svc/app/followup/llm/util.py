@@ -31,6 +31,7 @@ def make_json_llm(temperature: float = 0.2, max_tokens: int = 1600) -> ChatOpenA
         temperature=temperature,
         streaming=False,
         max_tokens=max_tokens,
+        extra_body={"enable_thinking": cfg.enable_thinking},
         # DeepSeek 兼容 OpenAI 的 JSON 模式；prompt 里须出现 "JSON" 字样
         model_kwargs={"response_format": {"type": "json_object"}},
     )

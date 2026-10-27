@@ -80,17 +80,17 @@ func (h *Handler) Update(c *gin.Context) {
 		}
 		in.Temperature = body.Temperature
 	}
+	if body.EnableThinking != nil && (id == Consult || id == Vision) {
+		in.EnableThinking = body.EnableThinking
+	}
+	if body.MaxTokens != nil && (id == Consult || id == Vision) {
+		if *body.MaxTokens < 256 || *body.MaxTokens > 32768 {
+			c.JSON(http.StatusBadRequest, gin.H{"detail": "最大输出 token 需要在 256 到 32768 之间"})
+			return
+		}
+		in.MaxTokens = body.MaxTokens
+	}
 	if id == Vision {
-		if body.EnableThinking != nil {
-			in.EnableThinking = body.EnableThinking
-		}
-		if body.MaxTokens != nil {
-			if *body.MaxTokens < 256 || *body.MaxTokens > 32768 {
-				c.JSON(http.StatusBadRequest, gin.H{"detail": "最大输出 token 需要在 256 到 32768 之间"})
-				return
-			}
-			in.MaxTokens = body.MaxTokens
-		}
 		if body.ConcatStandardVideo != nil {
 			in.ConcatStandardVideo = body.ConcatStandardVideo
 		}

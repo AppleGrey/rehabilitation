@@ -178,7 +178,7 @@ def _env_profile(profile: str) -> LlmProfile:
             base_url=DEEPSEEK_BASE_URL.rstrip("/"),
             model=DEEPSEEK_MODEL or "deepseek-chat",
             enable_thinking=False,
-            max_tokens=4096,
+            max_tokens=32768,
             temperature=0.2,
         )
     thinking = os.getenv("ASSESSMENT_ENABLE_THINKING", "false").lower() in ("1", "true", "yes")

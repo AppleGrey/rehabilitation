@@ -296,11 +296,22 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
     try {
       _startDemoLoop();
       await _liveKey.currentState?.releaseStreamForRecording();
+      // 与 feat/demo 相同：安卓先暂停原生预览，录像回调才能继续送帧。
+      // 否则插件会停掉分析帧，用户画面停在最后一帧，演示视频仍在播放。
+      if (Platform.isAndroid) {
+        await _camCtrl!.pausePreview();
+      }
       await _camCtrl!.startVideoRecording(
         onAvailable: (image) => _liveKey.currentState?.handleFrame(image),
+        enablePersistentRecording: false,
       );
       setState(() => _phase = _Phase.recording);
     } catch (e) {
+      if (Platform.isAndroid && _camCtrl != null) {
+        try {
+          await _camCtrl!.resumePreview();
+        } catch (_) {}
+      }
       setState(() {
         _uploadError = '录制启动失败：$e';
         _phase = _Phase.result;

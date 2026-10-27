@@ -201,7 +201,7 @@ func titleOf(id string) string {
 func descriptionOf(id string) string {
 	switch id {
 	case Consult:
-		return "策略问诊抽取事实、更新候选情况，并生成鉴别问题。"
+		return "策略问诊抽取事实、更新候选情况，并生成鉴别问题。建树的输出上限在这里调整，思考和正文共用这一额度。"
 	case Vision:
 		return "评估用户动作，以及预处理教学视频。评估时可选择是否拼接标准视频。"
 	default:
@@ -236,7 +236,7 @@ func envSeed(id string) envSeedValues {
 			baseURL:        strings.TrimRight(envOr("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1"), "/"),
 			model:          envOr("DEEPSEEK_MODEL", "deepseek-chat"),
 			enableThinking: false,
-			maxTokens:      4096,
+			maxTokens:      32768,
 		}
 	}
 	maxTokens := 4096

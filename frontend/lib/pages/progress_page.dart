@@ -1,25 +1,78 @@
 import 'package:flutter/material.dart';
+
+import '../services/rehab_overview.dart';
 import '../theme/app_theme.dart';
 import '../widgets/progress_ring.dart';
 
-class ProgressPage extends StatelessWidget {
-  const ProgressPage({super.key});
+/// 进度页只展示已经发生的训练：完成比例、得分、本周次数和最近记录。
+class ProgressPage extends StatefulWidget {
+  final int refreshTick;
+
+  const ProgressPage({super.key, this.refreshTick = 0});
+
+  @override
+  State<ProgressPage> createState() => _ProgressPageState();
+}
+
+class _ProgressPageState extends State<ProgressPage> {
+  RehabOverview? _overview;
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void didUpdateWidget(covariant ProgressPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.refreshTick != widget.refreshTick) _load();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final overview = await RehabOverview.load();
+      if (!mounted) return;
+      setState(() {
+        _overview = overview;
+        _loading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = '进度暂时没有加载出来';
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.bgSecondary,
+      backgroundColor: const Color(0xFFF3F6F5),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.only(bottom: 80),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        child: RefreshIndicator(
+          color: AppTheme.primary,
+          onRefresh: _load,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
             children: [
-              _buildHeader(),
-              _buildProgressRing(),
-              _buildStats(),
-              _buildWeeklyChart(),
-              _buildHistory(),
+              const Text('康复进度', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: AppTheme.textPrimary)),
+              const SizedBox(height: 4),
+              const Text('按你实际完成的动作统计', style: TextStyle(fontSize: 13, color: AppTheme.textSecondary)),
+              const SizedBox(height: 18),
+              if (_loading)
+                const Padding(padding: EdgeInsets.only(top: 80), child: Center(child: CircularProgressIndicator()))
+              else if (_error != null)
+                _empty(_error!, '下拉刷新后再看。')
+              else
+                ..._content(_overview!),
             ],
           ),
         ),
@@ -27,253 +80,198 @@ class ProgressPage extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader() {
-    return const Padding(
-      padding: EdgeInsets.all(20),
-      child: Text(
-        '康复进度',
-        style: TextStyle(
-          fontSize: 24,
-          fontWeight: FontWeight.bold,
-          color: AppTheme.textPrimary,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildProgressRing() {
-    return Center(
-      child: Column(
-        children: [
-          const ProgressRing(
-            progress: 0.75,
-            centerText: '75%',
-            subText: '本周目标',
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: AppTheme.primaryLight,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: const Text(
-              '已连续坚持 7 天',
-              style: TextStyle(
-                fontSize: 14,
-                color: AppTheme.primary,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStats() {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Row(
-        children: const [
-          Expanded(child: _StatCard(value: '21', label: '训练总天数', icon: Icons.calendar_today)),
-          SizedBox(width: 12),
-          Expanded(child: _StatCard(value: '5', label: '本周训练', icon: Icons.fitness_center)),
-          SizedBox(width: 12),
-          Expanded(child: _StatCard(value: '85', label: '平均得分', icon: Icons.star_outline)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildWeeklyChart() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: AppTheme.bgPrimary,
-          borderRadius: BorderRadius.circular(16),
-        ),
+  List<Widget> _content(RehabOverview overview) {
+    final focus = overview.focus ?? overview.latest;
+    final items = overview.itemsOf(focus);
+    final done = overview.doneOf(focus);
+    final total = items.length;
+    final ratio = total == 0 ? 0.0 : done / total;
+    final avg = overview.averageScore;
+    final streak = overview.streak;
+    final assessed = overview.hits.where((h) => h.done).length;
+    final week = overview.weekCounts;
+    final history = overview.hits.where((h) => h.done || h.at != null).take(8).toList();
+    return [
+      Center(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              '本周训练趋势',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.textPrimary,
+            ProgressRing(
+              progress: ratio,
+              centerText: total == 0 ? '—' : '${(ratio * 100).round()}%',
+              subText: focus == null ? '还没有方案' : '本期完成',
+            ),
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(color: AppTheme.primaryLight, borderRadius: BorderRadius.circular(999)),
+              child: Text(
+                streak > 0 ? '已连续训练 $streak 天' : '还没有连续训练记录',
+                style: const TextStyle(fontSize: 13.5, color: AppTheme.primary, fontWeight: FontWeight.w600),
               ),
             ),
-            const SizedBox(height: 20),
-            SizedBox(
-              height: 150,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  _buildBar('一', 0.8),
-                  _buildBar('二', 0.6),
-                  _buildBar('三', 1.0),
-                  _buildBar('四', 0.4),
-                  _buildBar('五', 0.9),
-                  _buildBar('六', 0.7),
-                  _buildBar('日', 0.5),
-                ],
+            if (focus != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                '${RehabOverview.programTitle(focus)} · ${RehabOverview.stageLabel(focus)}',
+                style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
               ),
-            ),
+            ],
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildBar(String day, double heightFactor) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        Container(
-          width: 32,
-          height: 120 * heightFactor,
-          decoration: BoxDecoration(
-            color: AppTheme.primary,
-            borderRadius: BorderRadius.circular(8),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          day,
-          style: const TextStyle(
-            fontSize: 12,
-            color: AppTheme.textSecondary,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildHistory() {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      const SizedBox(height: 18),
+      Row(
         children: [
-          const Text(
-            '训练记录',
-            style: TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 12),
-          _buildHistoryItem('肩部拉伸训练', '完成度 90%', '今天 10:30'),
-          const SizedBox(height: 8),
-          _buildHistoryItem('肩部环绕练习', '完成度 85%', '今天 09:30'),
-          const SizedBox(height: 8),
-          _buildHistoryItem('颈部放松运动', '完成度 100%', '昨天 21:00'),
+          Expanded(child: _stat('${overview.programs.length}', '方案数')),
+          const SizedBox(width: 10),
+          Expanded(child: _stat('$assessed', '已完成动作')),
+          const SizedBox(width: 10),
+          Expanded(child: _stat(avg == null ? '—' : avg.round().toString(), '平均得分')),
+        ],
+      ),
+      const SizedBox(height: 16),
+      _weekCard(week),
+      const SizedBox(height: 18),
+      const Text('训练记录', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.textPrimary)),
+      const SizedBox(height: 10),
+      if (history.isEmpty)
+        _empty('还没有训练记录', '完成方案里的动作后，得分和时间会出现在这里。')
+      else
+        ...history.map((h) => Padding(padding: const EdgeInsets.only(bottom: 10), child: _historyTile(h))),
+    ];
+  }
+
+  Widget _stat(String value, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(18)),
+      child: Column(
+        children: [
+          Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppTheme.textPrimary)),
+          const SizedBox(height: 2),
+          Text(label, style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
         ],
       ),
     );
   }
 
-  Widget _buildHistoryItem(String title, String completion, String time) {
+  Widget _weekCard(List<int> counts) {
+    final maxCount = counts.fold<int>(0, (a, b) => a > b ? a : b);
+    const days = ['一', '二', '三', '四', '五', '六', '日'];
+    final today = DateTime.now().weekday - 1;
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.bgPrimary,
-        borderRadius: BorderRadius.circular(12),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(22)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('本周完成', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.textPrimary)),
+          const SizedBox(height: 4),
+          Text(
+            maxCount == 0 ? '这周还没有完成动作' : '按每个动作最近一次完成的日期统计',
+            style: const TextStyle(fontSize: 12, color: AppTheme.textTertiary),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 120,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: List.generate(7, (i) {
+                final factor = maxCount == 0 ? 0.08 : (counts[i] / maxCount).clamp(0.08, 1.0);
+                final active = counts[i] > 0;
+                return Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      if (counts[i] > 0)
+                        Text('${counts[i]}', style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
+                      const SizedBox(height: 4),
+                      Container(
+                        width: 18,
+                        height: 78 * factor,
+                        decoration: BoxDecoration(
+                          color: active ? AppTheme.primary : const Color(0xFFE6EEEC),
+                          borderRadius: BorderRadius.circular(9),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        days[i],
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: i == today ? FontWeight.w700 : FontWeight.w400,
+                          color: i == today ? AppTheme.primary : AppTheme.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ),
+          ),
+        ],
       ),
+    );
+  }
+
+  Widget _historyTile(TrainingHit hit) {
+    final score = hit.score == null ? '评估中' : '${hit.score!.round()} 分';
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(18)),
       child: Row(
         children: [
           Container(
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: AppTheme.success.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(10),
+              color: hit.done ? const Color(0xFFE8F8EF) : AppTheme.primaryLight,
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(
-              Icons.check_circle,
-              color: AppTheme.success,
-              size: 20,
-            ),
+            child: Icon(hit.done ? Icons.check_rounded : Icons.timelapse, color: hit.done ? AppTheme.success : AppTheme.primary, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Text(hit.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
                 Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    color: AppTheme.textPrimary,
-                  ),
-                ),
-                Text(
-                  completion,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: AppTheme.textSecondary,
-                  ),
+                  hit.done ? '${hit.programTitle} · $score' : hit.programTitle,
+                  style: const TextStyle(fontSize: 12.5, color: AppTheme.textSecondary),
                 ),
               ],
             ),
           ),
-          Text(
-            time,
-            style: const TextStyle(
-              fontSize: 12,
-              color: AppTheme.textTertiary,
-            ),
-          ),
+          Text(_when(hit.at), style: const TextStyle(fontSize: 12, color: AppTheme.textTertiary)),
         ],
       ),
     );
   }
-}
 
-class _StatCard extends StatelessWidget {
-  final String value;
-  final String label;
-  final IconData icon;
+  String _when(DateTime? at) {
+    if (at == null) return '';
+    final local = at.toLocal();
+    final now = DateTime.now();
+    final day = DateTime(local.year, local.month, local.day);
+    final today = DateTime(now.year, now.month, now.day);
+    final hm = '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
+    if (day == today) return '今天 $hm';
+    if (day == today.subtract(const Duration(days: 1))) return '昨天 $hm';
+    return '${local.month}/${local.day} $hm';
+  }
 
-  const _StatCard({
-    required this.value,
-    required this.label,
-    required this.icon,
-  });
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _empty(String title, String body) {
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.bgPrimary,
-        borderRadius: BorderRadius.circular(12),
-      ),
+      width: double.infinity,
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(22)),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: AppTheme.primary, size: 24),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: AppTheme.textPrimary,
-            ),
-          ),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 12,
-              color: AppTheme.textSecondary,
-            ),
-          ),
+          Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 6),
+          Text(body, style: const TextStyle(fontSize: 13.5, height: 1.5, color: AppTheme.textSecondary)),
         ],
       ),
     );

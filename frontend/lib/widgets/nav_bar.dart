@@ -14,11 +14,12 @@ class NavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppTheme.bgPrimary,
-        border: Border(
-          top: BorderSide(color: AppTheme.border, width: 1),
-        ),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 16, offset: const Offset(0, -4)),
+        ],
       ),
       child: SafeArea(
         top: false,
@@ -28,31 +29,30 @@ class NavBar extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _NavItem(
-                icon: Icons.calendar_today_outlined,
-                activeIcon: Icons.calendar_today,
-                label: '方案',
+                icon: Icons.home_outlined,
+                activeIcon: Icons.home_rounded,
+                label: '首页',
                 isActive: currentIndex == 0,
                 onTap: () => onTap(0),
               ),
               _NavItem(
-                icon: Icons.bar_chart_outlined,
-                activeIcon: Icons.bar_chart,
-                label: '进度',
+                icon: Icons.calendar_today_outlined,
+                activeIcon: Icons.calendar_today,
+                label: '方案',
                 isActive: currentIndex == 1,
                 onTap: () => onTap(1),
               ),
               _NavItem(
-                icon: Icons.smart_toy_outlined,
-                activeIcon: Icons.smart_toy,
-                label: '问诊',
+                icon: Icons.bar_chart_outlined,
+                activeIcon: Icons.bar_chart_rounded,
+                label: '进度',
                 isActive: currentIndex == 2,
                 onTap: () => onTap(2),
-                emphasized: true,
               ),
               _NavItem(
-                icon: Icons.menu_book_outlined,
-                activeIcon: Icons.menu_book,
-                label: '知识',
+                icon: Icons.forum_outlined,
+                activeIcon: Icons.forum,
+                label: '问诊',
                 isActive: currentIndex == 3,
                 onTap: () => onTap(3),
               ),
@@ -77,7 +77,6 @@ class _NavItem extends StatelessWidget {
   final String label;
   final bool isActive;
   final VoidCallback onTap;
-  final bool emphasized;
 
   const _NavItem({
     required this.icon,
@@ -85,12 +84,11 @@ class _NavItem extends StatelessWidget {
     required this.label,
     required this.isActive,
     required this.onTap,
-    this.emphasized = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final iconSize = emphasized ? 24.0 : 22.0;
+    const iconSize = 22.0;
     final color = isActive ? AppTheme.primary : AppTheme.textTertiary;
 
     return GestureDetector(
@@ -102,35 +100,18 @@ class _NavItem extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if (emphasized)
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: isActive
-                      ? AppTheme.primary.withValues(alpha: 0.15)
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  isActive ? activeIcon : icon,
-                  color: color,
-                  size: iconSize,
-                ),
-              )
-            else
-              Icon(
-                isActive ? activeIcon : icon,
-                color: color,
-                size: iconSize,
-              ),
+            Icon(
+              isActive ? activeIcon : icon,
+              color: color,
+              size: iconSize,
+            ),
             const SizedBox(height: 2),
             Text(
               label,
               style: TextStyle(
                 fontSize: 11,
                 height: 1.1,
-                fontWeight:
-                    emphasized && isActive ? FontWeight.w600 : FontWeight.normal,
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
                 color: color,
               ),
             ),

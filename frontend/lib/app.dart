@@ -5,7 +5,7 @@ import 'pages/training_page.dart';
 import 'pages/result_page.dart';
 import 'pages/plan_page.dart';
 import 'pages/progress_page.dart';
-import 'pages/knowledge_page.dart';
+import 'pages/home_page.dart';
 import 'pages/profile_center_page.dart';
 import 'pages/free_follow_page.dart';
 import 'pages/chat_list_page.dart';
@@ -75,10 +75,10 @@ class AppNavigator extends StatefulWidget {
 }
 
 class _AppNavigatorState extends State<AppNavigator> {
-  // 0 = 主 Tab（默认中间「问诊」）
-  // 1 = 问诊对话  2 = 康复视频  3 = 训练  4 = 结果
+  // 0 = 主 Tab（默认「首页」）
+  // 1 = 问诊对话  2 = 康复视频  3 = 训练  4 = 结果  5 = 自由跟做
   int _currentPage = 0;
-  int _bottomNavIndex = 2;
+  int _bottomNavIndex = 0;
   bool _showBottomNav = true;
   int _planRefreshTick = 0;
   bool _otaChecked = false;
@@ -118,7 +118,7 @@ class _AppNavigatorState extends State<AppNavigator> {
   }
 
   void _navigateToChatList() {
-    _navigateToMain(tabIndex: 2);
+    _navigateToMain(tabIndex: 3);
   }
 
   void _navigateToChat({ConversationRecord? existing}) {
@@ -154,7 +154,7 @@ class _AppNavigatorState extends State<AppNavigator> {
     });
   }
 
-  /// 处理硬件返回键：子页面返回上一页，非默认 Tab 切回「问诊」，首页双击退出。
+  /// 处理硬件返回键：子页面返回上一页，其它 Tab 切回首页，首页双击退出。
   void _handleBack() {
     if (_currentPage != 0) {
       // 子页面：沿用各页 onBack 的「上一页」语义
@@ -171,9 +171,9 @@ class _AppNavigatorState extends State<AppNavigator> {
       }
       return;
     }
-    // 主页面但不在默认「问诊」Tab：切回问诊
-    if (_bottomNavIndex != 2) {
-      setState(() => _bottomNavIndex = 2);
+    // 主页面但不在首页：切回首页
+    if (_bottomNavIndex != 0) {
+      setState(() => _bottomNavIndex = 0);
       return;
     }
     // 真正首页：双击退出
@@ -207,7 +207,7 @@ class _AppNavigatorState extends State<AppNavigator> {
                 currentIndex: _bottomNavIndex,
                 onTap: (i) => setState(() {
                   _bottomNavIndex = i;
-                  if (i == 0) _planRefreshTick++;
+                  if (i == 0 || i == 1 || i == 2) _planRefreshTick++;
                 }),
               )
             : null,
@@ -253,12 +253,15 @@ class _AppNavigatorState extends State<AppNavigator> {
     return IndexedStack(
       index: _bottomNavIndex,
       children: [
+        HomePage(
+          refreshTick: _planRefreshTick,
+          onConsult: () => _navigateToMain(tabIndex: 3),
+        ),
         PlanPage(refreshTick: _planRefreshTick),
-        const ProgressPage(),
+        ProgressPage(refreshTick: _planRefreshTick),
         ChatListPage(
           onOpenChat: (existing) => _navigateToChat(existing: existing),
         ),
-        const KnowledgePage(),
         ProfileCenterPage(
           onLogout: widget.onLoggedOut,
           onOpenFreeFollow: () => setState(() {

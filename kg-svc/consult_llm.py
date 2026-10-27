@@ -26,6 +26,7 @@ class ConsultLLM:
     base_url: str
     model: str
     temperature: float
+    enable_thinking: bool = False
 
 
 def consult_llm() -> ConsultLLM:
@@ -54,7 +55,7 @@ def _load() -> ConsultLLM:
             with conn.cursor() as cur:
                 cur.execute(
                     """
-                    SELECT api_key, base_url, model, temperature
+                    SELECT api_key, base_url, model, temperature, enable_thinking
                     FROM llm_runtime_configs
                     WHERE profile = 'consult'
                     """
@@ -62,12 +63,13 @@ def _load() -> ConsultLLM:
                 row = cur.fetchone()
         if row is None:
             return _from_env()
-        api_key, base_url, model, temperature = row
+        api_key, base_url, model, temperature, enable_thinking = row
         return ConsultLLM(
             api_key=str(api_key or ""),
             base_url=str(base_url or "").rstrip("/"),
             model=str(model or "").strip() or "deepseek-chat",
             temperature=_temperature(temperature),
+            enable_thinking=bool(enable_thinking),
         )
     except Exception as exc:
         logger.warning("读取问诊大模型配置失败 type=%s", type(exc).__name__)

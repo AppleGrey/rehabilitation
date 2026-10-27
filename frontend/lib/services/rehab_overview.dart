@@ -1,0 +1,174 @@
+import 'program_api.dart';
+
+/// 一个训练动作的最近一次记录。进度页和首页都从这里读，避免再写死示例数据。
+class TrainingHit {
+  final String title;
+  final String programTitle;
+  final String programId;
+  final String status;
+  final double? score;
+  final DateTime? at;
+
+  const TrainingHit({
+    required this.title,
+    required this.programTitle,
+    required this.programId,
+    required this.status,
+    this.score,
+    this.at,
+  });
+
+  bool get done => status == 'done';
+}
+
+class RehabOverview {
+  final List<Map<String, dynamic>> programs;
+
+  const RehabOverview(this.programs);
+
+  static Future<RehabOverview> load() async {
+    final views = await ProgramApi.listAll();
+    return RehabOverview(views);
+  }
+
+  /// 还没结束的方案：生成中、进行中，或已经有分期内容但还没结业/转诊。
+  Map<String, dynamic>? get focus {
+    for (final p in programs) {
+      if (_isOpen(p)) return p;
+    }
+    return null;
+  }
+
+  Map<String, dynamic>? get latest => programs.isEmpty ? null : programs.first;
+
+  List<Map<String, dynamic>> itemsOf(Map<String, dynamic>? program) {
+    final current = program?['current'];
+    if (current is! Map) return const [];
+    return (current['items'] as List<dynamic>? ?? [])
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
+  }
+
+  List<TrainingHit> get hits {
+    final out = <TrainingHit>[];
+    for (final p in programs) {
+      final pid = p['program_id']?.toString() ?? '';
+      final title = programTitle(p);
+      for (final item in itemsOf(p)) {
+        final training = item['training'];
+        final t = training is Map ? Map<String, dynamic>.from(training) : const <String, dynamic>{};
+        out.add(TrainingHit(
+          title: itemTitle(item),
+          programTitle: title,
+          programId: pid,
+          status: t['status']?.toString() ?? 'none',
+          score: _asDouble(t['overall_score']),
+          at: DateTime.tryParse(t['created_at']?.toString() ?? ''),
+        ));
+      }
+    }
+    out.sort((a, b) {
+      final at = a.at;
+      final bt = b.at;
+      if (at == null && bt == null) return 0;
+      if (at == null) return 1;
+      if (bt == null) return -1;
+      return bt.compareTo(at);
+    });
+    return out;
+  }
+
+  int doneOf(Map<String, dynamic>? program) =>
+      itemsOf(program).where((it) => _status(it) == 'done').length;
+
+  /// 连续有训练记录的天数，从今天或昨天往前数。没有记录就是 0。
+  int get streak {
+    final days = hits.where((h) => h.done && h.at != null).map((h) => _day(h.at!)).toSet();
+    if (days.isEmpty) return 0;
+    var cursor = _day(DateTime.now());
+    if (!days.contains(cursor)) {
+      cursor = cursor.subtract(const Duration(days: 1));
+      if (!days.contains(cursor)) return 0;
+    }
+    var n = 0;
+    while (days.contains(cursor)) {
+      n++;
+      cursor = cursor.subtract(const Duration(days: 1));
+    }
+    return n;
+  }
+
+  double? get averageScore {
+    final scores = hits.where((h) => h.done && h.score != null).map((h) => h.score!).toList();
+    if (scores.isEmpty) return null;
+    return scores.reduce((a, b) => a + b) / scores.length;
+  }
+
+  /// 本周每天完成的动作数，下标 0 是周一。
+  List<int> get weekCounts {
+    final now = DateTime.now();
+    final monday = _day(now).subtract(Duration(days: now.weekday - 1));
+    final counts = List<int>.filled(7, 0);
+    for (final h in hits) {
+      if (!h.done || h.at == null) continue;
+      final day = _day(h.at!);
+      final delta = day.difference(monday).inDays;
+      if (delta >= 0 && delta < 7) counts[delta]++;
+    }
+    return counts;
+  }
+
+  static bool _isOpen(Map<String, dynamic> p) {
+    final status = p['status']?.toString() ?? '';
+    if (status == 'discharged' || status == 'refer') return false;
+    if (status == 'generating' || status == 'active') return true;
+    final current = p['current'];
+    return current is Map && current['plan'] != null;
+  }
+
+  static String programTitle(Map<String, dynamic> p) {
+    final condition = p['condition']?.toString().trim() ?? '';
+    final part = p['body_part']?.toString().trim() ?? '';
+    if (condition.isNotEmpty) return condition;
+    if (part.isNotEmpty) return '$part康复';
+    return '康复方案';
+  }
+
+  static String itemTitle(Map<String, dynamic> item) {
+    final title = item['title']?.toString().trim() ?? '';
+    if (title.isNotEmpty) return title;
+    final notes = item['notes']?.toString().trim() ?? '';
+    if (notes.isNotEmpty) return notes;
+    final order = item['order'];
+    return order == null ? '训练动作' : '动作 $order';
+  }
+
+  static String stageLabel(Map<String, dynamic>? program) {
+    const labels = {
+      'acute': '保护期',
+      'sub_acute': '恢复期',
+      'strengthen': '强化期',
+      'return': '回归期',
+    };
+    final current = program?['current'];
+    final stage = current is Map ? current['stage'] : null;
+    final type = stage is Map ? stage['stage_type']?.toString() ?? '' : '';
+    final no = program?['current_stage_no'] ?? 1;
+    final name = labels[type] ?? (type.isEmpty ? '当前阶段' : type);
+    return '第 $no 阶段 · $name';
+  }
+
+  static String _status(Map<String, dynamic> item) {
+    final training = item['training'];
+    if (training is! Map) return 'none';
+    return training['status']?.toString() ?? 'none';
+  }
+
+  static double? _asDouble(dynamic v) {
+    if (v is num) return v.toDouble();
+    return double.tryParse(v?.toString() ?? '');
+  }
+
+  static DateTime _day(DateTime t) => DateTime(t.year, t.month, t.day);
+}

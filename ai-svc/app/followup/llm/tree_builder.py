@@ -140,8 +140,10 @@ def build_tree(
     trace: 若传入，记录 LLM-B 原文与每次尝试的结果（供后台展示 AI 行为）。
     """
     k = session.k
-    # 假设+鉴别问题+option_leanings 输出较长，给足 token 避免 JSON 被截断导致解析失败。
-    llm = make_json_llm(temperature=consult_profile().temperature, max_tokens=3000)
+    # 输出上限走配置管理里的问诊「最大输出 token」。思考和正文共用这一额度。
+    cfg = consult_profile()
+    cap = cfg.max_tokens if 256 <= cfg.max_tokens <= 32768 else 32768
+    llm = make_json_llm(temperature=cfg.temperature, max_tokens=cap)
     # 注意：_SYSTEM 含字面 JSON 花括号，不能用 str.format（会把 {"tree_nodes"} 当字段）；用 replace。
     system = _SYSTEM.replace("{k}", str(k))
     user = _USER_TMPL.format(

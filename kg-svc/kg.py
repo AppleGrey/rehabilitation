@@ -38,6 +38,7 @@ async def _llm_model_func(
     if not cfg.api_key:
         raise RuntimeError("问诊大模型 API Key 未配置，请在管理平台的配置管理中填写")
     kwargs.setdefault("temperature", cfg.temperature)
+    kwargs.setdefault("extra_body", {"enable_thinking": cfg.enable_thinking})
     return await openai_complete_if_cache(
         cfg.model,
         prompt,

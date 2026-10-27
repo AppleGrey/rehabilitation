@@ -183,7 +183,11 @@ class FollowLiveStageState extends State<FollowLiveStage> {
       fit: StackFit.expand,
       children: [
         if (image == null)
-          CameraPreview(widget.camera)
+          widget.camera.value.isPreviewPaused
+              ? const Center(
+                  child: Text('正在连接摄像头…', style: TextStyle(color: Colors.white70)),
+                )
+              : CameraPreview(widget.camera)
         else
           SyncedPosePreview(
             image: image,
