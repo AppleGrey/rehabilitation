@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4275",
+  "title_cn": "站立双臂前平举互压拉伸",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "右臂抬平",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "right_shoulder",
+        "to": "right_wrist",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 80.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 90.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 45.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 20.0
+      },
+      "fail_hint": "手臂再抬高一些"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 1.5
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1"
+        ],
+        "t": 3.5,
+        "metric_id": "std_1",
+        "name_cn": "双臂前平举"
+      },
+      {
+        "role": "cycle_end",
+        "t": 13.0
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "站立双臂前平举互压拉伸",
+    "cycle_start": 1.5,
+    "cycle_end": 13.0,
+    "keypoints": [
+      {
+        "name_cn": "双臂前平举",
+        "t": 3.5,
+        "how_cn": "双臂向前抬起至与地面平行",
+        "scored": true,
+        "skip_reason": ""
+      },
+      {
+        "name_cn": "双手互压",
+        "t": 6.0,
+        "how_cn": "双手交握互压，保持手臂伸直",
+        "scored": false,
+        "skip_reason": "手部互压及腕关节动作正面骨架无法测量"
+      }
+    ]
+  }
+}

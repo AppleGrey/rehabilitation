@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4398",
+  "title_cn": "仰卧单腿腘绳肌拉伸",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "右膝伸直",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "angle_3point",
+        "output": "",
+        "from": null,
+        "to": null,
+        "points": [
+          "right_hip",
+          "right_knee",
+          "right_ankle"
+        ]
+      },
+      "pass": {
+        "op": "gte",
+        "value": 160.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 175.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 130.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 90.0
+      },
+      "fail_hint": "右膝再伸直一些"
+    },
+    {
+      "id": "std_2",
+      "name_cn": "右腿抬高",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "right_hip",
+        "to": "right_knee",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 140.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 160.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 100.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 40.0
+      },
+      "fail_hint": "右腿再抬高一些"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 2.5
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1",
+          "std_2"
+        ],
+        "t": 5.0,
+        "metric_id": "std_1",
+        "name_cn": "抬右腿伸直"
+      },
+      {
+        "role": "cycle_end",
+        "t": 13.5
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1",
+      "std_2"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "仰卧单腿腘绳肌拉伸",
+    "cycle_start": 2.5,
+    "cycle_end": 13.5,
+    "keypoints": [
+      {
+        "name_cn": "抬右腿伸直",
+        "t": 5.0,
+        "how_cn": "抱大腿后侧将右小腿缓慢伸直向上",
+        "scored": true,
+        "skip_reason": ""
+      }
+    ]
+  }
+}

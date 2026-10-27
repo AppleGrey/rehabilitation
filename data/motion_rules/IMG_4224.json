@@ -1,0 +1,131 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4224",
+  "title_cn": "站立交叉腿侧弯拉伸",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "右臂抬高",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "right_shoulder",
+        "to": "right_wrist",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 150.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 170.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 90.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 20.0
+      },
+      "fail_hint": "右臂再举高一些"
+    },
+    {
+      "id": "std_2",
+      "name_cn": "躯干侧倾",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "abs_degrees_from_vertical",
+        "from": "mid_hip",
+        "to": "mid_shoulder",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 15.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 25.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 8.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 3.0
+      },
+      "fail_hint": "身体再往左侧弯一些"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 2.0
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1"
+        ],
+        "t": 4.0,
+        "metric_id": "std_1",
+        "name_cn": "右臂上举"
+      },
+      {
+        "role": "peak",
+        "id": "peak_2",
+        "metric_ids": [
+          "std_2"
+        ],
+        "t": 6.0,
+        "metric_id": "std_2",
+        "name_cn": "向左侧弯"
+      },
+      {
+        "role": "cycle_end",
+        "t": 13.5
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1",
+      "std_2"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "站立交叉腿侧弯拉伸",
+    "cycle_start": 2.0,
+    "cycle_end": 13.5,
+    "keypoints": [
+      {
+        "name_cn": "右臂上举",
+        "t": 4.0,
+        "how_cn": "右臂向上举起准备侧弯",
+        "scored": true,
+        "skip_reason": ""
+      },
+      {
+        "name_cn": "向左侧弯",
+        "t": 6.0,
+        "how_cn": "躯干向左侧弯曲拉伸右侧腰",
+        "scored": true,
+        "skip_reason": ""
+      }
+    ]
+  }
+}

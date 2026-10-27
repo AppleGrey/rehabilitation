@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4276",
+  "title_cn": "站立单臂前平举拉伸手腕",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "左臂抬高",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "left_shoulder",
+        "to": "left_wrist",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 80.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 90.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 45.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 20.0
+      },
+      "fail_hint": "左臂再抬高一些"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 0.5
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1"
+        ],
+        "t": 3.0,
+        "metric_id": "std_1",
+        "name_cn": "左臂前平举"
+      },
+      {
+        "role": "cycle_end",
+        "t": 13.0
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "站立单臂前平举拉伸手腕",
+    "cycle_start": 0.5,
+    "cycle_end": 13.0,
+    "keypoints": [
+      {
+        "name_cn": "左臂前平举",
+        "t": 3.0,
+        "how_cn": "左臂向前抬起至与地面平行",
+        "scored": true,
+        "skip_reason": ""
+      },
+      {
+        "name_cn": "拉伸左手腕",
+        "t": 6.5,
+        "how_cn": "右手辅助将左手掌向后拉伸",
+        "scored": false,
+        "skip_reason": "手腕和手指的细小动作正面骨架无法测量"
+      }
+    ]
+  }
+}

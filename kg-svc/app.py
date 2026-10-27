@@ -1,6 +1,6 @@
 """
 kg-svc REST 服务：对内网提供「给一段查询 → 返回权威图谱上下文」的检索能力。
-只检索不生成（only_need_context 默认 True）；生成由 ai-svc 用 DeepSeek 负责。
+只检索不生成（only_need_context 默认 True）；关键词抽取用管理平台里的问诊大模型。
 
 启动（在 kg-svc 目录下，用本服务的 venv）：
     set PYTHONUTF8=1
@@ -19,6 +19,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
 from config import settings
+from consult_llm import consult_llm
 from kg import QueryParam, build_rag
 
 # 在模块加载期（尚无运行中的事件循环）构造 LightRAG：__post_init__ 会同步加载图谱存储。
@@ -57,7 +58,7 @@ async def health() -> dict:
         "service": "kg-svc",
         "working_dir": settings.working_dir,
         "embed_model": settings.embed_model,
-        "llm_model": settings.deepseek_model,
+        "llm_model": consult_llm().model,
         "config_missing": settings.missing(),
     }
 
@@ -67,9 +68,9 @@ async def retrieve(req: RetrieveRequest) -> RetrieveResponse:
     miss = settings.missing()
     if "SILICONFLOW_API_KEY" in miss:
         raise HTTPException(status_code=500, detail="SILICONFLOW_API_KEY 未配置（见 kg-svc/.env）")
-    # hybrid/local/global 需要 LLM 抽关键词；缺 DeepSeek key 时降级为 naive
+    # hybrid/local/global 需要问诊大模型抽关键词；没有密钥时降级为 naive
     mode = req.mode
-    if mode != "naive" and "DEEPSEEK_API_KEY" in miss:
+    if mode != "naive" and not consult_llm().api_key:
         mode = "naive"
 
     param = QueryParam(mode=mode, only_need_context=req.only_need_context, top_k=req.top_k)

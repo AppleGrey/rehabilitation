@@ -1,0 +1,126 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4211",
+  "title_cn": "扶椅单腿屈膝下蹲",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "右膝屈曲幅度",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "angle_3point",
+        "output": "",
+        "from": null,
+        "to": null,
+        "points": [
+          "right_hip",
+          "right_knee",
+          "right_ankle"
+        ]
+      },
+      "pass": {
+        "op": "lte",
+        "value": 135.0
+      },
+      "excellent": {
+        "op": "lte",
+        "value": 115.0
+      },
+      "attempt": {
+        "op": "lte",
+        "value": 135.0
+      },
+      "reset": {
+        "op": "gte",
+        "value": 175.0
+      },
+      "fail_hint": "右膝再弯曲一些，重心下沉"
+    },
+    {
+      "id": "std_2",
+      "name_cn": "躯干保持直立",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "abs_degrees_from_vertical",
+        "from": "mid_hip",
+        "to": "mid_shoulder",
+        "points": []
+      },
+      "pass": {
+        "op": "lte",
+        "value": 25.0
+      },
+      "excellent": {
+        "op": "lte",
+        "value": 15.0
+      },
+      "attempt": {
+        "op": "lte",
+        "value": 25.0
+      },
+      "reset": {
+        "op": "gte",
+        "value": 45.0
+      },
+      "fail_hint": "背部挺直，不要过度前倾"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 2.0
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1",
+          "std_2"
+        ],
+        "t": 7.5,
+        "metric_id": "std_1",
+        "name_cn": "屈右膝下蹲"
+      },
+      {
+        "role": "cycle_end",
+        "t": 9.5
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1",
+      "std_2"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "扶椅单腿屈膝下蹲",
+    "cycle_start": 2.0,
+    "cycle_end": 9.5,
+    "keypoints": [
+      {
+        "name_cn": "左脚踩椅",
+        "t": 3.5,
+        "how_cn": "左脚踩在椅面上，右腿在后伸直",
+        "scored": false,
+        "skip_reason": "侧面抬腿动作，正面骨架难以准确测量高度变化"
+      },
+      {
+        "name_cn": "屈右膝下蹲",
+        "t": 7.5,
+        "how_cn": "重心下沉，右膝弯曲，躯干保持直立",
+        "scored": true,
+        "skip_reason": ""
+      }
+    ]
+  }
+}

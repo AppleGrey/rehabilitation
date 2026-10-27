@@ -7,6 +7,7 @@ import 'pages/plan_page.dart';
 import 'pages/progress_page.dart';
 import 'pages/knowledge_page.dart';
 import 'pages/profile_center_page.dart';
+import 'pages/free_follow_page.dart';
 import 'pages/chat_list_page.dart';
 import 'pages/consult_page.dart';
 import 'pages/login_page.dart';
@@ -162,6 +163,9 @@ class _AppNavigatorState extends State<AppNavigator> {
         case 2: // 康复视频
           _navigateToChatList();
           break;
+        case 5: // 自由跟做
+          _navigateToMain(tabIndex: 4);
+          break;
         default: // 3 训练 / 4 结果
           _navigateToMain();
       }
@@ -238,6 +242,8 @@ class _AppNavigatorState extends State<AppNavigator> {
         );
       case 4:
         return ResultPage(onBack: () => _navigateToMain());
+      case 5:
+        return FreeFollowPage(onBack: () => _navigateToMain(tabIndex: 4));
       default:
         return _buildMainPages();
     }
@@ -253,7 +259,13 @@ class _AppNavigatorState extends State<AppNavigator> {
           onOpenChat: (existing) => _navigateToChat(existing: existing),
         ),
         const KnowledgePage(),
-        ProfileCenterPage(onLogout: widget.onLoggedOut),
+        ProfileCenterPage(
+          onLogout: widget.onLoggedOut,
+          onOpenFreeFollow: () => setState(() {
+            _currentPage = 5;
+            _showBottomNav = false;
+          }),
+        ),
       ],
     );
   }

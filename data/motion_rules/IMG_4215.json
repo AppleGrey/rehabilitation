@@ -1,0 +1,131 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4215",
+  "title_cn": "站立交替侧迈顶髋",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "右腿外展角度",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "right_hip",
+        "to": "right_knee",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 12.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 18.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 6.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 2.0
+      },
+      "fail_hint": "右脚再向右迈开一些"
+    },
+    {
+      "id": "std_2",
+      "name_cn": "左腿外展角度",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "left_hip",
+        "to": "left_knee",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 12.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 18.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 6.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 2.0
+      },
+      "fail_hint": "左脚再向左迈开一些"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 0.5
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1"
+        ],
+        "t": 2.2,
+        "metric_id": "std_1",
+        "name_cn": "右腿侧迈"
+      },
+      {
+        "role": "peak",
+        "id": "peak_2",
+        "metric_ids": [
+          "std_2"
+        ],
+        "t": 5.2,
+        "metric_id": "std_2",
+        "name_cn": "左腿侧迈"
+      },
+      {
+        "role": "cycle_end",
+        "t": 6.8
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1",
+      "std_2"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "站立交替侧迈顶髋",
+    "cycle_start": 0.5,
+    "cycle_end": 6.8,
+    "keypoints": [
+      {
+        "name_cn": "右腿侧迈",
+        "t": 2.2,
+        "how_cn": "右脚向右侧迈出一步，重心右移",
+        "scored": true,
+        "skip_reason": ""
+      },
+      {
+        "name_cn": "左腿侧迈",
+        "t": 5.2,
+        "how_cn": "左脚向左侧迈出一步，重心左移",
+        "scored": true,
+        "skip_reason": ""
+      }
+    ]
+  }
+}

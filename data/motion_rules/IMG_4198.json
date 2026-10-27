@@ -1,0 +1,147 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4198",
+  "title_cn": "弹力带半蹲侧移",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "屈膝幅度",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "angle_3point",
+        "output": "",
+        "from": null,
+        "to": null,
+        "points": [
+          "left_hip",
+          "left_knee",
+          "left_ankle"
+        ]
+      },
+      "pass": {
+        "op": "lte",
+        "value": 110.0
+      },
+      "excellent": {
+        "op": "lte",
+        "value": 95.0
+      },
+      "attempt": {
+        "op": "lte",
+        "value": 110.0
+      },
+      "reset": {
+        "op": "gte",
+        "value": 170.0
+      },
+      "fail_hint": "膝盖再弯曲一些"
+    },
+    {
+      "id": "std_2",
+      "name_cn": "躯干直立",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "abs_degrees_from_vertical",
+        "from": "mid_hip",
+        "to": "mid_shoulder",
+        "points": []
+      },
+      "pass": {
+        "op": "lte",
+        "value": 20.0
+      },
+      "excellent": {
+        "op": "lte",
+        "value": 10.0
+      },
+      "attempt": {
+        "op": "lte",
+        "value": 20.0
+      },
+      "reset": {
+        "op": "gte",
+        "value": 45.0
+      },
+      "fail_hint": "背部挺直，不要过度前倾"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 1.0
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1",
+          "std_2"
+        ],
+        "t": 2.5,
+        "metric_id": "std_1",
+        "name_cn": "下蹲"
+      },
+      {
+        "role": "cycle_end",
+        "t": 11.5
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1",
+      "std_2"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "弹力带半蹲侧移",
+    "cycle_start": 1.0,
+    "cycle_end": 11.5,
+    "keypoints": [
+      {
+        "name_cn": "下蹲",
+        "t": 2.5,
+        "how_cn": "屈膝下蹲至大腿接近水平，躯干保持直立",
+        "scored": true,
+        "skip_reason": ""
+      },
+      {
+        "name_cn": "向左迈步",
+        "t": 4.5,
+        "how_cn": "保持半蹲，左脚向左侧迈出一大步",
+        "scored": false,
+        "skip_reason": "正面视角无法准确测量横向迈步距离"
+      },
+      {
+        "name_cn": "右脚跟进",
+        "t": 6.0,
+        "how_cn": "保持半蹲，右脚跟进收回至起始宽度",
+        "scored": false,
+        "skip_reason": "正面视角无法准确测量横向收步距离"
+      },
+      {
+        "name_cn": "向右迈步",
+        "t": 8.5,
+        "how_cn": "保持半蹲，右脚向右侧迈出一大步",
+        "scored": false,
+        "skip_reason": "正面视角无法准确测量横向迈步距离"
+      },
+      {
+        "name_cn": "左脚跟进",
+        "t": 10.5,
+        "how_cn": "保持半蹲，左脚跟进收回至起始宽度",
+        "scored": false,
+        "skip_reason": "正面视角无法准确测量横向收步距离"
+      }
+    ]
+  }
+}

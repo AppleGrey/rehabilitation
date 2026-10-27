@@ -12,6 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"rehabilitation/admin-svc/internal/auth"
+	"rehabilitation/admin-svc/internal/llmconfig"
 	"rehabilitation/admin-svc/internal/ota"
 	"rehabilitation/admin-svc/internal/program"
 	"rehabilitation/admin-svc/internal/strategy"
@@ -21,11 +22,13 @@ type Deps struct {
 	Strategy     *strategy.Handler
 	Program      *program.Handler
 	OTA          *ota.Handler
+	LLM          *llmconfig.Handler
 	Auth         *auth.Handler
 	Guard        *auth.Guard
 	StaticDir    string
 	KgSvcURL     string
 	CoreSvcURL   string
+	AiSvcURL     string
 	ServiceToken string
 }
 
@@ -64,6 +67,27 @@ func NewRouter(d Deps) *gin.Engine {
 		api.POST("/app/releases", d.OTA.Create)
 		api.POST("/app/releases/:id/publish", d.OTA.Publish)
 		api.DELETE("/app/releases/:id", d.OTA.Delete)
+
+		if d.LLM != nil {
+			api.GET("/llm-configs", d.LLM.List)
+			api.PUT("/llm-configs/:profile", d.LLM.Update)
+		}
+
+		// 实时评分规则：页面在视频库，写入仍由 ai-svc 校验并落盘。
+		if d.AiSvcURL != "" {
+			api.GET("/motion-rules", proxyAI(d.AiSvcURL, func(*gin.Context) string {
+				return "/api/admin/motion-rules"
+			}))
+			api.GET("/motion-rules/:video_id", proxyAI(d.AiSvcURL, func(c *gin.Context) string {
+				return "/api/motion-rules/" + c.Param("video_id")
+			}))
+			api.PUT("/motion-rules/:video_id", proxyAI(d.AiSvcURL, func(c *gin.Context) string {
+				return "/api/admin/motion-rules/" + c.Param("video_id")
+			}))
+			api.DELETE("/motion-rules/:video_id", proxyAI(d.AiSvcURL, func(c *gin.Context) string {
+				return "/api/admin/motion-rules/" + c.Param("video_id")
+			}))
+		}
 	}
 
 	// 反向代理同样要挡住，否则可以绕过 /admin-api 直接打后端服务。
@@ -111,6 +135,21 @@ func NewRouter(d Deps) *gin.Engine {
 	}
 
 	return r
+}
+
+func proxyAI(raw string, pathOf func(*gin.Context) string) gin.HandlerFunc {
+	target, err := url.Parse(strings.TrimRight(raw, "/"))
+	if err != nil {
+		return func(c *gin.Context) {
+			c.JSON(http.StatusBadGateway, gin.H{"detail": "ai-svc 地址无效"})
+		}
+	}
+	proxy := httputil.NewSingleHostReverseProxy(target)
+	return func(c *gin.Context) {
+		c.Request.URL.Path = pathOf(c)
+		c.Request.URL.RawPath = ""
+		proxy.ServeHTTP(c.Writer, c.Request)
+	}
 }
 
 func newPrefixProxy(raw, prefix, serviceToken string) (gin.HandlerFunc, error) {

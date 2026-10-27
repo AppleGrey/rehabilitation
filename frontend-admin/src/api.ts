@@ -95,7 +95,7 @@ export function fetchVideos(opts?: {
   const params = new URLSearchParams()
   if (opts?.target_joint) params.set('target_joint', opts.target_joint)
   if (opts?.severity) params.set('severity', opts.severity)
-  params.set('limit', String(opts?.limit ?? 200))
+  params.set('limit', String(opts?.limit ?? 500))
   const qs = params.toString()
   return getJSON<{ videos: VideoItem[] }>(`${CORE_SVC_BASE}/api/videos?${qs}`)
 }
@@ -147,6 +147,53 @@ export function deleteProgram(id: string) {
 
 export function fetchUploads(limit = 50) {
   return getJSON<{ uploads: UploadItem[] }>(`/admin-api/uploads?limit=${limit}`)
+}
+
+export interface MotionRuleRecord {
+  video_id: string
+  rule: Record<string, unknown>
+}
+
+export function fetchMotionRuleIds() {
+  return getJSON<{ video_ids: string[] }>('/admin-api/motion-rules')
+}
+
+/** 没有规则时返回 null，不把它当成请求失败。 */
+export async function fetchMotionRule(videoId: string): Promise<MotionRuleRecord | null> {
+  const resp = await fetch(`/admin-api/motion-rules/${encodeURIComponent(videoId)}`, {
+    headers: authHeaders(),
+  })
+  if (resp.status === 401) {
+    onUnauthorized()
+    throw new Error('登录已过期，请重新登录')
+  }
+  if (resp.status === 404) return null
+  if (!resp.ok) {
+    let detail = `${resp.status} ${resp.statusText}`
+    try {
+      const body = await resp.json()
+      if (body?.detail) detail = String(body.detail)
+    } catch {
+      /* ignore */
+    }
+    throw new Error(detail)
+  }
+  return resp.json() as Promise<MotionRuleRecord>
+}
+
+export function saveMotionRule(videoId: string, rule: Record<string, unknown>) {
+  return sendJSON<MotionRuleRecord>(
+    `/admin-api/motion-rules/${encodeURIComponent(videoId)}`,
+    'PUT',
+    rule,
+  )
+}
+
+export function deleteMotionRule(videoId: string) {
+  return sendJSON<{ video_id: string; deleted: boolean }>(
+    `/admin-api/motion-rules/${encodeURIComponent(videoId)}`,
+    'DELETE',
+  )
 }
 
 // ── 用户管理（经 admin-svc 代理到 core-svc /api/admin/*）──
@@ -281,5 +328,45 @@ export function deleteAppRelease(id: string) {
   return sendJSON<{ ok: boolean; id: string }>(
     `/admin-api/app/releases/${encodeURIComponent(id)}`,
     'DELETE',
+  )
+}
+
+// ── 问诊 / 视觉大模型配置 ──
+
+export interface LlmProfile {
+  id: string
+  title: string
+  description: string
+  api_key_hint: string
+  has_api_key: boolean
+  base_url: string
+  model: string
+  enable_thinking: boolean
+  max_tokens: number
+  temperature: number
+  concat_standard_video: boolean
+  updated_at: string
+}
+
+export function fetchLlmConfigs() {
+  return getJSON<{ profiles: LlmProfile[] }>('/admin-api/llm-configs')
+}
+
+export function saveLlmConfig(
+  id: string,
+  body: {
+    api_key?: string
+    base_url: string
+    model: string
+    enable_thinking?: boolean
+    max_tokens?: number
+    temperature?: number
+    concat_standard_video?: boolean
+  },
+) {
+  return sendJSON<{ ok: boolean; profile: LlmProfile }>(
+    `/admin-api/llm-configs/${encodeURIComponent(id)}`,
+    'PUT',
+    body,
   )
 }

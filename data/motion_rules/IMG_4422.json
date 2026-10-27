@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4422",
+  "title_cn": "俯卧悬空伸膝",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "右膝伸直",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "angle_3point",
+        "output": "",
+        "from": null,
+        "to": null,
+        "points": [
+          "right_hip",
+          "right_knee",
+          "right_ankle"
+        ]
+      },
+      "pass": {
+        "op": "gte",
+        "value": 160.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 175.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 130.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 90.0
+      },
+      "fail_hint": "右膝再伸直一些"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 0.5
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1"
+        ],
+        "t": 3.0,
+        "metric_id": "std_1",
+        "name_cn": "伸直右膝"
+      },
+      {
+        "role": "cycle_end",
+        "t": 5.0
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "俯卧悬空伸膝",
+    "cycle_start": 0.5,
+    "cycle_end": 5.0,
+    "keypoints": [
+      {
+        "name_cn": "伸直右膝",
+        "t": 3.0,
+        "how_cn": "右腿缓慢伸直至与躯干呈一直线",
+        "scored": true,
+        "skip_reason": ""
+      }
+    ]
+  }
+}

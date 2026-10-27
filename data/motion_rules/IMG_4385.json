@@ -1,0 +1,146 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4385",
+  "title_cn": "跪姿进入平板支撑",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "左腿伸直",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "angle_3point",
+        "output": "",
+        "from": null,
+        "to": null,
+        "points": [
+          "left_hip",
+          "left_knee",
+          "left_ankle"
+        ]
+      },
+      "pass": {
+        "op": "gte",
+        "value": 160.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 175.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 130.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 90.0
+      },
+      "fail_hint": "左膝再伸直一些"
+    },
+    {
+      "id": "std_2",
+      "name_cn": "左膝弯曲",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "angle_3point",
+        "output": "",
+        "from": null,
+        "to": null,
+        "points": [
+          "left_hip",
+          "left_knee",
+          "left_ankle"
+        ]
+      },
+      "pass": {
+        "op": "lte",
+        "value": 100.0
+      },
+      "excellent": {
+        "op": "lte",
+        "value": 80.0
+      },
+      "attempt": {
+        "op": "lte",
+        "value": 100.0
+      },
+      "reset": {
+        "op": "gte",
+        "value": 170.0
+      },
+      "fail_hint": "左膝再弯曲一些"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 0.5
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1"
+        ],
+        "t": 2.5,
+        "metric_id": "std_1",
+        "name_cn": "伸直双腿"
+      },
+      {
+        "role": "peak",
+        "id": "peak_2",
+        "metric_ids": [
+          "std_2"
+        ],
+        "t": 16.5,
+        "metric_id": "std_2",
+        "name_cn": "屈膝还原"
+      },
+      {
+        "role": "cycle_end",
+        "t": 17.0
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1",
+      "std_2"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "跪姿进入平板支撑",
+    "cycle_start": 0.5,
+    "cycle_end": 17.0,
+    "keypoints": [
+      {
+        "name_cn": "伸直双腿",
+        "t": 2.5,
+        "how_cn": "双腿向后伸直进入平板支撑姿态",
+        "scored": true,
+        "skip_reason": ""
+      },
+      {
+        "name_cn": "保持平板",
+        "t": 9.0,
+        "how_cn": "头背臀腿呈直线，核心收紧不塌腰",
+        "scored": false,
+        "skip_reason": "只有保持直立，没有可测量的动作幅度"
+      },
+      {
+        "name_cn": "屈膝还原",
+        "t": 16.5,
+        "how_cn": "双膝弯曲回到跪姿起始位置",
+        "scored": true,
+        "skip_reason": ""
+      }
+    ]
+  }
+}

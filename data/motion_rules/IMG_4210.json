@@ -1,0 +1,126 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4210",
+  "title_cn": "扶椅单腿髋屈伸",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "躯干前倾幅度",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "abs_degrees_from_vertical",
+        "from": "mid_hip",
+        "to": "mid_shoulder",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 25.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 35.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 15.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 5.0
+      },
+      "fail_hint": "上身再向前倾一些"
+    },
+    {
+      "id": "std_2",
+      "name_cn": "左腿伸直",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "angle_3point",
+        "output": "",
+        "from": null,
+        "to": null,
+        "points": [
+          "left_hip",
+          "left_knee",
+          "left_ankle"
+        ]
+      },
+      "pass": {
+        "op": "gte",
+        "value": 160.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 175.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 140.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 100.0
+      },
+      "fail_hint": "左膝不要弯曲"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 1.5
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1",
+          "std_2"
+        ],
+        "t": 5.5,
+        "metric_id": "std_1",
+        "name_cn": "踏椅前倾"
+      },
+      {
+        "role": "cycle_end",
+        "t": 9.5
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1",
+      "std_2"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "扶椅单腿髋屈伸",
+    "cycle_start": 1.5,
+    "cycle_end": 9.5,
+    "keypoints": [
+      {
+        "name_cn": "踏椅前倾",
+        "t": 5.5,
+        "how_cn": "右脚踩椅，重心前移拉伸左髋",
+        "scored": true,
+        "skip_reason": ""
+      },
+      {
+        "name_cn": "起身回正",
+        "t": 8.0,
+        "how_cn": "重心后移回到直立姿态",
+        "scored": false,
+        "skip_reason": "只有保持直立，没有可测量的动作幅度"
+      }
+    ]
+  }
+}

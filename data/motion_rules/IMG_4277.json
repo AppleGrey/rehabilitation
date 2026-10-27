@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4277",
+  "title_cn": "站立前臂伸肌拉伸",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "左臂抬高",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "left_shoulder",
+        "to": "left_wrist",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 80.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 90.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 50.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 20.0
+      },
+      "fail_hint": "左臂再抬高至水平"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 1.5
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1"
+        ],
+        "t": 3.0,
+        "metric_id": "std_1",
+        "name_cn": "抬左臂"
+      },
+      {
+        "role": "cycle_end",
+        "t": 14.0
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "站立前臂伸肌拉伸",
+    "cycle_start": 1.5,
+    "cycle_end": 14.0,
+    "keypoints": [
+      {
+        "name_cn": "抬左臂",
+        "t": 3.0,
+        "how_cn": "左臂向前平举伸直",
+        "scored": true,
+        "skip_reason": ""
+      },
+      {
+        "name_cn": "压左手腕",
+        "t": 6.5,
+        "how_cn": "右手辅助左手腕向下压",
+        "scored": false,
+        "skip_reason": "手腕屈伸及手指动作无法用正面骨架关键点测量"
+      }
+    ]
+  }
+}

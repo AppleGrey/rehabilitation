@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4438",
+  "title_cn": "坐姿4字臀部拉伸",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "右踝靠近左膝",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "left_knee",
+        "to": "right_ankle",
+        "points": []
+      },
+      "pass": {
+        "op": "lte",
+        "value": 45.0
+      },
+      "excellent": {
+        "op": "lte",
+        "value": 20.0
+      },
+      "attempt": {
+        "op": "lte",
+        "value": 45.0
+      },
+      "reset": {
+        "op": "gte",
+        "value": 120.0
+      },
+      "fail_hint": "右脚踝再往左膝靠一些"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 1.0
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1"
+        ],
+        "t": 3.5,
+        "metric_id": "std_1",
+        "name_cn": "搭右踝"
+      },
+      {
+        "role": "cycle_end",
+        "t": 14.0
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "坐姿4字臀部拉伸",
+    "cycle_start": 1.0,
+    "cycle_end": 14.0,
+    "keypoints": [
+      {
+        "name_cn": "搭右踝",
+        "t": 3.5,
+        "how_cn": "右脚踝放在左膝上呈4字",
+        "scored": true,
+        "skip_reason": ""
+      },
+      {
+        "name_cn": "压右膝",
+        "t": 6.0,
+        "how_cn": "双手轻压右膝向下拉伸",
+        "scored": false,
+        "skip_reason": "下压力度无法通过骨架角度测量"
+      }
+    ]
+  }
+}

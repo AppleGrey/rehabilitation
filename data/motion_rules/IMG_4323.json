@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4323",
+  "title_cn": "站立颈部侧屈拉伸",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "左肘抬高",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "left_shoulder",
+        "to": "left_elbow",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 100.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 120.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 60.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 20.0
+      },
+      "fail_hint": "左肘再抬高一些"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 0.5
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1"
+        ],
+        "t": 4.0,
+        "metric_id": "std_1",
+        "name_cn": "抬左臂扶头"
+      },
+      {
+        "role": "cycle_end",
+        "t": 13.5
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "站立颈部侧屈拉伸",
+    "cycle_start": 0.5,
+    "cycle_end": 13.5,
+    "keypoints": [
+      {
+        "name_cn": "抬左臂扶头",
+        "t": 4.0,
+        "how_cn": "左臂抬起弯曲，手部置于头顶辅助",
+        "scored": true,
+        "skip_reason": ""
+      },
+      {
+        "name_cn": "头向左侧屈",
+        "t": 5.0,
+        "how_cn": "左手扶头将头部向左侧倾斜拉伸",
+        "scored": false,
+        "skip_reason": "正面骨架无颈椎关键点，无法测量头部侧倾角度"
+      }
+    ]
+  }
+}

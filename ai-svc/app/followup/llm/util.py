@@ -14,17 +14,20 @@ from typing import Any, Optional
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
 
-from ...core.config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, DEEPSEEK_MODEL
+from ...core.llm_runtime import consult_profile
 
 logger = logging.getLogger(__name__)
 
 
 def make_json_llm(temperature: float = 0.2, max_tokens: int = 1600) -> ChatOpenAI:
     """构造用于结构化输出的 LLM：低温、非流式、请求 JSON 对象。"""
+    cfg = consult_profile()
+    if not cfg.api_key:
+        raise RuntimeError("问诊大模型 API Key 未配置，请在管理平台的配置管理中填写")
     return ChatOpenAI(
-        model=DEEPSEEK_MODEL,
-        api_key=DEEPSEEK_API_KEY,          # type: ignore[arg-type]
-        base_url=DEEPSEEK_BASE_URL,
+        model=cfg.model,
+        api_key=cfg.api_key,          # type: ignore[arg-type]
+        base_url=cfg.base_url,
         temperature=temperature,
         streaming=False,
         max_tokens=max_tokens,

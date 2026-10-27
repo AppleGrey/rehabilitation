@@ -1,0 +1,191 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4396",
+  "title_cn": "仰卧膝下垫巾伸膝",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "右膝伸直",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "angle_3point",
+        "output": "",
+        "from": null,
+        "to": null,
+        "points": [
+          "right_hip",
+          "right_knee",
+          "right_ankle"
+        ]
+      },
+      "pass": {
+        "op": "gte",
+        "value": 160.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 175.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 130.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 100.0
+      },
+      "fail_hint": "右膝再伸直一些"
+    },
+    {
+      "id": "std_2",
+      "name_cn": "右膝保持直",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "angle_3point",
+        "output": "",
+        "from": null,
+        "to": null,
+        "points": [
+          "right_hip",
+          "right_knee",
+          "right_ankle"
+        ]
+      },
+      "pass": {
+        "op": "gte",
+        "value": 160.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 175.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 140.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 120.0
+      },
+      "fail_hint": "保持右膝伸直不要弯曲"
+    },
+    {
+      "id": "std_3",
+      "name_cn": "右膝屈曲",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "angle_3point",
+        "output": "",
+        "from": null,
+        "to": null,
+        "points": [
+          "right_hip",
+          "right_knee",
+          "right_ankle"
+        ]
+      },
+      "pass": {
+        "op": "lte",
+        "value": 110.0
+      },
+      "excellent": {
+        "op": "lte",
+        "value": 90.0
+      },
+      "attempt": {
+        "op": "lte",
+        "value": 110.0
+      },
+      "reset": {
+        "op": "gte",
+        "value": 170.0
+      },
+      "fail_hint": "右膝再弯曲一些回到原位"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 1.5
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1"
+        ],
+        "t": 4.0,
+        "metric_id": "std_1",
+        "name_cn": "伸直右腿"
+      },
+      {
+        "role": "peak",
+        "id": "peak_2",
+        "metric_ids": [
+          "std_2"
+        ],
+        "t": 9.0,
+        "metric_id": "std_2",
+        "name_cn": "保持伸直"
+      },
+      {
+        "role": "peak",
+        "id": "peak_3",
+        "metric_ids": [
+          "std_3"
+        ],
+        "t": 14.5,
+        "metric_id": "std_3",
+        "name_cn": "屈右膝还原"
+      },
+      {
+        "role": "cycle_end",
+        "t": 15.0
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1",
+      "std_2",
+      "std_3"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "仰卧膝下垫巾伸膝",
+    "cycle_start": 1.5,
+    "cycle_end": 15.0,
+    "keypoints": [
+      {
+        "name_cn": "伸直右腿",
+        "t": 4.0,
+        "how_cn": "右腿缓慢伸直，膝窝压住毛巾",
+        "scored": true,
+        "skip_reason": ""
+      },
+      {
+        "name_cn": "保持伸直",
+        "t": 9.0,
+        "how_cn": "保持右腿完全伸直不动",
+        "scored": true,
+        "skip_reason": ""
+      },
+      {
+        "name_cn": "屈右膝还原",
+        "t": 14.5,
+        "how_cn": "缓慢屈右膝回到起始位置",
+        "scored": true,
+        "skip_reason": ""
+      }
+    ]
+  }
+}

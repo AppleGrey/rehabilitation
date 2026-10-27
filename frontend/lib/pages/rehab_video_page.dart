@@ -626,7 +626,10 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
           child: _videoReady && _videoCtrl != null
               ? AspectRatio(
                   aspectRatio: _videoCtrl!.value.aspectRatio,
-                  child: VideoPlayer(_videoCtrl!),
+                  child: Transform.flip(
+                    flipX: true,
+                    child: VideoPlayer(_videoCtrl!),
+                  ),
                 )
               : Center(
                   child: Padding(

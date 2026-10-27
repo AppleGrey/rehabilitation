@@ -1,0 +1,275 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4237",
+  "title_cn": "站立双臂侧平举上举",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "左臂抬高",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "left_shoulder",
+        "to": "left_wrist",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 80.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 90.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 45.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 10.0
+      },
+      "fail_hint": "左臂再抬高一些"
+    },
+    {
+      "id": "std_2",
+      "name_cn": "右臂抬高",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "right_shoulder",
+        "to": "right_wrist",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 80.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 90.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 45.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 10.0
+      },
+      "fail_hint": "右臂再抬高一些"
+    },
+    {
+      "id": "std_3",
+      "name_cn": "左臂上举",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "left_shoulder",
+        "to": "left_wrist",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 150.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 170.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 120.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 10.0
+      },
+      "fail_hint": "左臂尽量举过头顶"
+    },
+    {
+      "id": "std_4",
+      "name_cn": "右臂上举",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "right_shoulder",
+        "to": "right_wrist",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 150.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 170.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 120.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 10.0
+      },
+      "fail_hint": "右臂尽量举过头顶"
+    },
+    {
+      "id": "std_5",
+      "name_cn": "左臂放下",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "left_shoulder",
+        "to": "left_wrist",
+        "points": []
+      },
+      "pass": {
+        "op": "lte",
+        "value": 20.0
+      },
+      "excellent": {
+        "op": "lte",
+        "value": 5.0
+      },
+      "attempt": {
+        "op": "lte",
+        "value": 20.0
+      },
+      "reset": {
+        "op": "gte",
+        "value": 170.0
+      },
+      "fail_hint": "左臂继续向下放"
+    },
+    {
+      "id": "std_6",
+      "name_cn": "右臂放下",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "right_shoulder",
+        "to": "right_wrist",
+        "points": []
+      },
+      "pass": {
+        "op": "lte",
+        "value": 20.0
+      },
+      "excellent": {
+        "op": "lte",
+        "value": 5.0
+      },
+      "attempt": {
+        "op": "lte",
+        "value": 20.0
+      },
+      "reset": {
+        "op": "gte",
+        "value": 170.0
+      },
+      "fail_hint": "右臂继续向下放"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 1.5
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1",
+          "std_2"
+        ],
+        "t": 4.0,
+        "metric_id": "std_1",
+        "name_cn": "双臂侧平举"
+      },
+      {
+        "role": "peak",
+        "id": "peak_2",
+        "metric_ids": [
+          "std_3",
+          "std_4"
+        ],
+        "t": 6.0,
+        "metric_id": "std_3",
+        "name_cn": "双臂上举过头"
+      },
+      {
+        "role": "peak",
+        "id": "peak_3",
+        "metric_ids": [
+          "std_5",
+          "std_6"
+        ],
+        "t": 9.0,
+        "metric_id": "std_5",
+        "name_cn": "双臂缓慢放下"
+      },
+      {
+        "role": "cycle_end",
+        "t": 9.5
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1",
+      "std_2",
+      "std_3",
+      "std_4",
+      "std_5",
+      "std_6"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "站立双臂侧平举上举",
+    "cycle_start": 1.5,
+    "cycle_end": 9.5,
+    "keypoints": [
+      {
+        "name_cn": "双臂侧平举",
+        "t": 4.0,
+        "how_cn": "双臂经体侧抬起至水平位置",
+        "scored": true,
+        "skip_reason": ""
+      },
+      {
+        "name_cn": "双臂上举过头",
+        "t": 6.0,
+        "how_cn": "双臂继续上举至头顶上方接近竖直",
+        "scored": true,
+        "skip_reason": ""
+      },
+      {
+        "name_cn": "双臂缓慢放下",
+        "t": 9.0,
+        "how_cn": "双臂经体侧缓慢放回身体两侧",
+        "scored": true,
+        "skip_reason": ""
+      }
+    ]
+  }
+}

@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4264",
+  "title_cn": "站立单臂手腕屈伸",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "左肘屈曲",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "angle_3point",
+        "output": "",
+        "from": null,
+        "to": null,
+        "points": [
+          "left_shoulder",
+          "left_elbow",
+          "left_wrist"
+        ]
+      },
+      "pass": {
+        "op": "lte",
+        "value": 110.0
+      },
+      "excellent": {
+        "op": "lte",
+        "value": 90.0
+      },
+      "attempt": {
+        "op": "lte",
+        "value": 110.0
+      },
+      "reset": {
+        "op": "gte",
+        "value": 170.0
+      },
+      "fail_hint": "左肘再弯曲一些"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 1.0
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1"
+        ],
+        "t": 2.5,
+        "metric_id": "std_1",
+        "name_cn": "抬左臂"
+      },
+      {
+        "role": "cycle_end",
+        "t": 6.0
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "站立单臂手腕屈伸",
+    "cycle_start": 1.0,
+    "cycle_end": 6.0,
+    "keypoints": [
+      {
+        "name_cn": "抬左臂",
+        "t": 2.5,
+        "how_cn": "左肘屈曲，前臂抬至胸前",
+        "scored": true,
+        "skip_reason": ""
+      },
+      {
+        "name_cn": "手腕屈伸",
+        "t": 4.5,
+        "how_cn": "手腕做屈伸动作",
+        "scored": false,
+        "skip_reason": "手腕和手指的细小动作无法用正面骨架关键点测量"
+      }
+    ]
+  }
+}

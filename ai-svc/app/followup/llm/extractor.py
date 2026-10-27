@@ -23,6 +23,7 @@ from ..models import (
     SlotStatus,
     StrategySession,
 )
+from ...core.llm_runtime import consult_profile
 from .util import call_json_llm, make_json_llm
 from ..policy.body_parts import is_canonical, joints_prompt_list, normalize_body_region
 
@@ -111,7 +112,7 @@ def _hyp_text(session: StrategySession) -> str:
 def perceive(session: StrategySession, user_message: str, kg_context: str = "",
              trace: Optional[list] = None) -> PerceptResult:
     """调用 LLM-A，返回结构化感知结果（解析失败返回空结果，由 planner 兜底）。"""
-    llm = make_json_llm(temperature=0.2, max_tokens=1200)
+    llm = make_json_llm(temperature=consult_profile().temperature, max_tokens=1200)
     user = _USER_TMPL.format(
         known_state=_known_state_text(session),
         hypotheses=_hyp_text(session),
@@ -239,7 +240,7 @@ def extract_seed(session: StrategySession, conversation_text: str,
     """
     从对话抽取/更新主诉种子（合并进 session.seed）。返回抽取结果（含建议的下一句粗问）。
     """
-    llm = make_json_llm(temperature=0.2, max_tokens=600)
+    llm = make_json_llm(temperature=consult_profile().temperature, max_tokens=600)
     user = (
         f"【已知种子】{session.seed.model_dump()}\n\n"
         f"【标准部位白名单】{joints_prompt_list()}\n\n"

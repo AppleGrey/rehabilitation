@@ -1,8 +1,8 @@
 """
 kg-svc 配置。
 - SiliconFlow(硅基流动) 提供 bge-m3 向量化（与图谱构建时的 bge-m3 兼容，1024 维）
-- DeepSeek 提供 LLM（供 LightRAG 的 local/global/hybrid 模式做关键词抽取；生成仍由 ai-svc 负责）
-- 密钥优先从 kg-svc/.env 读取；DeepSeek 复用项目根 .env（无需重复填写）
+- 问诊大模型做关键词抽取（读管理平台配置；生成仍由 ai-svc 负责）
+- 密钥优先从 kg-svc/.env 读取；数据库和问诊模型的初始值复用项目根 .env
 """
 from __future__ import annotations
 
@@ -29,7 +29,7 @@ class Settings:
     embed_dim: int = int(os.getenv("KG_EMBED_DIM", "1024"))
     embed_max_tokens: int = int(os.getenv("KG_EMBED_MAX_TOKENS", "8192"))
 
-    # ── LLM：DeepSeek（关键词抽取）────────────────────────────────
+    # ── 问诊大模型读不到数据库时的退路（关键词抽取）────────────────
     deepseek_api_key: str = os.getenv("DEEPSEEK_API_KEY", "")
     deepseek_base_url: str = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1")
     deepseek_model: str = os.getenv("DEEPSEEK_MODEL", "deepseek-chat")
@@ -43,8 +43,6 @@ class Settings:
         miss = []
         if not self.siliconflow_api_key:
             miss.append("SILICONFLOW_API_KEY")
-        if not self.deepseek_api_key:
-            miss.append("DEEPSEEK_API_KEY")
         return miss
 
 

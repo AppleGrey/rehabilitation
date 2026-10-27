@@ -1,0 +1,131 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4342",
+  "title_cn": "仰卧交替脚尖点地",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "右大腿下放",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "right_hip",
+        "to": "right_knee",
+        "points": []
+      },
+      "pass": {
+        "op": "lte",
+        "value": 45.0
+      },
+      "excellent": {
+        "op": "lte",
+        "value": 35.0
+      },
+      "attempt": {
+        "op": "lte",
+        "value": 45.0
+      },
+      "reset": {
+        "op": "gte",
+        "value": 90.0
+      },
+      "fail_hint": "右腿再往下放一些"
+    },
+    {
+      "id": "std_2",
+      "name_cn": "左大腿下放",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "left_hip",
+        "to": "left_knee",
+        "points": []
+      },
+      "pass": {
+        "op": "lte",
+        "value": 45.0
+      },
+      "excellent": {
+        "op": "lte",
+        "value": 35.0
+      },
+      "attempt": {
+        "op": "lte",
+        "value": 45.0
+      },
+      "reset": {
+        "op": "gte",
+        "value": 90.0
+      },
+      "fail_hint": "左腿再往下放一些"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 1.5
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1"
+        ],
+        "t": 6.5,
+        "metric_id": "std_1",
+        "name_cn": "右脚尖点地"
+      },
+      {
+        "role": "peak",
+        "id": "peak_2",
+        "metric_ids": [
+          "std_2"
+        ],
+        "t": 8.5,
+        "metric_id": "std_2",
+        "name_cn": "左脚尖点地"
+      },
+      {
+        "role": "cycle_end",
+        "t": 9.5
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1",
+      "std_2"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "仰卧交替脚尖点地",
+    "cycle_start": 1.5,
+    "cycle_end": 9.5,
+    "keypoints": [
+      {
+        "name_cn": "右脚尖点地",
+        "t": 6.5,
+        "how_cn": "右脚尖轻触地面，左腿保持屈膝悬空",
+        "scored": true,
+        "skip_reason": ""
+      },
+      {
+        "name_cn": "左脚尖点地",
+        "t": 8.5,
+        "how_cn": "左脚尖轻触地面，右腿保持屈膝悬空",
+        "scored": true,
+        "skip_reason": ""
+      }
+    ]
+  }
+}

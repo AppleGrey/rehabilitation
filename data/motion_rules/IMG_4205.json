@@ -1,0 +1,299 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4205",
+  "title_cn": "深蹲跳",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "左膝屈曲",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "angle_3point",
+        "output": "",
+        "from": null,
+        "to": null,
+        "points": [
+          "left_hip",
+          "left_knee",
+          "left_ankle"
+        ]
+      },
+      "pass": {
+        "op": "lte",
+        "value": 100.0
+      },
+      "excellent": {
+        "op": "lte",
+        "value": 90.0
+      },
+      "attempt": {
+        "op": "lte",
+        "value": 100.0
+      },
+      "reset": {
+        "op": "gte",
+        "value": 170.0
+      },
+      "fail_hint": "再蹲低一些"
+    },
+    {
+      "id": "std_2",
+      "name_cn": "右膝屈曲",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "angle_3point",
+        "output": "",
+        "from": null,
+        "to": null,
+        "points": [
+          "right_hip",
+          "right_knee",
+          "right_ankle"
+        ]
+      },
+      "pass": {
+        "op": "lte",
+        "value": 100.0
+      },
+      "excellent": {
+        "op": "lte",
+        "value": 90.0
+      },
+      "attempt": {
+        "op": "lte",
+        "value": 100.0
+      },
+      "reset": {
+        "op": "gte",
+        "value": 170.0
+      },
+      "fail_hint": "再蹲低一些"
+    },
+    {
+      "id": "std_3",
+      "name_cn": "左腿伸直",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "angle_3point",
+        "output": "",
+        "from": null,
+        "to": null,
+        "points": [
+          "left_hip",
+          "left_knee",
+          "left_ankle"
+        ]
+      },
+      "pass": {
+        "op": "gte",
+        "value": 160.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 170.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 140.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 100.0
+      },
+      "fail_hint": "跳起时腿要伸直"
+    },
+    {
+      "id": "std_4",
+      "name_cn": "右腿伸直",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "angle_3point",
+        "output": "",
+        "from": null,
+        "to": null,
+        "points": [
+          "right_hip",
+          "right_knee",
+          "right_ankle"
+        ]
+      },
+      "pass": {
+        "op": "gte",
+        "value": 160.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 170.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 140.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 100.0
+      },
+      "fail_hint": "跳起时腿要伸直"
+    },
+    {
+      "id": "std_5",
+      "name_cn": "左膝缓冲",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "angle_3point",
+        "output": "",
+        "from": null,
+        "to": null,
+        "points": [
+          "left_hip",
+          "left_knee",
+          "left_ankle"
+        ]
+      },
+      "pass": {
+        "op": "lte",
+        "value": 110.0
+      },
+      "excellent": {
+        "op": "lte",
+        "value": 100.0
+      },
+      "attempt": {
+        "op": "lte",
+        "value": 110.0
+      },
+      "reset": {
+        "op": "gte",
+        "value": 170.0
+      },
+      "fail_hint": "落地要屈膝缓冲"
+    },
+    {
+      "id": "std_6",
+      "name_cn": "右膝缓冲",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "angle_3point",
+        "output": "",
+        "from": null,
+        "to": null,
+        "points": [
+          "right_hip",
+          "right_knee",
+          "right_ankle"
+        ]
+      },
+      "pass": {
+        "op": "lte",
+        "value": 110.0
+      },
+      "excellent": {
+        "op": "lte",
+        "value": 100.0
+      },
+      "attempt": {
+        "op": "lte",
+        "value": 110.0
+      },
+      "reset": {
+        "op": "gte",
+        "value": 170.0
+      },
+      "fail_hint": "落地要屈膝缓冲"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 1.5
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1",
+          "std_2"
+        ],
+        "t": 3.5,
+        "metric_id": "std_1",
+        "name_cn": "下蹲蓄力"
+      },
+      {
+        "role": "peak",
+        "id": "peak_2",
+        "metric_ids": [
+          "std_3",
+          "std_4"
+        ],
+        "t": 4.5,
+        "metric_id": "std_3",
+        "name_cn": "向上跳跃"
+      },
+      {
+        "role": "peak",
+        "id": "peak_3",
+        "metric_ids": [
+          "std_5",
+          "std_6"
+        ],
+        "t": 5.5,
+        "metric_id": "std_5",
+        "name_cn": "落地缓冲"
+      },
+      {
+        "role": "cycle_end",
+        "t": 8.5
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1",
+      "std_2",
+      "std_3",
+      "std_4",
+      "std_5",
+      "std_6"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "深蹲跳",
+    "cycle_start": 1.5,
+    "cycle_end": 8.5,
+    "keypoints": [
+      {
+        "name_cn": "下蹲蓄力",
+        "t": 3.5,
+        "how_cn": "屈膝下蹲至大腿接近水平",
+        "scored": true,
+        "skip_reason": ""
+      },
+      {
+        "name_cn": "向上跳跃",
+        "t": 4.5,
+        "how_cn": "蹬地跳起，双腿伸直离地",
+        "scored": true,
+        "skip_reason": ""
+      },
+      {
+        "name_cn": "落地缓冲",
+        "t": 5.5,
+        "how_cn": "落地顺势屈膝下蹲缓冲",
+        "scored": true,
+        "skip_reason": ""
+      }
+    ]
+  }
+}

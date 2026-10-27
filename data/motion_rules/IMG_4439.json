@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4439",
+  "title_cn": "坐姿弹力带髋外展",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "双脚间距",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "left_ankle",
+        "to": "right_ankle",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 80.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 90.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 70.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 60.0
+      },
+      "fail_hint": "双脚再向外打开一些"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 1.0
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1"
+        ],
+        "t": 2.8,
+        "metric_id": "std_1",
+        "name_cn": "双脚外展"
+      },
+      {
+        "role": "cycle_end",
+        "t": 4.5
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "坐姿弹力带髋外展",
+    "cycle_start": 1.0,
+    "cycle_end": 4.5,
+    "keypoints": [
+      {
+        "name_cn": "双脚外展",
+        "t": 2.8,
+        "how_cn": "双脚对抗阻力向两侧打开至最宽",
+        "scored": true,
+        "skip_reason": ""
+      }
+    ]
+  }
+}

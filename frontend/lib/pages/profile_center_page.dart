@@ -10,8 +10,13 @@ import '../theme/app_theme.dart';
 class ProfileCenterPage extends StatefulWidget {
   /// 退出登录后回调，由 AuthGate 切回登录页。
   final VoidCallback onLogout;
+  final VoidCallback onOpenFreeFollow;
 
-  const ProfileCenterPage({super.key, required this.onLogout});
+  const ProfileCenterPage({
+    super.key,
+    required this.onLogout,
+    required this.onOpenFreeFollow,
+  });
 
   @override
   State<ProfileCenterPage> createState() => _ProfileCenterPageState();
@@ -205,6 +210,15 @@ class _ProfileCenterPageState extends State<ProfileCenterPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _buildSectionTitle('训练'),
+          _buildMenuCard([
+            _MenuItem(
+              icon: Icons.accessibility_new,
+              title: '自由跟做',
+              onTap: widget.onOpenFreeFollow,
+            ),
+          ]),
+          const SizedBox(height: 24),
           _buildSectionTitle('账号与安全'),
           _buildMenuCard([
             _MenuItem(

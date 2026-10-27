@@ -1,5 +1,5 @@
 """
-LightRAG 工厂：把「SiliconFlow bge-m3 向量化」+「DeepSeek 关键词抽取」接进 LightRAG，
+LightRAG 工厂：把「SiliconFlow bge-m3 向量化」+「问诊大模型关键词抽取」接进 LightRAG，
 指向已构建好的康复知识图谱工作目录（KangFu / KangFu-Full-QwQ-32B-AWQ）。
 
 用法：
@@ -22,6 +22,7 @@ from lightrag.llm.openai import openai_complete_if_cache, openai_embed  # noqa: 
 from lightrag.utils import EmbeddingFunc  # noqa: E402
 
 from config import settings  # noqa: E402
+from consult_llm import consult_llm  # noqa: E402
 
 __all__ = ["build_rag", "QueryParam"]
 
@@ -32,14 +33,18 @@ async def _llm_model_func(
     history_messages: list | None = None,
     **kwargs,
 ) -> str:
-    """DeepSeek（OpenAI 兼容）——仅用于 local/global/hybrid 模式的关键词抽取。"""
+    """管理平台配置的问诊大模型——仅用于 local/global/hybrid 模式的关键词抽取。"""
+    cfg = consult_llm()
+    if not cfg.api_key:
+        raise RuntimeError("问诊大模型 API Key 未配置，请在管理平台的配置管理中填写")
+    kwargs.setdefault("temperature", cfg.temperature)
     return await openai_complete_if_cache(
-        settings.deepseek_model,
+        cfg.model,
         prompt,
         system_prompt=system_prompt,
         history_messages=history_messages or [],
-        base_url=settings.deepseek_base_url,
-        api_key=settings.deepseek_api_key,
+        base_url=cfg.base_url,
+        api_key=cfg.api_key,
         **kwargs,
     )
 

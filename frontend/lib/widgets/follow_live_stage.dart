@@ -24,6 +24,10 @@ class FollowLiveStage extends StatefulWidget {
     this.demo,
     this.demoAspect = 0.75,
     this.note,
+    this.onScoredFrame,
+    this.focusPeakId,
+    this.demoWaiting = false,
+    this.repCount,
   });
 
   final CameraController camera;
@@ -31,6 +35,10 @@ class FollowLiveStage extends StatefulWidget {
   final Widget? demo;
   final double demoAspect;
   final String? note;
+  final void Function(PoseFrame frame, DateTime at)? onScoredFrame;
+  final String? focusPeakId;
+  final bool demoWaiting;
+  final int? repCount;
 
   @override
   State<FollowLiveStage> createState() => FollowLiveStageState();
@@ -46,7 +54,7 @@ class FollowLiveStageState extends State<FollowLiveStage> {
   List<OffsetLandmark> _landmarks = const [];
   bool _detected = false;
   double _score = 0;
-  double? _angle;
+  Map<String, double?> _angles = const {};
   bool _inflight = false;
   bool _closed = false;
   InputImageRotation? _lastRotation;
@@ -120,21 +128,27 @@ class FollowLiveStageState extends State<FollowLiveStage> {
       if (_scored && rule != null && scoredLandmarks.isNotEmpty) {
         frame = evaluateLocal(scoredLandmarks, rule);
       }
-      final metric = rule?.requiredMetric;
-      final angle = frame == null || metric == null ? null : frame.metrics[metric.id];
+      final angles = <String, double?>{
+        for (final metric in (rule?.metrics ?? const <FollowMetric>[]).where((item) => item.enabled))
+          metric.id: frame?.metrics[metric.id],
+      };
       setState(() {
         final previous = _image;
         _image = frameImage;
         frameImage = null;
         _landmarks = drawLandmarks;
         _detected = tracked.isNotEmpty;
-        _angle = angle;
+        _angles = angles;
         if (frame != null) {
-          final target = frame.instantScore.toDouble();
+          final focus = widget.focusPeakId;
+          final target = focus != null && rule != null
+              ? scoreForPeak(frame, rule, focus)
+              : frame.instantScore.toDouble();
           _score += (target - _score) * 0.4;
         }
         previous?.dispose();
       });
+      if (frame != null) widget.onScoredFrame?.call(frame, capturedAt);
     } catch (error) {
       debugPrint('follow pose failed: $error');
     } finally {
@@ -160,9 +174,11 @@ class FollowLiveStageState extends State<FollowLiveStage> {
   Widget build(BuildContext context) {
     final image = _image;
     final rule = widget.rule;
-    final metric = rule?.requiredMetric;
+    final scoredMetrics = rule?.metrics.where((item) => item.enabled).toList() ?? const <FollowMetric>[];
     final scored = _scored;
     final tint = scored ? null : const Color(0xFF80DEEA);
+    final segments = rule?.barSegments ?? 10;
+    final filled = ((_score / 100) * segments).round().clamp(0, segments).toInt();
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -192,14 +208,13 @@ class FollowLiveStageState extends State<FollowLiveStage> {
               ),
             ),
           ),
-        if (scored && metric != null)
+        if (scored && scoredMetrics.isNotEmpty)
           Positioned(
             left: 16,
             top: 12,
+            right: 96,
             child: Text(
-              _angle == null
-                  ? '请让全身入画'
-                  : '${metric.nameCn} ${_angle!.toStringAsFixed(0)}° / 合格 ${metric.pass.value.round()}°',
+              followScoreLines(rule!, _angles),
               style: const TextStyle(
                 color: Color(0xFF69F0AE),
                 fontSize: 14,
@@ -210,23 +225,47 @@ class FollowLiveStageState extends State<FollowLiveStage> {
         if (scored)
           Positioned(
             right: 16,
-            top: 48,
-            child: Text(
-              '${_score.round().clamp(0, 100)}',
-              style: TextStyle(
-                color: skeletonColorForScore(_score, detected: _detected),
-                fontSize: 42,
-                fontWeight: FontWeight.bold,
-                height: 1,
-              ),
+            top: 72,
+            bottom: 72,
+            child: Column(
+              children: [
+                Text(
+                  '${_score.round().clamp(0, 100)}',
+                  style: TextStyle(
+                    color: skeletonColorForScore(_score, detected: _detected),
+                    fontSize: 42,
+                    fontWeight: FontWeight.bold,
+                    height: 1,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: _ScoreBar(
+                    segments: segments,
+                    filled: filled,
+                    color: skeletonColorForScore(_score, detected: _detected),
+                  ),
+                ),
+                if (widget.repCount != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    '${widget.repCount}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
         if (widget.demo != null)
           Positioned.fill(
             child: FollowDemoPip(
               aspectRatio: widget.demoAspect,
-              waiting: false,
-              child: widget.demo!,
+              waiting: widget.demoWaiting,
+              child: Transform.flip(flipX: true, child: widget.demo!),
             ),
           ),
       ],
@@ -234,14 +273,81 @@ class FollowLiveStageState extends State<FollowLiveStage> {
   }
 }
 
+class _ScoreBar extends StatelessWidget {
+  final int segments;
+  final int filled;
+  final Color color;
+
+  const _ScoreBar({
+    required this.segments,
+    required this.filled,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final count = segments < 1 ? 1 : segments;
+    return Column(
+      children: List.generate(count, (i) {
+        final lit = (count - 1 - i) < filled;
+        return Expanded(
+          child: Container(
+            width: 18,
+            margin: const EdgeInsets.symmetric(vertical: 2),
+            decoration: BoxDecoration(
+              color: lit ? color : Colors.white24,
+              borderRadius: BorderRadius.circular(3),
+            ),
+          ),
+        );
+      }),
+    );
+  }
+}
+
+String followScoreLines(MotionStandard rule, Map<String, double?> angles) {
+  String line(FollowMetric metric) {
+    final angle = angles[metric.id];
+    if (angle == null) return '${metric.nameCn} 未入画';
+    return '${metric.nameCn} ${angle.toStringAsFixed(0)}° / 合格 ${metric.pass.value.round()}°';
+  }
+
+  final byId = {for (final metric in rule.metrics) metric.id: metric};
+  final claimed = <String>{};
+  final lines = <String>[];
+  final grouped = rule.peaks.length > 1 || rule.peaks.any((peak) => peak.metricIds.length > 1);
+  for (final peak in rule.peaks) {
+    final metrics = [
+      for (final id in peak.metricIds)
+        if (byId[id]?.enabled ?? false) byId[id]!,
+    ];
+    if (metrics.isEmpty) continue;
+    if (grouped && peak.nameCn.isNotEmpty) lines.add(peak.nameCn);
+    for (final metric in metrics) {
+      claimed.add(metric.id);
+      lines.add(line(metric));
+    }
+  }
+  for (final metric in rule.metrics) {
+    if (!metric.enabled || claimed.contains(metric.id)) continue;
+    lines.add(line(metric));
+  }
+  final measurements = lines.where((item) => item.contains('°') || item.endsWith('未入画'));
+  if (measurements.isEmpty || measurements.every((item) => item.endsWith('未入画'))) {
+    return '请让全身入画';
+  }
+  return lines.join('\n');
+}
+
 List<int> focusJointsFor(MotionStandard rule) {
-  final metric = rule.requiredMetric;
-  if (metric == null) return const [];
-  final names = <String>[
-    if (metric.fromName != null) metric.fromName!,
-    if (metric.toName != null) metric.toName!,
-    ...metric.points,
-  ];
+  final metrics = rule.metrics.where((metric) => metric.enabled);
+  final names = <String>{
+    for (final metric in metrics) ...[
+      if (metric.fromName != null) metric.fromName!,
+      if (metric.toName != null) metric.toName!,
+      ...metric.points,
+    ],
+  };
   return [
     for (final name in names)
       if (landmarkIndex.containsKey(name)) landmarkIndex[name]!,

@@ -1,0 +1,181 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4268",
+  "title_cn": "站立单臂前平举手腕屈伸",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "右臂抬高",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "right_shoulder",
+        "to": "right_wrist",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 80.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 90.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 45.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 10.0
+      },
+      "fail_hint": "右臂再抬高一些"
+    },
+    {
+      "id": "std_2",
+      "name_cn": "右肘伸直",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "angle_3point",
+        "output": "",
+        "from": null,
+        "to": null,
+        "points": [
+          "right_shoulder",
+          "right_elbow",
+          "right_wrist"
+        ]
+      },
+      "pass": {
+        "op": "gte",
+        "value": 160.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 175.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 140.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 100.0
+      },
+      "fail_hint": "右肘尽量伸直"
+    },
+    {
+      "id": "std_3",
+      "name_cn": "右臂放下",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "right_shoulder",
+        "to": "right_wrist",
+        "points": []
+      },
+      "pass": {
+        "op": "lte",
+        "value": 20.0
+      },
+      "excellent": {
+        "op": "lte",
+        "value": 10.0
+      },
+      "attempt": {
+        "op": "lte",
+        "value": 20.0
+      },
+      "reset": {
+        "op": "gte",
+        "value": 90.0
+      },
+      "fail_hint": "右臂请放回体侧"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 1.0
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1",
+          "std_2"
+        ],
+        "t": 3.0,
+        "metric_id": "std_1",
+        "name_cn": "右臂前平举"
+      },
+      {
+        "role": "peak",
+        "id": "peak_2",
+        "metric_ids": [
+          "std_3"
+        ],
+        "t": 12.0,
+        "metric_id": "std_3",
+        "name_cn": "手臂放下"
+      },
+      {
+        "role": "cycle_end",
+        "t": 12.5
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1",
+      "std_2",
+      "std_3"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "站立单臂前平举手腕屈伸",
+    "cycle_start": 1.0,
+    "cycle_end": 12.5,
+    "keypoints": [
+      {
+        "name_cn": "右臂前平举",
+        "t": 3.0,
+        "how_cn": "右臂向前抬起至与地面平行",
+        "scored": true,
+        "skip_reason": ""
+      },
+      {
+        "name_cn": "手腕背屈",
+        "t": 5.0,
+        "how_cn": "手掌向上竖起，指尖朝上",
+        "scored": false,
+        "skip_reason": "手指手腕细小动作正面骨架无法测量"
+      },
+      {
+        "name_cn": "手腕放松",
+        "t": 7.0,
+        "how_cn": "手掌放平，指尖朝前",
+        "scored": false,
+        "skip_reason": "手指手腕细小动作正面骨架无法测量"
+      },
+      {
+        "name_cn": "手臂放下",
+        "t": 12.0,
+        "how_cn": "右臂自然下垂回到体侧",
+        "scored": true,
+        "skip_reason": ""
+      }
+    ]
+  }
+}

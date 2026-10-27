@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4397",
+  "title_cn": "仰卧单腿抱膝拉伸",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "右大腿抬高",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "right_hip",
+        "to": "right_knee",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 80.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 90.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 50.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 30.0
+      },
+      "fail_hint": "右腿再抬高一些"
+    },
+    {
+      "id": "std_2",
+      "name_cn": "右膝伸直",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "angle_3point",
+        "output": "",
+        "from": null,
+        "to": null,
+        "points": [
+          "right_hip",
+          "right_knee",
+          "right_ankle"
+        ]
+      },
+      "pass": {
+        "op": "gte",
+        "value": 160.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 175.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 140.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 120.0
+      },
+      "fail_hint": "右膝尽量伸直"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 0.5
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1",
+          "std_2"
+        ],
+        "t": 4.5,
+        "metric_id": "std_1",
+        "name_cn": "抬右腿"
+      },
+      {
+        "role": "cycle_end",
+        "t": 13.5
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1",
+      "std_2"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "仰卧单腿抱膝拉伸",
+    "cycle_start": 0.5,
+    "cycle_end": 13.5,
+    "keypoints": [
+      {
+        "name_cn": "抬右腿",
+        "t": 4.5,
+        "how_cn": "右腿伸直向上抬起，双手抱膝后侧",
+        "scored": true,
+        "skip_reason": ""
+      }
+    ]
+  }
+}

@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4231",
+  "title_cn": "俯身手臂摆动",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "躯干前倾",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "abs_degrees_from_vertical",
+        "from": "mid_hip",
+        "to": "mid_shoulder",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 70.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 80.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 40.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 10.0
+      },
+      "fail_hint": "上身再往前倾一些"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 2.0
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1"
+        ],
+        "t": 4.0,
+        "metric_id": "std_1",
+        "name_cn": "俯身准备"
+      },
+      {
+        "role": "cycle_end",
+        "t": 14.0
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "俯身手臂摆动",
+    "cycle_start": 2.0,
+    "cycle_end": 14.0,
+    "keypoints": [
+      {
+        "name_cn": "俯身准备",
+        "t": 4.0,
+        "how_cn": "手扶椅背，上身前倾至接近水平",
+        "scored": true,
+        "skip_reason": ""
+      },
+      {
+        "name_cn": "手臂摆动",
+        "t": 8.0,
+        "how_cn": "左臂自然下垂并微幅前后摆动",
+        "scored": false,
+        "skip_reason": "侧面拍摄且动作幅度极小，正面骨架无法准确测量前后摆动角度"
+      }
+    ]
+  }
+}

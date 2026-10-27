@@ -117,7 +117,7 @@ def _install_stubs(store: dict):
     from ..media import matching as _matching, storage as _storage
     _matching.ensure_playable_mp4_path = lambda vid: f"videos/{vid}.mp4"
     _storage.download_to_path = lambda key, path: path.write_bytes(b"\x00")
-    _assess.evaluate_baseline = lambda std, usr: {
+    _assess.evaluate_baseline = lambda std, usr, video_id="": {
         "movement_quality": "整体完成度尚可，下蹲深度不足",
         "limitations": ["屈膝角度受限"],
         "compensations": ["躯干前倾"],

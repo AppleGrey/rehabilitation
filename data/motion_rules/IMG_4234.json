@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4234",
+  "title_cn": "站立单臂前上举",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "左臂抬高",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "left_shoulder",
+        "to": "left_wrist",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 150.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 170.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 90.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 20.0
+      },
+      "fail_hint": "左臂再举高一些"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 1.0
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1"
+        ],
+        "t": 3.5,
+        "metric_id": "std_1",
+        "name_cn": "举左臂"
+      },
+      {
+        "role": "cycle_end",
+        "t": 7.0
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "站立单臂前上举",
+    "cycle_start": 1.0,
+    "cycle_end": 7.0,
+    "keypoints": [
+      {
+        "name_cn": "举左臂",
+        "t": 3.5,
+        "how_cn": "左臂向前上方举起至最高点",
+        "scored": true,
+        "skip_reason": ""
+      }
+    ]
+  }
+}

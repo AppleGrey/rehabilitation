@@ -74,12 +74,27 @@ class FollowMetric {
   }
 }
 
+class CyclePeak {
+  final String id;
+  final String nameCn;
+  final List<String> metricIds;
+  final Duration time;
+
+  const CyclePeak({
+    required this.id,
+    required this.metricIds,
+    required this.time,
+    this.nameCn = '',
+  });
+}
+
 class MotionStandard {
   final String videoId;
   final String titleCn;
   final Duration tStart;
   final Duration tPeak;
   final Duration tEnd;
+  final List<CyclePeak> peaks;
   final int pauseToleranceMs;
   final int holdMs;
   final int waitTimeoutMs;
@@ -97,6 +112,7 @@ class MotionStandard {
     required this.tStart,
     required this.tPeak,
     required this.tEnd,
+    this.peaks = const [],
     required this.pauseToleranceMs,
     required this.holdMs,
     required this.waitTimeoutMs,
@@ -119,6 +135,25 @@ class MotionStandard {
         }
       }
       return Duration(milliseconds: (fallback * 1000).round());
+    }
+
+    final peaks = <CyclePeak>[];
+    for (final p in points) {
+      final role = p['role'];
+      if (role != 'peak' && role != 'wait_peak') continue;
+      final listed = (p['metric_ids'] as List<dynamic>? ?? []).map((e) => e.toString()).where((e) => e.isNotEmpty).toList();
+      final metricIds = listed.isNotEmpty
+          ? listed
+          : [(p['metric_id'] ?? p['id'] ?? 'primary').toString()];
+      final id = (p['id'] ?? metricIds.first).toString();
+      peaks.add(
+        CyclePeak(
+          id: id,
+          nameCn: p['name_cn'] as String? ?? '',
+          metricIds: metricIds,
+          time: Duration(milliseconds: ((p['t'] as num).toDouble() * 1000).round()),
+        ),
+      );
     }
 
     final metrics = (j['metrics'] as List<dynamic>? ?? [])
@@ -146,8 +181,9 @@ class MotionStandard {
       videoId: j['video_id'] as String? ?? '',
       titleCn: j['title_cn'] as String? ?? '跟做训练',
       tStart: pt('cycle_start', 0),
-      tPeak: pt('wait_peak', 0),
+      tPeak: peaks.isEmpty ? pt('wait_peak', 0) : peaks.first.time,
       tEnd: pt('cycle_end', 0),
+      peaks: peaks,
       pauseToleranceMs: (playback['pause_seek_tolerance_ms'] as num?)?.toInt() ?? 80,
       holdMs: (logic['hold_ms'] as num?)?.toInt() ?? 300,
       waitTimeoutMs: (logic['wait_timeout_ms'] as num?)?.toInt() ?? 8000,

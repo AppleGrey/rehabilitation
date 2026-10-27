@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4225",
+  "title_cn": "站姿侧腰拉伸",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "左臂上举",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "left_shoulder",
+        "to": "left_wrist",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 135.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 160.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 90.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 45.0
+      },
+      "fail_hint": "左臂再举高一些"
+    },
+    {
+      "id": "std_2",
+      "name_cn": "躯干右侧屈",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "abs_degrees_from_vertical",
+        "from": "mid_hip",
+        "to": "mid_shoulder",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 12.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 20.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 6.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 3.0
+      },
+      "fail_hint": "身体再向右侧弯一些"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 2.0
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1",
+          "std_2"
+        ],
+        "t": 5.5,
+        "metric_id": "std_1",
+        "name_cn": "举左臂侧屈"
+      },
+      {
+        "role": "cycle_end",
+        "t": 14.0
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1",
+      "std_2"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "站姿侧腰拉伸",
+    "cycle_start": 2.0,
+    "cycle_end": 14.0,
+    "keypoints": [
+      {
+        "name_cn": "举左臂侧屈",
+        "t": 5.5,
+        "how_cn": "左臂上举过头，躯干向右侧屈拉伸",
+        "scored": true,
+        "skip_reason": ""
+      }
+    ]
+  }
+}

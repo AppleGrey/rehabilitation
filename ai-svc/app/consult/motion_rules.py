@@ -7,9 +7,9 @@ import re
 from pathlib import Path
 
 from ..core.config import DATA_DIR
+from ..media.video_metadata import list_video_ids, load_video
 
 RULES_DIR = DATA_DIR / "motion_rules"
-METADATA_PATH = DATA_DIR / "metadata" / "metadata.json"
 _ID = re.compile(r"^[A-Za-z0-9_-]{1,80}$")
 
 LANDMARKS = {
@@ -65,42 +65,9 @@ def list_saved_ids() -> set[str]:
     return {path.stem for path in RULES_DIR.glob("*.json") if _ID.fullmatch(path.stem)}
 
 
-def list_actions() -> list[dict]:
-    saved = list_saved_ids()
-    actions: list[dict] = []
-    seen: set[str] = set()
-    if METADATA_PATH.exists():
-        with open(METADATA_PATH, encoding="utf-8") as f:
-            rows = json.load(f)
-        if isinstance(rows, list):
-            for row in rows:
-                if not isinstance(row, dict):
-                    continue
-                video_id = str(row.get("video_id") or "")
-                if not _ID.fullmatch(video_id) or video_id in seen:
-                    continue
-                seen.add(video_id)
-                keywords = row.get("action_keywords") or []
-                title = keywords[0] if keywords else row.get("description_cn") or video_id
-                actions.append(
-                    {
-                        "video_id": video_id,
-                        "title": title,
-                        "joint": row.get("target_joint") or "",
-                        "has_rule": video_id in saved,
-                    }
-                )
-    for video_id in sorted(saved - seen):
-        rule = load_rule(video_id) or {}
-        actions.append(
-            {
-                "video_id": video_id,
-                "title": rule.get("title_cn") or video_id,
-                "joint": "",
-                "has_rule": True,
-            }
-        )
-    return actions
+def list_configured_ids() -> list[str]:
+    """只返回视频库里、并且已经写了规则的编号。"""
+    return sorted(list_saved_ids() & list_video_ids())
 
 
 def _number(value, name: str) -> float:
@@ -190,12 +157,16 @@ def validate_rule(video_id: str, raw: dict) -> dict:
         raise MotionRuleError("required_metric_ids 里有不存在的指标")
     hold = logic.get("hold_ms", 300)
     visibility = raw.get("min_visibility", 0.45)
+    keyframes, peak_metric_ids = _keyframes(raw, video_id, {metric["id"] for metric in metrics})
+    if peak_metric_ids:
+        required = peak_metric_ids
     return {
         "schema_version": 1,
         "video_id": video_id,
         "title_cn": str(raw.get("title_cn") or video_id),
         "min_visibility": _number(visibility, "min_visibility"),
         "metrics": metrics,
+        "keyframes": keyframes,
         "rep_logic": {
             "required_metric_ids": required,
             "hold_ms": int(_number(hold, "hold_ms")),
@@ -204,7 +175,130 @@ def validate_rule(video_id: str, raw: dict) -> dict:
     }
 
 
+def _peak_standards(item: dict, peak_id: str, metric_ids: set[str], legacy_peak: bool) -> list[str]:
+    """一个关键点在同一时刻可以要求多条动作标准。"""
+    raw_ids = item.get("metric_ids")
+    chosen: list[str] = []
+    if isinstance(raw_ids, list) and not raw_ids and not str(item.get("metric_id") or "").strip():
+        return []
+    if isinstance(raw_ids, list):
+        chosen = [str(metric_id).strip() for metric_id in raw_ids if str(metric_id).strip()]
+    if not chosen:
+        one = str(item.get("metric_id") or "").strip()
+        if one:
+            chosen = [one]
+        elif legacy_peak or peak_id in metric_ids:
+            fallback = peak_id
+            if legacy_peak and peak_id not in metric_ids:
+                if not metric_ids:
+                    raise MotionRuleError("关键点至少要有一条动作标准")
+                fallback = "primary" if "primary" in metric_ids else sorted(metric_ids)[0]
+            chosen = [fallback]
+    if not chosen:
+        raise MotionRuleError(f"关键点 {peak_id} 至少要有一条动作标准")
+    seen: set[str] = set()
+    for metric_id in chosen:
+        if not _ID.fullmatch(metric_id):
+            raise MotionRuleError("动作标准需要一个合法编号")
+        if metric_id not in metric_ids:
+            raise MotionRuleError(f"动作标准 {metric_id} 不存在")
+        if metric_id in seen:
+            raise MotionRuleError("同一个关键点里不能重复同一条动作标准")
+        seen.add(metric_id)
+    return chosen
+
+
+def _keyframes(raw: dict, video_id: str, metric_ids: set[str]) -> tuple[dict, list[str]]:
+    """一轮动作：一个开始、若干关键点、一个结束。每个关键点可挂多条同时生效的动作标准。"""
+    kf = raw.get("keyframes")
+    if kf is None:
+        return {"points": []}, []
+    if not isinstance(kf, dict):
+        raise MotionRuleError("关键点需要是对象")
+    points = kf.get("points") or []
+    if not isinstance(points, list):
+        raise MotionRuleError("关键点列表格式不正确")
+    start: float | None = None
+    end: float | None = None
+    peaks: list[dict] = []
+    seen_ids: set[str] = set()
+    used_metrics: set[str] = set()
+    for item in points:
+        if not isinstance(item, dict):
+            raise MotionRuleError("关键点格式不正确")
+        role = str(item.get("role") or "")
+        legacy_peak = role == "wait_peak"
+        if legacy_peak:
+            role = "peak"
+        if role not in {"cycle_start", "peak", "cycle_end"}:
+            raise MotionRuleError("时间点只能是开始、关键点或结束")
+        moment = _number(item.get("t"), role)
+        if moment < 0:
+            raise MotionRuleError("关键点时间不能为负")
+        if role == "cycle_start":
+            if start is not None:
+                raise MotionRuleError("开始点只能有一个")
+            start = moment
+            continue
+        if role == "cycle_end":
+            if end is not None:
+                raise MotionRuleError("结束点只能有一个")
+            end = moment
+            continue
+        peak_id = str(item.get("id") or item.get("metric_id") or "").strip()
+        if legacy_peak and not peak_id:
+            peak_id = "primary" if "primary" in metric_ids else (sorted(metric_ids)[0] if metric_ids else "")
+        if not peak_id or not _ID.fullmatch(peak_id):
+            raise MotionRuleError("关键点需要一个合法编号")
+        if peak_id in seen_ids:
+            raise MotionRuleError("关键点编号不能重复")
+        standards = _peak_standards(item, peak_id, metric_ids, legacy_peak)
+        overlap = [metric_id for metric_id in standards if metric_id in used_metrics]
+        if overlap:
+            raise MotionRuleError("同一条动作标准只能属于一个关键点")
+        seen_ids.add(peak_id)
+        used_metrics.update(standards)
+        peak = {
+            "role": "peak",
+            "id": peak_id,
+            "metric_ids": standards,
+            "t": round(moment, 3),
+        }
+        if standards:
+            peak["metric_id"] = standards[0]
+        name = str(item.get("name_cn") or "").strip()
+        if name:
+            peak["name_cn"] = name
+        peaks.append(peak)
+    if start is None and end is None and not peaks:
+        return {"points": []}, []
+    if start is None or end is None or not peaks:
+        raise MotionRuleError("一轮动作需要开始、至少一个关键点和结束")
+    leftover = sorted(metric_ids - used_metrics)
+    if leftover:
+        raise MotionRuleError("还有动作标准没有挂到关键点上")
+    peaks.sort(key=lambda peak: peak["t"])
+    ordered = [start, *(peak["t"] for peak in peaks), end]
+    if any(left >= right for left, right in zip(ordered, ordered[1:])):
+        raise MotionRuleError("时间顺序必须是开始、各个关键点、结束")
+    meta = load_video(video_id) or {}
+    duration = meta.get("duration_seconds")
+    if isinstance(duration, (int, float)) and duration > 0 and end > float(duration) + 0.25:
+        raise MotionRuleError("结束点超过了视频时长")
+    required = [metric_id for peak in peaks for metric_id in peak["metric_ids"]]
+    return {
+        "points": [
+            {"role": "cycle_start", "t": round(start, 3)},
+            *peaks,
+            {"role": "cycle_end", "t": round(end, 3)},
+        ]
+    }, required
+
+
 def save_rule(video_id: str, raw: dict) -> dict:
+    video_id = check_video_id(video_id)
+    if load_video(video_id) is None:
+        raise MotionRuleError("视频库里没有这个视频，不能设置实时评分规则")
     rule = validate_rule(video_id, raw)
     RULES_DIR.mkdir(parents=True, exist_ok=True)
     path = _rule_path(video_id)

@@ -15,6 +15,16 @@ const _orientations = {
 
 const _mlToIndex = <PoseLandmarkType, int>{
   PoseLandmarkType.nose: 0,
+  PoseLandmarkType.leftEyeInner: 1,
+  PoseLandmarkType.leftEye: 2,
+  PoseLandmarkType.leftEyeOuter: 3,
+  PoseLandmarkType.rightEyeInner: 4,
+  PoseLandmarkType.rightEye: 5,
+  PoseLandmarkType.rightEyeOuter: 6,
+  PoseLandmarkType.leftEar: 7,
+  PoseLandmarkType.rightEar: 8,
+  PoseLandmarkType.leftMouth: 9,
+  PoseLandmarkType.rightMouth: 10,
   PoseLandmarkType.leftShoulder: 11,
   PoseLandmarkType.rightShoulder: 12,
   PoseLandmarkType.leftElbow: 13,

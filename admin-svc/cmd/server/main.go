@@ -14,6 +14,7 @@ import (
 	"rehabilitation/admin-svc/internal/auth"
 	"rehabilitation/admin-svc/internal/config"
 	"rehabilitation/admin-svc/internal/httpserver"
+	"rehabilitation/admin-svc/internal/llmconfig"
 	"rehabilitation/admin-svc/internal/ota"
 	"rehabilitation/admin-svc/internal/program"
 	"rehabilitation/admin-svc/internal/storage"
@@ -48,6 +49,9 @@ func main() {
 	if err := ota.EnsureSchema(ctx, pool); err != nil {
 		log.Fatalf("ota schema: %v", err)
 	}
+	if err := llmconfig.EnsureSchema(ctx, pool); err != nil {
+		log.Fatalf("llm config schema: %v", err)
+	}
 
 	repo := strategy.NewRepo(pool)
 	handler := strategy.NewHandler(repo)
@@ -61,11 +65,13 @@ func main() {
 		Strategy:     handler,
 		Program:      programHandler,
 		OTA:          otaHandler,
+		LLM:          llmconfig.NewHandler(llmconfig.NewRepo(pool)),
 		Auth:         auth.NewHandler(cfg.CoreSvcURL),
 		Guard:        auth.NewGuard([]byte(cfg.JWTSecret), pool),
 		StaticDir:    cfg.StaticDir,
 		KgSvcURL:     cfg.KgSvcURL,
 		CoreSvcURL:   cfg.CoreSvcURL,
+		AiSvcURL:     cfg.AiSvcURL,
 		ServiceToken: cfg.ServiceToken,
 	})
 

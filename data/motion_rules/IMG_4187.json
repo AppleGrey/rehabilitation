@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4187",
+  "title_cn": "单腿前伸下蹲",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "右膝屈曲",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "angle_3point",
+        "output": "",
+        "from": null,
+        "to": null,
+        "points": [
+          "right_hip",
+          "right_knee",
+          "right_ankle"
+        ]
+      },
+      "pass": {
+        "op": "lte",
+        "value": 110.0
+      },
+      "excellent": {
+        "op": "lte",
+        "value": 95.0
+      },
+      "attempt": {
+        "op": "lte",
+        "value": 110.0
+      },
+      "reset": {
+        "op": "gte",
+        "value": 170.0
+      },
+      "fail_hint": "右膝再弯曲一些"
+    },
+    {
+      "id": "std_2",
+      "name_cn": "左腿前伸",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "left_hip",
+        "to": "left_ankle",
+        "points": []
+      },
+      "pass": {
+        "op": "lte",
+        "value": 45.0
+      },
+      "excellent": {
+        "op": "lte",
+        "value": 30.0
+      },
+      "attempt": {
+        "op": "lte",
+        "value": 45.0
+      },
+      "reset": {
+        "op": "gte",
+        "value": 85.0
+      },
+      "fail_hint": "左腿尽量向前伸直"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 4.0
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1",
+          "std_2"
+        ],
+        "t": 7.0,
+        "metric_id": "std_1",
+        "name_cn": "伸左腿下蹲"
+      },
+      {
+        "role": "cycle_end",
+        "t": 9.0
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1",
+      "std_2"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "单腿前伸下蹲",
+    "cycle_start": 4.0,
+    "cycle_end": 9.0,
+    "keypoints": [
+      {
+        "name_cn": "伸左腿下蹲",
+        "t": 7.0,
+        "how_cn": "左腿前伸，右腿屈膝下蹲至大腿近水平",
+        "scored": true,
+        "skip_reason": ""
+      }
+    ]
+  }
+}

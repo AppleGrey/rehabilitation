@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4424",
+  "title_cn": "弹力带抗阻伸膝",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "左膝伸直",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "angle_3point",
+        "output": "",
+        "from": null,
+        "to": null,
+        "points": [
+          "left_hip",
+          "left_knee",
+          "left_ankle"
+        ]
+      },
+      "pass": {
+        "op": "gte",
+        "value": 165.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 175.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 150.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 135.0
+      },
+      "fail_hint": "左腿再向后蹬直一些"
+    },
+    {
+      "id": "std_2",
+      "name_cn": "躯干保持直立",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "abs_degrees_from_vertical",
+        "from": "mid_hip",
+        "to": "mid_shoulder",
+        "points": []
+      },
+      "pass": {
+        "op": "lte",
+        "value": 12.0
+      },
+      "excellent": {
+        "op": "lte",
+        "value": 6.0
+      },
+      "attempt": {
+        "op": "lte",
+        "value": 12.0
+      },
+      "reset": {
+        "op": "gte",
+        "value": 25.0
+      },
+      "fail_hint": "上身不要过度前倾"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 0.5
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1",
+          "std_2"
+        ],
+        "t": 2.5,
+        "metric_id": "std_1",
+        "name_cn": "伸直左腿"
+      },
+      {
+        "role": "cycle_end",
+        "t": 4.5
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1",
+      "std_2"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "弹力带抗阻伸膝",
+    "cycle_start": 0.5,
+    "cycle_end": 4.5,
+    "keypoints": [
+      {
+        "name_cn": "伸直左腿",
+        "t": 2.5,
+        "how_cn": "左腿向后用力蹬直对抗阻力",
+        "scored": true,
+        "skip_reason": ""
+      }
+    ]
+  }
+}

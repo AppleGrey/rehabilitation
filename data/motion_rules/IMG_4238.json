@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4238",
+  "title_cn": "站立屈肘肩外旋",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "右前臂外展",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "right_elbow",
+        "to": "right_wrist",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 75.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 90.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 40.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 10.0
+      },
+      "fail_hint": "右前臂再向外打开一些"
+    },
+    {
+      "id": "std_2",
+      "name_cn": "左前臂外展",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "left_elbow",
+        "to": "left_wrist",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 75.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 90.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 40.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 10.0
+      },
+      "fail_hint": "左前臂再向外打开一些"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 1.5
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1",
+          "std_2"
+        ],
+        "t": 4.5,
+        "metric_id": "std_1",
+        "name_cn": "屈肘外旋"
+      },
+      {
+        "role": "cycle_end",
+        "t": 7.5
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1",
+      "std_2"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "站立屈肘肩外旋",
+    "cycle_start": 1.5,
+    "cycle_end": 7.5,
+    "keypoints": [
+      {
+        "name_cn": "屈肘外旋",
+        "t": 4.5,
+        "how_cn": "大臂贴紧身体，前臂向两侧打开至水平",
+        "scored": true,
+        "skip_reason": ""
+      }
+    ]
+  }
+}

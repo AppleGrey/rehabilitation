@@ -18,7 +18,7 @@ from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, System
 from langchain_openai import ChatOpenAI
 from langgraph.graph import END, StateGraph
 
-from ..core.config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, DEEPSEEK_MODEL
+from ..core.llm_runtime import consult_profile
 from .prompts import (
     GAP_FILL_SYSTEM,
     GREETING_SYSTEM,
@@ -46,29 +46,34 @@ from .state import (
 from ..core.llm_request_log import append_llm_trace
 from ..media.matching import match_videos
 
-# ── LLM 实例（DeepSeek 兼容 OpenAI 接口） ────────────────────────────────────
-_llm = ChatOpenAI(
-    model=DEEPSEEK_MODEL,
-    api_key=DEEPSEEK_API_KEY,
-    base_url=DEEPSEEK_BASE_URL,
-    temperature=0.25,
-    streaming=True,
-)
+def _consult_llm() -> ChatOpenAI:
+    cfg = consult_profile()
+    if not cfg.api_key:
+        raise RuntimeError("问诊大模型 API Key 未配置，请在管理平台的配置管理中填写")
+    return ChatOpenAI(
+        model=cfg.model,
+        api_key=cfg.api_key,
+        base_url=cfg.base_url,
+        temperature=cfg.temperature,
+        streaming=True,
+    )
 
 
 def _invoke_and_log(node: str, messages_for_llm: Sequence[BaseMessage]) -> BaseMessage:
     """调用 LLM，并把与 OpenAI 等价的请求体 + 原始响应写入 logs/llm_openai_io.jsonl。"""
-    response = _llm.invoke(messages_for_llm)
-    model_id = getattr(_llm, "model_name", None) or DEEPSEEK_MODEL
-    temp = float(getattr(_llm, "temperature", 0.4) or 0.4)
+    cfg = consult_profile()
+    llm = _consult_llm()
+    response = llm.invoke(messages_for_llm)
+    model_id = getattr(llm, "model_name", None) or cfg.model
+    temp = float(getattr(llm, "temperature", 0.25) or 0.25)
     append_llm_trace(
         node=node,
         messages_sent=messages_for_llm,
         assistant_message=response,
         model=model_id,
         temperature=temp,
-        stream_flag=bool(getattr(_llm, "streaming", False)),
-        api_base_url=DEEPSEEK_BASE_URL,
+        stream_flag=bool(getattr(llm, "streaming", False)),
+        api_base_url=cfg.base_url,
     )
     return response  # type: ignore[return-value]
 

@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4377",
+  "title_cn": "侧卧股四头肌拉伸",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "左膝屈曲幅度",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "angle_3point",
+        "output": "",
+        "from": null,
+        "to": null,
+        "points": [
+          "left_hip",
+          "left_knee",
+          "left_ankle"
+        ]
+      },
+      "pass": {
+        "op": "lte",
+        "value": 60.0
+      },
+      "excellent": {
+        "op": "lte",
+        "value": 40.0
+      },
+      "attempt": {
+        "op": "lte",
+        "value": 60.0
+      },
+      "reset": {
+        "op": "gte",
+        "value": 160.0
+      },
+      "fail_hint": "左膝再弯曲一些，脚跟靠近臀部"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 0.5
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1"
+        ],
+        "t": 4.0,
+        "metric_id": "std_1",
+        "name_cn": "屈左膝拉踝"
+      },
+      {
+        "role": "cycle_end",
+        "t": 15.5
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "侧卧股四头肌拉伸",
+    "cycle_start": 0.5,
+    "cycle_end": 15.5,
+    "keypoints": [
+      {
+        "name_cn": "屈左膝拉踝",
+        "t": 4.0,
+        "how_cn": "左手拉左脚踝靠近臀部，充分屈膝",
+        "scored": true,
+        "skip_reason": ""
+      }
+    ]
+  }
+}

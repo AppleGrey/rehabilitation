@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4182",
+  "title_cn": "站立侧抬腿",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "右大腿外展",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "right_hip",
+        "to": "right_knee",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 35.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 45.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 20.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 10.0
+      },
+      "fail_hint": "右腿再抬高一些"
+    },
+    {
+      "id": "std_2",
+      "name_cn": "躯干保持直立",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "abs_degrees_from_vertical",
+        "from": "mid_hip",
+        "to": "mid_shoulder",
+        "points": []
+      },
+      "pass": {
+        "op": "lte",
+        "value": 10.0
+      },
+      "excellent": {
+        "op": "lte",
+        "value": 5.0
+      },
+      "attempt": {
+        "op": "lte",
+        "value": 10.0
+      },
+      "reset": {
+        "op": "gte",
+        "value": 20.0
+      },
+      "fail_hint": "身体不要过度倾斜"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 2.0
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1",
+          "std_2"
+        ],
+        "t": 3.5,
+        "metric_id": "std_1",
+        "name_cn": "右腿侧抬"
+      },
+      {
+        "role": "cycle_end",
+        "t": 5.0
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1",
+      "std_2"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "站立侧抬腿",
+    "cycle_start": 2.0,
+    "cycle_end": 5.0,
+    "keypoints": [
+      {
+        "name_cn": "右腿侧抬",
+        "t": 3.5,
+        "how_cn": "右腿向侧方抬起至约45度",
+        "scored": true,
+        "skip_reason": ""
+      }
+    ]
+  }
+}

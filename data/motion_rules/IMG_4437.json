@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4437",
+  "title_cn": "坐姿髋部拉伸",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "右膝外展",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "angle_3point",
+        "output": "",
+        "from": null,
+        "to": null,
+        "points": [
+          "right_hip",
+          "right_knee",
+          "right_ankle"
+        ]
+      },
+      "pass": {
+        "op": "lte",
+        "value": 90.0
+      },
+      "excellent": {
+        "op": "lte",
+        "value": 70.0
+      },
+      "attempt": {
+        "op": "lte",
+        "value": 90.0
+      },
+      "reset": {
+        "op": "gte",
+        "value": 160.0
+      },
+      "fail_hint": "右膝再向外打开一些"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 0.5
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1"
+        ],
+        "t": 3.0,
+        "metric_id": "std_1",
+        "name_cn": "搭右脚踝"
+      },
+      {
+        "role": "cycle_end",
+        "t": 12.0
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "坐姿髋部拉伸",
+    "cycle_start": 0.5,
+    "cycle_end": 12.0,
+    "keypoints": [
+      {
+        "name_cn": "搭右脚踝",
+        "t": 3.0,
+        "how_cn": "右脚踝放在左膝上方",
+        "scored": true,
+        "skip_reason": ""
+      },
+      {
+        "name_cn": "压膝拉伸",
+        "t": 7.0,
+        "how_cn": "双手轻压右膝保持拉伸",
+        "scored": false,
+        "skip_reason": "手部施力按压无法通过骨架角度准确测量"
+      }
+    ]
+  }
+}

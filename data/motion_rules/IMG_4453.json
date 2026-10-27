@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4453",
+  "title_cn": "单腿提踵静态保持",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "左膝抬高",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "left_hip",
+        "to": "left_knee",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 25.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 35.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 15.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 5.0
+      },
+      "fail_hint": "左腿再抬高一些"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 1.0
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1"
+        ],
+        "t": 3.0,
+        "metric_id": "std_1",
+        "name_cn": "抬左腿"
+      },
+      {
+        "role": "cycle_end",
+        "t": 14.5
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "单腿提踵静态保持",
+    "cycle_start": 1.0,
+    "cycle_end": 14.5,
+    "keypoints": [
+      {
+        "name_cn": "抬左腿",
+        "t": 3.0,
+        "how_cn": "左腿屈膝抬起离开踏板",
+        "scored": true,
+        "skip_reason": ""
+      },
+      {
+        "name_cn": "右腿提踵",
+        "t": 4.5,
+        "how_cn": "右脚后跟抬起，单腿支撑保持",
+        "scored": false,
+        "skip_reason": "踝关节跖屈角度无法通过现有骨架点准确测量"
+      }
+    ]
+  }
+}

@@ -1,0 +1,131 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4251",
+  "title_cn": "站立单臂侧举侧弯",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "左臂抬高",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "left_shoulder",
+        "to": "left_wrist",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 80.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 90.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 45.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 20.0
+      },
+      "fail_hint": "左臂再抬高一些"
+    },
+    {
+      "id": "std_2",
+      "name_cn": "躯干侧倾幅度",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "abs_degrees_from_vertical",
+        "from": "mid_hip",
+        "to": "mid_shoulder",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 12.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 18.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 6.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 3.0
+      },
+      "fail_hint": "身体再向左侧弯一些"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 1.5
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1"
+        ],
+        "t": 3.5,
+        "metric_id": "std_1",
+        "name_cn": "左臂侧平举"
+      },
+      {
+        "role": "peak",
+        "id": "peak_2",
+        "metric_ids": [
+          "std_2"
+        ],
+        "t": 6.0,
+        "metric_id": "std_2",
+        "name_cn": "躯干向左侧弯"
+      },
+      {
+        "role": "cycle_end",
+        "t": 8.5
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1",
+      "std_2"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "站立单臂侧举侧弯",
+    "cycle_start": 1.5,
+    "cycle_end": 8.5,
+    "keypoints": [
+      {
+        "name_cn": "左臂侧平举",
+        "t": 3.5,
+        "how_cn": "左臂向侧方抬起至接近水平",
+        "scored": true,
+        "skip_reason": ""
+      },
+      {
+        "name_cn": "躯干向左侧弯",
+        "t": 6.0,
+        "how_cn": "上身向左侧弯曲拉伸右侧腰",
+        "scored": true,
+        "skip_reason": ""
+      }
+    ]
+  }
+}

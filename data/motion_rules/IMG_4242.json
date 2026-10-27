@@ -1,0 +1,215 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4242",
+  "title_cn": "站立单侧肩前屈上举",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "右大臂抬高",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "right_shoulder",
+        "to": "right_elbow",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 80.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 90.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 45.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 10.0
+      },
+      "fail_hint": "右大臂再抬高一些"
+    },
+    {
+      "id": "std_2",
+      "name_cn": "右前臂竖起",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "right_elbow",
+        "to": "right_wrist",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 150.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 170.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 120.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 90.0
+      },
+      "fail_hint": "右前臂再向上竖起一些"
+    },
+    {
+      "id": "std_3",
+      "name_cn": "屈右肘",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "angle_3point",
+        "output": "",
+        "from": null,
+        "to": null,
+        "points": [
+          "right_shoulder",
+          "right_elbow",
+          "right_wrist"
+        ]
+      },
+      "pass": {
+        "op": "lte",
+        "value": 100.0
+      },
+      "excellent": {
+        "op": "lte",
+        "value": 90.0
+      },
+      "attempt": {
+        "op": "lte",
+        "value": 100.0
+      },
+      "reset": {
+        "op": "gte",
+        "value": 170.0
+      },
+      "fail_hint": "右肘弯曲角度再小一些"
+    },
+    {
+      "id": "std_4",
+      "name_cn": "右前臂放下",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "right_elbow",
+        "to": "right_wrist",
+        "points": []
+      },
+      "pass": {
+        "op": "lte",
+        "value": 100.0
+      },
+      "excellent": {
+        "op": "lte",
+        "value": 90.0
+      },
+      "attempt": {
+        "op": "lte",
+        "value": 100.0
+      },
+      "reset": {
+        "op": "gte",
+        "value": 170.0
+      },
+      "fail_hint": "右前臂再放低一些"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 1.0
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1"
+        ],
+        "t": 3.0,
+        "metric_id": "std_1",
+        "name_cn": "右臂侧平举"
+      },
+      {
+        "role": "peak",
+        "id": "peak_2",
+        "metric_ids": [
+          "std_2",
+          "std_3"
+        ],
+        "t": 5.5,
+        "metric_id": "std_2",
+        "name_cn": "右前臂上举"
+      },
+      {
+        "role": "peak",
+        "id": "peak_3",
+        "metric_ids": [
+          "std_4"
+        ],
+        "t": 9.0,
+        "metric_id": "std_4",
+        "name_cn": "右臂还原"
+      },
+      {
+        "role": "cycle_end",
+        "t": 9.5
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1",
+      "std_2",
+      "std_3",
+      "std_4"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "站立单侧肩前屈上举",
+    "cycle_start": 1.0,
+    "cycle_end": 9.5,
+    "keypoints": [
+      {
+        "name_cn": "右臂侧平举",
+        "t": 3.0,
+        "how_cn": "右大臂抬至与地面平行",
+        "scored": true,
+        "skip_reason": ""
+      },
+      {
+        "name_cn": "右前臂上举",
+        "t": 5.5,
+        "how_cn": "右前臂向上竖起接近垂直",
+        "scored": true,
+        "skip_reason": ""
+      },
+      {
+        "name_cn": "右臂还原",
+        "t": 9.0,
+        "how_cn": "右前臂放下回到侧平举位",
+        "scored": true,
+        "skip_reason": ""
+      }
+    ]
+  }
+}

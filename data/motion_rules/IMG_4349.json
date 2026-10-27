@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4349",
+  "title_cn": "仰卧抱膝拉伸",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "大腿靠近躯干",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "left_hip",
+        "to": "left_knee",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 110.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 130.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 80.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 50.0
+      },
+      "fail_hint": "膝盖再往胸口拉近一些"
+    },
+    {
+      "id": "std_2",
+      "name_cn": "屈膝充分",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "angle_3point",
+        "output": "",
+        "from": null,
+        "to": null,
+        "points": [
+          "left_hip",
+          "left_knee",
+          "left_ankle"
+        ]
+      },
+      "pass": {
+        "op": "lte",
+        "value": 70.0
+      },
+      "excellent": {
+        "op": "lte",
+        "value": 50.0
+      },
+      "attempt": {
+        "op": "lte",
+        "value": 70.0
+      },
+      "reset": {
+        "op": "gte",
+        "value": 110.0
+      },
+      "fail_hint": "小腿再贴近大腿一些"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 0.5
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1",
+          "std_2"
+        ],
+        "t": 4.5,
+        "metric_id": "std_1",
+        "name_cn": "抱膝贴胸"
+      },
+      {
+        "role": "cycle_end",
+        "t": 14.5
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1",
+      "std_2"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "仰卧抱膝拉伸",
+    "cycle_start": 0.5,
+    "cycle_end": 14.5,
+    "keypoints": [
+      {
+        "name_cn": "抱膝贴胸",
+        "t": 4.5,
+        "how_cn": "双手抱膝将大腿拉向胸口并保持",
+        "scored": true,
+        "skip_reason": ""
+      }
+    ]
+  }
+}

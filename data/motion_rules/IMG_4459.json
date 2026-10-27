@@ -1,0 +1,163 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4459",
+  "title_cn": "单腿硬拉接高抬膝",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "右大腿抬高",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "right_hip",
+        "to": "right_knee",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 80.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 95.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 45.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 10.0
+      },
+      "fail_hint": "右腿再向后抬高一些"
+    },
+    {
+      "id": "std_2",
+      "name_cn": "躯干前倾",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "abs_degrees_from_vertical",
+        "from": "mid_hip",
+        "to": "mid_shoulder",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 70.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 85.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 40.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 10.0
+      },
+      "fail_hint": "上半身再向前倾一些"
+    },
+    {
+      "id": "std_3",
+      "name_cn": "右大腿前抬",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "right_hip",
+        "to": "right_knee",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 80.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 95.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 45.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 10.0
+      },
+      "fail_hint": "右膝再向前抬高一些"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 1.0
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1",
+          "std_2"
+        ],
+        "t": 7.0,
+        "metric_id": "std_1",
+        "name_cn": "后抬右腿"
+      },
+      {
+        "role": "peak",
+        "id": "peak_2",
+        "metric_ids": [
+          "std_3"
+        ],
+        "t": 12.0,
+        "metric_id": "std_3",
+        "name_cn": "抬右膝"
+      },
+      {
+        "role": "cycle_end",
+        "t": 14.0
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1",
+      "std_2",
+      "std_3"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "单腿硬拉接高抬膝",
+    "cycle_start": 1.0,
+    "cycle_end": 14.0,
+    "keypoints": [
+      {
+        "name_cn": "后抬右腿",
+        "t": 7.0,
+        "how_cn": "躯干前倾，右腿向后抬起至接近水平",
+        "scored": true,
+        "skip_reason": ""
+      },
+      {
+        "name_cn": "抬右膝",
+        "t": 12.0,
+        "how_cn": "收回右腿，右大腿向前抬至接近水平",
+        "scored": true,
+        "skip_reason": ""
+      }
+    ]
+  }
+}

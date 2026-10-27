@@ -14,6 +14,7 @@ type Config struct {
 	StaticDir   string
 	KgSvcURL    string
 	CoreSvcURL  string
+	AiSvcURL    string
 
 	// 认证：JWT_SECRET 必须与 core-svc 一致（admin-svc 只验签，不签发）。
 	// SERVICE_TOKEN 用于代理到 core-svc 时表明「这是内部调用」。
@@ -40,6 +41,7 @@ func Load() (*Config, error) {
 		StaticDir:      env("STATIC_DIR", "../frontend-admin/dist"),
 		KgSvcURL:       env("KG_SVC_URL", "http://127.0.0.1:8010"),
 		CoreSvcURL:     env("CORE_SVC_URL", "http://127.0.0.1:8081"),
+		AiSvcURL:       env("AI_SVC_URL", "http://127.0.0.1:8000"),
 		JWTSecret:      env("JWT_SECRET", DefaultJWTSecret),
 		ServiceToken:   env("SERVICE_TOKEN", "dev-service-token"),
 		MinIOEndpoint:  env("MINIO_ENDPOINT", "localhost:9000"),

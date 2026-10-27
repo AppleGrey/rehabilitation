@@ -1,0 +1,171 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4222",
+  "title_cn": "交叉步下蹲",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "支撑腿屈膝",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "angle_3point",
+        "output": "",
+        "from": null,
+        "to": null,
+        "points": [
+          "left_hip",
+          "left_knee",
+          "left_ankle"
+        ]
+      },
+      "pass": {
+        "op": "lte",
+        "value": 110.0
+      },
+      "excellent": {
+        "op": "lte",
+        "value": 95.0
+      },
+      "attempt": {
+        "op": "lte",
+        "value": 110.0
+      },
+      "reset": {
+        "op": "gte",
+        "value": 170.0
+      },
+      "fail_hint": "支撑腿再蹲低一些"
+    },
+    {
+      "id": "std_2",
+      "name_cn": "躯干前倾",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "abs_degrees_from_vertical",
+        "from": "mid_hip",
+        "to": "mid_shoulder",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 25.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 35.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 15.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 5.0
+      },
+      "fail_hint": "上身适度前倾保持平衡"
+    },
+    {
+      "id": "std_3",
+      "name_cn": "支撑腿伸直",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "angle_3point",
+        "output": "",
+        "from": null,
+        "to": null,
+        "points": [
+          "left_hip",
+          "left_knee",
+          "left_ankle"
+        ]
+      },
+      "pass": {
+        "op": "gte",
+        "value": 160.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 175.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 140.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 110.0
+      },
+      "fail_hint": "膝盖完全伸直站起"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 1.5
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1",
+          "std_2"
+        ],
+        "t": 4.5,
+        "metric_id": "std_1",
+        "name_cn": "交叉下蹲"
+      },
+      {
+        "role": "peak",
+        "id": "peak_2",
+        "metric_ids": [
+          "std_3"
+        ],
+        "t": 13.0,
+        "metric_id": "std_3",
+        "name_cn": "起身还原"
+      },
+      {
+        "role": "cycle_end",
+        "t": 13.5
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1",
+      "std_2",
+      "std_3"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "交叉步下蹲",
+    "cycle_start": 1.5,
+    "cycle_end": 13.5,
+    "keypoints": [
+      {
+        "name_cn": "交叉下蹲",
+        "t": 4.5,
+        "how_cn": "前脚交叉，支撑腿屈膝下蹲至大腿近水平",
+        "scored": true,
+        "skip_reason": ""
+      },
+      {
+        "name_cn": "起身还原",
+        "t": 13.0,
+        "how_cn": "支撑腿伸直站起，回到双脚并拢姿态",
+        "scored": true,
+        "skip_reason": ""
+      }
+    ]
+  }
+}

@@ -126,6 +126,28 @@ double _metricScore(double value, FollowMetric metric) {
   return score.clamp(0.0, 100.0);
 }
 
+/// 当前关键点的分数：它的几条标准要同时做到，取其中最低的一条。
+double scoreForPeak(PoseFrame frame, MotionStandard rule, String peakId) {
+  CyclePeak? peak;
+  for (final item in rule.peaks) {
+    if (item.id == peakId) peak = item;
+  }
+  if (peak == null) return frame.instantScore.toDouble();
+  final byId = {for (final metric in rule.metrics) metric.id: metric};
+  final metrics = [
+    for (final id in peak.metricIds)
+      if (byId[id]?.enabled ?? false) byId[id]!,
+  ];
+  if (metrics.isEmpty) return 0;
+  final scores = <double>[];
+  for (final metric in metrics) {
+    final value = frame.metrics[metric.id];
+    if (value == null) return 0;
+    scores.add(_metricScore(value, metric));
+  }
+  return scores.reduce(math.min);
+}
+
 /// 只有配置了至少一条启用的指标，跟做才显示实时分数。
 bool motionRuleEnablesLiveScore(MotionStandard? rule) {
   if (rule == null) return false;
@@ -168,7 +190,7 @@ PoseFrame evaluateLocal(List<OffsetLandmark> lms, MotionStandard standard) {
     );
   }
   final metrics = <String, double?>{};
-  final scored = <(double, double)>[];
+  final scores = <String, double>{};
   var visOk = true;
   final required = standard.requiredIds.toSet();
   if (required.isEmpty && standard.metrics.isNotEmpty) {
@@ -177,22 +199,44 @@ PoseFrame evaluateLocal(List<OffsetLandmark> lms, MotionStandard standard) {
 
   for (final m in standard.metrics) {
     if (!m.enabled) continue;
-    double? value;
-    value = computeMetricValue(lms, m, standard.minVisibility);
+    final value = computeMetricValue(lms, m, standard.minVisibility);
     metrics[m.id] = _round1(value);
     if (value == null) {
       if (required.contains(m.id)) visOk = false;
       continue;
     }
-    scored.add((m.weight, _metricScore(value, m)));
+    scores[m.id] = _metricScore(value, m);
+  }
+  final claimed = <String>{};
+  final groups = <List<String>>[];
+  for (final peak in standard.peaks) {
+    final ids = peak.metricIds.where((id) => standard.metrics.any((metric) => metric.enabled && metric.id == id)).toList();
+    if (ids.isEmpty) continue;
+    groups.add(ids);
+    claimed.addAll(ids);
+  }
+  for (final metric in standard.metrics) {
+    if (metric.enabled && !claimed.contains(metric.id)) groups.add([metric.id]);
   }
   var instant = 0.0;
-  if (scored.isEmpty) {
-    visOk = false;
-  } else {
-    final tw = scored.fold<double>(0, (s, e) => s + e.$1);
-    instant = tw == 0 ? 0 : scored.fold<double>(0, (s, e) => s + e.$1 * e.$2) / tw;
+  var complete = false;
+  for (final group in groups) {
+    final values = <double>[];
+    var missing = false;
+    for (final id in group) {
+      final score = scores[id];
+      if (score == null) {
+        missing = true;
+        break;
+      }
+      values.add(score);
+    }
+    if (missing || values.isEmpty) continue;
+    complete = true;
+    final groupScore = values.reduce(math.min);
+    if (groupScore > instant) instant = groupScore;
   }
+  if (!complete) visOk = false;
   return PoseFrame(
     detected: true,
     visibilityOk: visOk,

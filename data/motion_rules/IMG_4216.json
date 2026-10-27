@@ -1,0 +1,195 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4216",
+  "title_cn": "站立交替侧点地",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "左腿侧迈幅度",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "left_hip",
+        "to": "left_ankle",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 12.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 18.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 6.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 2.0
+      },
+      "fail_hint": "左脚再向侧面迈开一些"
+    },
+    {
+      "id": "std_2",
+      "name_cn": "躯干保持直立",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "abs_degrees_from_vertical",
+        "from": "mid_hip",
+        "to": "mid_shoulder",
+        "points": []
+      },
+      "pass": {
+        "op": "lte",
+        "value": 8.0
+      },
+      "excellent": {
+        "op": "lte",
+        "value": 4.0
+      },
+      "attempt": {
+        "op": "lte",
+        "value": 8.0
+      },
+      "reset": {
+        "op": "gte",
+        "value": 18.0
+      },
+      "fail_hint": "身体不要过度倾斜"
+    },
+    {
+      "id": "std_3",
+      "name_cn": "右腿侧迈幅度",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "right_hip",
+        "to": "right_ankle",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 12.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 18.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 6.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 2.0
+      },
+      "fail_hint": "右脚再向侧面迈开一些"
+    },
+    {
+      "id": "std_4",
+      "name_cn": "躯干保持直立",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "abs_degrees_from_vertical",
+        "from": "mid_hip",
+        "to": "mid_shoulder",
+        "points": []
+      },
+      "pass": {
+        "op": "lte",
+        "value": 8.0
+      },
+      "excellent": {
+        "op": "lte",
+        "value": 4.0
+      },
+      "attempt": {
+        "op": "lte",
+        "value": 8.0
+      },
+      "reset": {
+        "op": "gte",
+        "value": 18.0
+      },
+      "fail_hint": "身体不要过度倾斜"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 1.5
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1",
+          "std_2"
+        ],
+        "t": 3.2,
+        "metric_id": "std_1",
+        "name_cn": "左腿侧点地"
+      },
+      {
+        "role": "peak",
+        "id": "peak_2",
+        "metric_ids": [
+          "std_3",
+          "std_4"
+        ],
+        "t": 6.2,
+        "metric_id": "std_3",
+        "name_cn": "右腿侧点地"
+      },
+      {
+        "role": "cycle_end",
+        "t": 7.5
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1",
+      "std_2",
+      "std_3",
+      "std_4"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "站立交替侧点地",
+    "cycle_start": 1.5,
+    "cycle_end": 7.5,
+    "keypoints": [
+      {
+        "name_cn": "左腿侧点地",
+        "t": 3.2,
+        "how_cn": "左脚向侧方迈出脚尖点地，躯干保持直立",
+        "scored": true,
+        "skip_reason": ""
+      },
+      {
+        "name_cn": "右腿侧点地",
+        "t": 6.2,
+        "how_cn": "右脚向侧方迈出脚尖点地，躯干保持直立",
+        "scored": true,
+        "skip_reason": ""
+      }
+    ]
+  }
+}

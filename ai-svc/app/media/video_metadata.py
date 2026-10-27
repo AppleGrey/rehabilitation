@@ -117,6 +117,18 @@ def load_video(video_id: str) -> dict | None:
         return None
 
 
+def list_video_ids() -> set[str]:
+    """视频库里已有的 video_id。读失败时返回空集，避免把库外动作写成规则。"""
+    try:
+        with db_cursor(commit=False) as cur:
+            cur.execute("SELECT video_id FROM videos")
+            rows = cur.fetchall()
+        return {str(row["video_id"]) for row in rows if row.get("video_id")}
+    except Exception:
+        logger.exception("[VIDEO] 读取视频编号失败")
+        return set()
+
+
 def count_videos() -> int:
     try:
         with db_cursor(commit=False) as cur:

@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4420",
+  "title_cn": "扶墙小腿拉伸",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "左膝伸直",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "angle_3point",
+        "output": "",
+        "from": null,
+        "to": null,
+        "points": [
+          "left_hip",
+          "left_knee",
+          "left_ankle"
+        ]
+      },
+      "pass": {
+        "op": "gte",
+        "value": 165.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 175.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 150.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 130.0
+      },
+      "fail_hint": "左腿再伸直一些"
+    },
+    {
+      "id": "std_2",
+      "name_cn": "身体前倾",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "abs_degrees_from_vertical",
+        "from": "mid_hip",
+        "to": "mid_shoulder",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 25.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 35.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 15.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 5.0
+      },
+      "fail_hint": "身体再向前倾一些"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 2.0
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1",
+          "std_2"
+        ],
+        "t": 4.5,
+        "metric_id": "std_1",
+        "name_cn": "左腿后伸"
+      },
+      {
+        "role": "cycle_end",
+        "t": 6.5
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1",
+      "std_2"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "扶墙小腿拉伸",
+    "cycle_start": 2.0,
+    "cycle_end": 6.5,
+    "keypoints": [
+      {
+        "name_cn": "左腿后伸",
+        "t": 4.5,
+        "how_cn": "左腿向后伸直，脚跟踩地，身体前倾",
+        "scored": true,
+        "skip_reason": ""
+      }
+    ]
+  }
+}

@@ -8,6 +8,7 @@ import ProgramView from '../views/ProgramView.vue'
 import UserVideoView from '../views/UserVideoView.vue'
 import UserManageView from '../views/UserManageView.vue'
 import AppReleaseView from '../views/AppReleaseView.vue'
+import ModelConfigView from '../views/ModelConfigView.vue'
 import { isLoggedIn } from '../auth'
 
 const router = createRouter({
@@ -26,6 +27,7 @@ const router = createRouter({
         { path: 'uploads', name: 'uploads', component: UserVideoView },
         { path: 'users', name: 'users', component: UserManageView },
         { path: 'releases', name: 'releases', component: AppReleaseView },
+        { path: 'settings', name: 'settings', component: ModelConfigView },
       ],
     },
   ],

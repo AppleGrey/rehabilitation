@@ -1,0 +1,174 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4175",
+  "title_cn": "站立交替高抬膝",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "右大腿抬高",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "right_hip",
+        "to": "right_knee",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 80.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 90.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 40.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 20.0
+      },
+      "fail_hint": "右膝抬得不够高"
+    },
+    {
+      "id": "std_2",
+      "name_cn": "躯干保持直立",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "abs_degrees_from_vertical",
+        "from": "mid_hip",
+        "to": "mid_shoulder",
+        "points": []
+      },
+      "pass": {
+        "op": "lte",
+        "value": 15.0
+      },
+      "excellent": {
+        "op": "lte",
+        "value": 5.0
+      },
+      "attempt": {
+        "op": "lte",
+        "value": 7.5
+      },
+      "reset": {
+        "op": "gte",
+        "value": 25.0
+      },
+      "fail_hint": "身体不要过度后仰或前倾"
+    },
+    {
+      "id": "std_3",
+      "name_cn": "左大腿抬高",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "left_hip",
+        "to": "left_knee",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 80.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 90.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 40.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 20.0
+      },
+      "fail_hint": "左膝抬得不够高"
+    },
+    {
+      "id": "std_4",
+      "name_cn": "躯干保持直立",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "abs_degrees_from_vertical",
+        "from": "mid_hip",
+        "to": "mid_shoulder",
+        "points": []
+      },
+      "pass": {
+        "op": "lte",
+        "value": 15.0
+      },
+      "excellent": {
+        "op": "lte",
+        "value": 5.0
+      },
+      "attempt": {
+        "op": "lte",
+        "value": 7.5
+      },
+      "reset": {
+        "op": "gte",
+        "value": 25.0
+      },
+      "fail_hint": "身体不要过度后仰或前倾"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 1.0
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1",
+          "std_2"
+        ],
+        "t": 2.5,
+        "metric_id": "std_1",
+        "name_cn": "抬右膝"
+      },
+      {
+        "role": "peak",
+        "id": "peak_2",
+        "metric_ids": [
+          "std_3",
+          "std_4"
+        ],
+        "t": 5.5,
+        "metric_id": "std_3",
+        "name_cn": "抬左膝"
+      },
+      {
+        "role": "cycle_end",
+        "t": 6.5
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1",
+      "std_2",
+      "std_3",
+      "std_4"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  }
+}

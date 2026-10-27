@@ -1,0 +1,175 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4196",
+  "title_cn": "站立交替后撤弓步",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "左膝屈曲",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "angle_3point",
+        "output": "",
+        "from": null,
+        "to": null,
+        "points": [
+          "left_hip",
+          "left_knee",
+          "left_ankle"
+        ]
+      },
+      "pass": {
+        "op": "lte",
+        "value": 100.0
+      },
+      "excellent": {
+        "op": "lte",
+        "value": 90.0
+      },
+      "attempt": {
+        "op": "lte",
+        "value": 100.0
+      },
+      "reset": {
+        "op": "gte",
+        "value": 170.0
+      },
+      "fail_hint": "左膝再弯曲一些"
+    },
+    {
+      "id": "std_2",
+      "name_cn": "右膝屈曲",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "angle_3point",
+        "output": "",
+        "from": null,
+        "to": null,
+        "points": [
+          "right_hip",
+          "right_knee",
+          "right_ankle"
+        ]
+      },
+      "pass": {
+        "op": "lte",
+        "value": 110.0
+      },
+      "excellent": {
+        "op": "lte",
+        "value": 90.0
+      },
+      "attempt": {
+        "op": "lte",
+        "value": 110.0
+      },
+      "reset": {
+        "op": "gte",
+        "value": 175.0
+      },
+      "fail_hint": "右膝再下沉一些"
+    },
+    {
+      "id": "std_3",
+      "name_cn": "左腿伸直",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "angle_3point",
+        "output": "",
+        "from": null,
+        "to": null,
+        "points": [
+          "left_hip",
+          "left_knee",
+          "left_ankle"
+        ]
+      },
+      "pass": {
+        "op": "gte",
+        "value": 160.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 175.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 140.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 90.0
+      },
+      "fail_hint": "左腿没站直"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 0.5
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1",
+          "std_2"
+        ],
+        "t": 3.5,
+        "metric_id": "std_1",
+        "name_cn": "左腿后撤下蹲"
+      },
+      {
+        "role": "peak",
+        "id": "peak_2",
+        "metric_ids": [
+          "std_3"
+        ],
+        "t": 6.0,
+        "metric_id": "std_3",
+        "name_cn": "还原站立"
+      },
+      {
+        "role": "cycle_end",
+        "t": 6.5
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1",
+      "std_2",
+      "std_3"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "站立交替后撤弓步",
+    "cycle_start": 0.5,
+    "cycle_end": 6.5,
+    "keypoints": [
+      {
+        "name_cn": "左腿后撤下蹲",
+        "t": 3.5,
+        "how_cn": "左腿后撤屈膝，双膝接近90度",
+        "scored": true,
+        "skip_reason": ""
+      },
+      {
+        "name_cn": "还原站立",
+        "t": 6.0,
+        "how_cn": "收回左腿，双腿伸直站直",
+        "scored": true,
+        "skip_reason": ""
+      }
+    ]
+  }
+}

@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4299",
+  "title_cn": "坐姿单腿伸直",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "右膝伸直",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "angle_3point",
+        "output": "",
+        "from": null,
+        "to": null,
+        "points": [
+          "right_hip",
+          "right_knee",
+          "right_ankle"
+        ]
+      },
+      "pass": {
+        "op": "gte",
+        "value": 160.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 175.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 130.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 95.0
+      },
+      "fail_hint": "右膝再伸直一些"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 1.5
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1"
+        ],
+        "t": 3.5,
+        "metric_id": "std_1",
+        "name_cn": "伸直右腿"
+      },
+      {
+        "role": "cycle_end",
+        "t": 6.0
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "坐姿单腿伸直",
+    "cycle_start": 1.5,
+    "cycle_end": 6.0,
+    "keypoints": [
+      {
+        "name_cn": "伸直右腿",
+        "t": 3.5,
+        "how_cn": "右小腿缓慢抬起至完全伸直并悬停",
+        "scored": true,
+        "skip_reason": ""
+      }
+    ]
+  }
+}

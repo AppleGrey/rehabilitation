@@ -1,0 +1,203 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4247",
+  "title_cn": "站立双臂屈肘上举",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "右臂抬高",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "right_shoulder",
+        "to": "right_wrist",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 130.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 150.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 80.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 20.0
+      },
+      "fail_hint": "手臂再抬高一些"
+    },
+    {
+      "id": "std_2",
+      "name_cn": "右肘弯曲",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "angle_3point",
+        "output": "",
+        "from": null,
+        "to": null,
+        "points": [
+          "right_shoulder",
+          "right_elbow",
+          "right_wrist"
+        ]
+      },
+      "pass": {
+        "op": "lte",
+        "value": 110.0
+      },
+      "excellent": {
+        "op": "lte",
+        "value": 70.0
+      },
+      "attempt": {
+        "op": "lte",
+        "value": 110.0
+      },
+      "reset": {
+        "op": "gte",
+        "value": 170.0
+      },
+      "fail_hint": "手肘再弯曲一些"
+    },
+    {
+      "id": "std_3",
+      "name_cn": "右臂举高",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "right_shoulder",
+        "to": "right_wrist",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 160.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 175.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 120.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 20.0
+      },
+      "fail_hint": "手臂尽量向上伸直"
+    },
+    {
+      "id": "std_4",
+      "name_cn": "右肘伸直",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "angle_3point",
+        "output": "",
+        "from": null,
+        "to": null,
+        "points": [
+          "right_shoulder",
+          "right_elbow",
+          "right_wrist"
+        ]
+      },
+      "pass": {
+        "op": "gte",
+        "value": 150.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 170.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 120.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 90.0
+      },
+      "fail_hint": "手肘尽量伸直"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 2.0
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1",
+          "std_2"
+        ],
+        "t": 3.5,
+        "metric_id": "std_1",
+        "name_cn": "屈肘上举"
+      },
+      {
+        "role": "peak",
+        "id": "peak_2",
+        "metric_ids": [
+          "std_3",
+          "std_4"
+        ],
+        "t": 5.5,
+        "metric_id": "std_3",
+        "name_cn": "伸臂过头"
+      },
+      {
+        "role": "cycle_end",
+        "t": 9.0
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1",
+      "std_2",
+      "std_3",
+      "std_4"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "站立双臂屈肘上举",
+    "cycle_start": 2.0,
+    "cycle_end": 9.0,
+    "keypoints": [
+      {
+        "name_cn": "屈肘上举",
+        "t": 3.5,
+        "how_cn": "双臂屈肘抬起，双手至肩耳侧",
+        "scored": true,
+        "skip_reason": ""
+      },
+      {
+        "name_cn": "伸臂过头",
+        "t": 5.5,
+        "how_cn": "双臂向上伸直，举过头顶",
+        "scored": true,
+        "skip_reason": ""
+      }
+    ]
+  }
+}

@@ -1,0 +1,131 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4363",
+  "title_cn": "仰卧臀桥",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "髋部抬高",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "mid_shoulder",
+        "to": "mid_hip",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 60.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 75.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 30.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 10.0
+      },
+      "fail_hint": "臀部再向上抬高一些"
+    },
+    {
+      "id": "std_2",
+      "name_cn": "髋部回落",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "mid_shoulder",
+        "to": "mid_hip",
+        "points": []
+      },
+      "pass": {
+        "op": "lte",
+        "value": 20.0
+      },
+      "excellent": {
+        "op": "lte",
+        "value": 10.0
+      },
+      "attempt": {
+        "op": "lte",
+        "value": 20.0
+      },
+      "reset": {
+        "op": "gte",
+        "value": 60.0
+      },
+      "fail_hint": "臀部再向下落一些"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 2.0
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1"
+        ],
+        "t": 5.0,
+        "metric_id": "std_1",
+        "name_cn": "挺髋抬臀"
+      },
+      {
+        "role": "peak",
+        "id": "peak_2",
+        "metric_ids": [
+          "std_2"
+        ],
+        "t": 8.5,
+        "metric_id": "std_2",
+        "name_cn": "还原落臀"
+      },
+      {
+        "role": "cycle_end",
+        "t": 9.0
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1",
+      "std_2"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "仰卧臀桥",
+    "cycle_start": 2.0,
+    "cycle_end": 9.0,
+    "keypoints": [
+      {
+        "name_cn": "挺髋抬臀",
+        "t": 5.0,
+        "how_cn": "臀部上抬至肩膝成一直线",
+        "scored": true,
+        "skip_reason": ""
+      },
+      {
+        "name_cn": "还原落臀",
+        "t": 8.5,
+        "how_cn": "臀部缓慢下落接近垫面",
+        "scored": true,
+        "skip_reason": ""
+      }
+    ]
+  }
+}

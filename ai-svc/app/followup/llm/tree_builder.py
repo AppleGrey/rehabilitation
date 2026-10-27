@@ -29,6 +29,7 @@ from ..models import (
 )
 from ..policy.stopping import needs_sp_backfill
 from ..policy.body_parts import question_fingerprint
+from ...core.llm_runtime import consult_profile
 from .util import call_json_llm, make_json_llm
 
 logger = logging.getLogger(__name__)
@@ -140,7 +141,7 @@ def build_tree(
     """
     k = session.k
     # 假设+鉴别问题+option_leanings 输出较长，给足 token 避免 JSON 被截断导致解析失败。
-    llm = make_json_llm(temperature=0.2, max_tokens=3000)
+    llm = make_json_llm(temperature=consult_profile().temperature, max_tokens=3000)
     # 注意：_SYSTEM 含字面 JSON 花括号，不能用 str.format（会把 {"tree_nodes"} 当字段）；用 replace。
     system = _SYSTEM.replace("{k}", str(k))
     user = _USER_TMPL.format(

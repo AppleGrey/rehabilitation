@@ -1,0 +1,179 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4370",
+  "title_cn": "侧卧屈膝抬臀",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "躯干抬离地面",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "mid_shoulder",
+        "to": "mid_hip",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 75.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 85.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 60.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 45.0
+      },
+      "fail_hint": "臀部再抬高一些"
+    },
+    {
+      "id": "std_2",
+      "name_cn": "躯干保持平直",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "mid_shoulder",
+        "to": "mid_hip",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 75.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 85.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 65.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 50.0
+      },
+      "fail_hint": "保持身体呈直线"
+    },
+    {
+      "id": "std_3",
+      "name_cn": "躯干下落",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "mid_shoulder",
+        "to": "mid_hip",
+        "points": []
+      },
+      "pass": {
+        "op": "lte",
+        "value": 55.0
+      },
+      "excellent": {
+        "op": "lte",
+        "value": 45.0
+      },
+      "attempt": {
+        "op": "lte",
+        "value": 55.0
+      },
+      "reset": {
+        "op": "gte",
+        "value": 80.0
+      },
+      "fail_hint": "臀部再放低一些"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 0.0
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1"
+        ],
+        "t": 2.0,
+        "metric_id": "std_1",
+        "name_cn": "抬起臀部"
+      },
+      {
+        "role": "peak",
+        "id": "peak_2",
+        "metric_ids": [
+          "std_2"
+        ],
+        "t": 3.5,
+        "metric_id": "std_2",
+        "name_cn": "保持直线"
+      },
+      {
+        "role": "peak",
+        "id": "peak_3",
+        "metric_ids": [
+          "std_3"
+        ],
+        "t": 4.2,
+        "metric_id": "std_3",
+        "name_cn": "放下臀部"
+      },
+      {
+        "role": "cycle_end",
+        "t": 4.5
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1",
+      "std_2",
+      "std_3"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "侧卧屈膝抬臀",
+    "cycle_start": 0.0,
+    "cycle_end": 4.5,
+    "keypoints": [
+      {
+        "name_cn": "抬起臀部",
+        "t": 2.0,
+        "how_cn": "收紧核心将臀部抬离地面至身体呈直线",
+        "scored": true,
+        "skip_reason": ""
+      },
+      {
+        "name_cn": "保持直线",
+        "t": 3.5,
+        "how_cn": "保持肩髋膝在一条直线上不要塌腰",
+        "scored": true,
+        "skip_reason": ""
+      },
+      {
+        "name_cn": "放下臀部",
+        "t": 4.2,
+        "how_cn": "缓慢控制臀部下落接近地面",
+        "scored": true,
+        "skip_reason": ""
+      }
+    ]
+  }
+}

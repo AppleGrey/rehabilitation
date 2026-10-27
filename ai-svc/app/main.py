@@ -60,7 +60,7 @@ from .consult.state import (
 )
 from .media.matching import ensure_playable_mp4_path
 from .assessment.assessment import evaluate_motion_grounded
-from .core.config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, DEEPSEEK_MODEL
+from .core.llm_runtime import consult_profile, vision_profile
 from .core.config import ASSETS_DIR as _ASSETS_DIR
 from .consult.sessions import load_session, save_session
 from .assessment.tasks import create_task, load_task, update_task
@@ -595,11 +595,15 @@ def _run_assessment(task_id: str) -> None:
     standard_video_path = tmp_dir / "standard.mp4"
 
     try:
-        # 从 MinIO 下载标准视频与用户上传视频
-        standard_key = ensure_playable_mp4_path(standard_video_id)
-        if standard_key is None:
-            raise FileNotFoundError(f"标准视频 {standard_video_id} 不存在")
-        download_to_path(standard_key, standard_video_path)
+        # 关闭拼接时不下载、不转码标准视频，只把用户视频和动作要点送给模型。
+        concat_standard = vision_profile().concat_standard_video
+        if concat_standard:
+            standard_key = ensure_playable_mp4_path(standard_video_id)
+            if standard_key is None:
+                raise FileNotFoundError(f"标准视频 {standard_video_id} 不存在")
+            download_to_path(standard_key, standard_video_path)
+        else:
+            standard_video_path = None
         download_to_path(user_video_key, user_video_path)
 
         # K3：先取该动作的 KG 权威标准（ROM 参考值 / 常见代偿 / 本阶段达标条件）。
@@ -616,6 +620,7 @@ def _run_assessment(task_id: str) -> None:
         # VLM 评估
         assessment = evaluate_motion_grounded(
             standard_video_path, user_video_path, grounding["text"],
+            video_id=task.get("video_id") or standard_video_id,
         )
         assessment = _akg.normalize(
             assessment, grounding=grounding, pain_reported=task.get("pain_reported"),
@@ -638,15 +643,19 @@ def _run_assessment(task_id: str) -> None:
             "你是专业的运动康复 AI，请根据以下问诊对话历史和动作评估报告，"
             "为用户生成一段简洁的康复总结（200字以内），"
             "包含：症状情况、训练表现亮点与不足、下一步康复建议。"
+            "制定建议时优先看 standard_checks 和 plan_notes。"
             "语气温暖专业，鼓励用户坚持。\n\n"
             f"【问诊对话历史】\n{history_text}\n\n"
             f"【本次训练动作评估报告】\n{assessment_text}\n\n"
             "请直接输出总结内容，不要标题或分点格式。"
         )
+        consult_cfg = consult_profile()
+        if not consult_cfg.api_key:
+            raise RuntimeError("问诊大模型 API Key 未配置，请在管理平台的配置管理中填写")
         llm = ChatOpenAI(
-            model=DEEPSEEK_MODEL,
-            api_key=DEEPSEEK_API_KEY,  # type: ignore[arg-type]
-            base_url=DEEPSEEK_BASE_URL,
+            model=consult_cfg.model,
+            api_key=consult_cfg.api_key,  # type: ignore[arg-type]
+            base_url=consult_cfg.base_url,
             temperature=0.4,
         )
         resp = llm.invoke(

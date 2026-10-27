@@ -1,0 +1,191 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4300",
+  "title_cn": "坐姿伸膝",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "左膝伸直",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "angle_3point",
+        "output": "",
+        "from": null,
+        "to": null,
+        "points": [
+          "left_hip",
+          "left_knee",
+          "left_ankle"
+        ]
+      },
+      "pass": {
+        "op": "gte",
+        "value": 160.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 175.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 130.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 100.0
+      },
+      "fail_hint": "左腿再伸直一些"
+    },
+    {
+      "id": "std_2",
+      "name_cn": "左膝还原",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "angle_3point",
+        "output": "",
+        "from": null,
+        "to": null,
+        "points": [
+          "left_hip",
+          "left_knee",
+          "left_ankle"
+        ]
+      },
+      "pass": {
+        "op": "lte",
+        "value": 110.0
+      },
+      "excellent": {
+        "op": "lte",
+        "value": 95.0
+      },
+      "attempt": {
+        "op": "lte",
+        "value": 110.0
+      },
+      "reset": {
+        "op": "gte",
+        "value": 170.0
+      },
+      "fail_hint": "左腿收回至弯曲状态"
+    },
+    {
+      "id": "std_3",
+      "name_cn": "右膝伸直",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "angle_3point",
+        "output": "",
+        "from": null,
+        "to": null,
+        "points": [
+          "right_hip",
+          "right_knee",
+          "right_ankle"
+        ]
+      },
+      "pass": {
+        "op": "gte",
+        "value": 160.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 175.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 130.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 100.0
+      },
+      "fail_hint": "右腿再伸直一些"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 0.5
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1"
+        ],
+        "t": 2.2,
+        "metric_id": "std_1",
+        "name_cn": "伸左膝"
+      },
+      {
+        "role": "peak",
+        "id": "peak_2",
+        "metric_ids": [
+          "std_2"
+        ],
+        "t": 4.0,
+        "metric_id": "std_2",
+        "name_cn": "收左腿"
+      },
+      {
+        "role": "peak",
+        "id": "peak_3",
+        "metric_ids": [
+          "std_3"
+        ],
+        "t": 5.8,
+        "metric_id": "std_3",
+        "name_cn": "伸右膝"
+      },
+      {
+        "role": "cycle_end",
+        "t": 6.2
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1",
+      "std_2",
+      "std_3"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "坐姿伸膝",
+    "cycle_start": 0.5,
+    "cycle_end": 6.2,
+    "keypoints": [
+      {
+        "name_cn": "伸左膝",
+        "t": 2.2,
+        "how_cn": "左腿缓慢伸直，脚尖勾起",
+        "scored": true,
+        "skip_reason": ""
+      },
+      {
+        "name_cn": "收左腿",
+        "t": 4.0,
+        "how_cn": "左腿缓慢屈膝还原至起始位",
+        "scored": true,
+        "skip_reason": ""
+      },
+      {
+        "name_cn": "伸右膝",
+        "t": 5.8,
+        "how_cn": "右腿缓慢伸直，脚尖勾起",
+        "scored": true,
+        "skip_reason": ""
+      }
+    ]
+  }
+}

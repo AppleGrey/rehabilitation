@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4429",
+  "title_cn": "坐姿单腿伸直拉伸",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "左膝伸直",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "angle_3point",
+        "output": "",
+        "from": null,
+        "to": null,
+        "points": [
+          "left_hip",
+          "left_knee",
+          "left_ankle"
+        ]
+      },
+      "pass": {
+        "op": "gte",
+        "value": 170.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 178.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 150.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 130.0
+      },
+      "fail_hint": "左膝再伸直一些"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 0.0
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1"
+        ],
+        "t": 4.0,
+        "metric_id": "std_1",
+        "name_cn": "左腿伸直"
+      },
+      {
+        "role": "cycle_end",
+        "t": 8.5
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "坐姿单腿伸直拉伸",
+    "cycle_start": 0.0,
+    "cycle_end": 8.5,
+    "keypoints": [
+      {
+        "name_cn": "左腿伸直",
+        "t": 4.0,
+        "how_cn": "左腿在凳面上保持伸直平放",
+        "scored": true,
+        "skip_reason": ""
+      },
+      {
+        "name_cn": "躯干前倾",
+        "t": 4.1,
+        "how_cn": "上身微微前倾以拉伸腿部后侧",
+        "scored": false,
+        "skip_reason": "侧面拍摄，正面骨架无法测量躯干前倾角度"
+      }
+    ]
+  }
+}

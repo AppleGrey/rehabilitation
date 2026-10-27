@@ -1,0 +1,97 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4343",
+  "title_cn": "仰卧双膝摆动接抬腿",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "大腿抬起角度",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "left_hip",
+        "to": "left_knee",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 80.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 90.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 45.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 20.0
+      },
+      "fail_hint": "大腿再抬高一些"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 2.0
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1"
+        ],
+        "t": 11.5,
+        "metric_id": "std_1",
+        "name_cn": "屈髋抬腿"
+      },
+      {
+        "role": "cycle_end",
+        "t": 12.5
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "仰卧双膝摆动接抬腿",
+    "cycle_start": 2.0,
+    "cycle_end": 12.5,
+    "keypoints": [
+      {
+        "name_cn": "双膝右摆",
+        "t": 4.5,
+        "how_cn": "双膝并拢向右侧倒向地面",
+        "scored": false,
+        "skip_reason": "侧面拍摄无法通过正面骨架测量膝盖左右摆动幅度"
+      },
+      {
+        "name_cn": "双膝左摆",
+        "t": 8.5,
+        "how_cn": "双膝并拢向左侧倒向地面",
+        "scored": false,
+        "skip_reason": "侧面拍摄无法通过正面骨架测量膝盖左右摆动幅度"
+      },
+      {
+        "name_cn": "屈髋抬腿",
+        "t": 11.5,
+        "how_cn": "双腿屈膝抬起至大腿垂直地面",
+        "scored": true,
+        "skip_reason": ""
+      }
+    ]
+  }
+}

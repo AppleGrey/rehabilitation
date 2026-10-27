@@ -1,0 +1,167 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4208",
+  "title_cn": "扶椅单腿浅蹲",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "左大腿抬高",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "left_hip",
+        "to": "left_knee",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 80.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 90.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 45.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 10.0
+      },
+      "fail_hint": "左膝再抬高一些"
+    },
+    {
+      "id": "std_2",
+      "name_cn": "右膝屈曲",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "angle_3point",
+        "output": "",
+        "from": null,
+        "to": null,
+        "points": [
+          "right_hip",
+          "right_knee",
+          "right_ankle"
+        ]
+      },
+      "pass": {
+        "op": "lte",
+        "value": 160.0
+      },
+      "excellent": {
+        "op": "lte",
+        "value": 150.0
+      },
+      "attempt": {
+        "op": "lte",
+        "value": 160.0
+      },
+      "reset": {
+        "op": "gte",
+        "value": 178.0
+      },
+      "fail_hint": "右膝弯曲幅度不够"
+    },
+    {
+      "id": "std_3",
+      "name_cn": "躯干直立",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "abs_degrees_from_vertical",
+        "from": "mid_hip",
+        "to": "mid_shoulder",
+        "points": []
+      },
+      "pass": {
+        "op": "lte",
+        "value": 15.0
+      },
+      "excellent": {
+        "op": "lte",
+        "value": 5.0
+      },
+      "attempt": {
+        "op": "lte",
+        "value": 15.0
+      },
+      "reset": {
+        "op": "gte",
+        "value": 35.0
+      },
+      "fail_hint": "身体不要过度前倾"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 2.0
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1"
+        ],
+        "t": 3.5,
+        "metric_id": "std_1",
+        "name_cn": "抬左腿"
+      },
+      {
+        "role": "peak",
+        "id": "peak_2",
+        "metric_ids": [
+          "std_2",
+          "std_3"
+        ],
+        "t": 5.5,
+        "metric_id": "std_2",
+        "name_cn": "右腿浅蹲"
+      },
+      {
+        "role": "cycle_end",
+        "t": 7.5
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1",
+      "std_2",
+      "std_3"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "扶椅单腿浅蹲",
+    "cycle_start": 2.0,
+    "cycle_end": 7.5,
+    "keypoints": [
+      {
+        "name_cn": "抬左腿",
+        "t": 3.5,
+        "how_cn": "左大腿抬起至接近水平位置",
+        "scored": true,
+        "skip_reason": ""
+      },
+      {
+        "name_cn": "右腿浅蹲",
+        "t": 5.5,
+        "how_cn": "支撑腿微屈下蹲，躯干保持直立",
+        "scored": true,
+        "skip_reason": ""
+      }
+    ]
+  }
+}

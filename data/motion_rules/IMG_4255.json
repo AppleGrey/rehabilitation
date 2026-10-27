@@ -1,0 +1,138 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4255",
+  "title_cn": "站立右手按揉眼周",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "右手腕抬高",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "right_shoulder",
+        "to": "right_wrist",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 120.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 140.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 80.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 20.0
+      },
+      "fail_hint": "右手再抬高一些"
+    },
+    {
+      "id": "std_2",
+      "name_cn": "右手腕放下",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "right_shoulder",
+        "to": "right_wrist",
+        "points": []
+      },
+      "pass": {
+        "op": "lte",
+        "value": 30.0
+      },
+      "excellent": {
+        "op": "lte",
+        "value": 10.0
+      },
+      "attempt": {
+        "op": "lte",
+        "value": 30.0
+      },
+      "reset": {
+        "op": "gte",
+        "value": 140.0
+      },
+      "fail_hint": "右手请放回体侧"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 1.5
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1"
+        ],
+        "t": 3.0,
+        "metric_id": "std_1",
+        "name_cn": "抬右手"
+      },
+      {
+        "role": "peak",
+        "id": "peak_2",
+        "metric_ids": [
+          "std_2"
+        ],
+        "t": 13.0,
+        "metric_id": "std_2",
+        "name_cn": "放右手"
+      },
+      {
+        "role": "cycle_end",
+        "t": 13.5
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1",
+      "std_2"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "站立右手按揉眼周",
+    "cycle_start": 1.5,
+    "cycle_end": 13.5,
+    "keypoints": [
+      {
+        "name_cn": "抬右手",
+        "t": 3.0,
+        "how_cn": "右手抬起至头部右侧高度",
+        "scored": true,
+        "skip_reason": ""
+      },
+      {
+        "name_cn": "按揉眼周",
+        "t": 8.0,
+        "how_cn": "手指在右眼周及太阳穴轻柔按揉",
+        "scored": false,
+        "skip_reason": "手指细小动作且面部被手遮挡，正面骨架无法测量"
+      },
+      {
+        "name_cn": "放右手",
+        "t": 13.0,
+        "how_cn": "右手放下回到身体右侧",
+        "scored": true,
+        "skip_reason": ""
+      }
+    ]
+  }
+}

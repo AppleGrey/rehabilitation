@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4219",
+  "title_cn": "站立单腿后抬",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "右膝屈曲",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "angle_3point",
+        "output": "",
+        "from": null,
+        "to": null,
+        "points": [
+          "right_hip",
+          "right_knee",
+          "right_ankle"
+        ]
+      },
+      "pass": {
+        "op": "lte",
+        "value": 60.0
+      },
+      "excellent": {
+        "op": "lte",
+        "value": 40.0
+      },
+      "attempt": {
+        "op": "lte",
+        "value": 60.0
+      },
+      "reset": {
+        "op": "gte",
+        "value": 160.0
+      },
+      "fail_hint": "右小腿再向后屈一些"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 1.0
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1"
+        ],
+        "t": 2.8,
+        "metric_id": "std_1",
+        "name_cn": "屈右膝后抬"
+      },
+      {
+        "role": "cycle_end",
+        "t": 4.5
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "站立单腿后抬",
+    "cycle_start": 1.0,
+    "cycle_end": 4.5,
+    "keypoints": [
+      {
+        "name_cn": "屈右膝后抬",
+        "t": 2.8,
+        "how_cn": "右小腿向后屈起，大腿保持竖直",
+        "scored": true,
+        "skip_reason": ""
+      }
+    ]
+  }
+}

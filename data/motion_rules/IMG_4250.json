@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4250",
+  "title_cn": "站立单臂侧平举颈侧屈",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "右臂抬高",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "right_shoulder",
+        "to": "right_wrist",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 80.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 90.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 50.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 20.0
+      },
+      "fail_hint": "右臂再抬高一些"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 1.0
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1"
+        ],
+        "t": 4.0,
+        "metric_id": "std_1",
+        "name_cn": "右臂侧平举"
+      },
+      {
+        "role": "cycle_end",
+        "t": 8.5
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "站立单臂侧平举颈侧屈",
+    "cycle_start": 1.0,
+    "cycle_end": 8.5,
+    "keypoints": [
+      {
+        "name_cn": "右臂侧平举",
+        "t": 4.0,
+        "how_cn": "右臂向侧方伸直接近水平",
+        "scored": true,
+        "skip_reason": ""
+      },
+      {
+        "name_cn": "头向右侧屈",
+        "t": 5.5,
+        "how_cn": "头部向右侧倾斜拉伸颈侧",
+        "scored": false,
+        "skip_reason": "正面骨架缺少耳朵关键点，无法准确测量头部侧倾角度"
+      }
+    ]
+  }
+}

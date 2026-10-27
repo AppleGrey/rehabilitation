@@ -1,0 +1,178 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4189",
+  "title_cn": "单腿椅前蹲",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "右膝屈曲",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "angle_3point",
+        "output": "",
+        "from": null,
+        "to": null,
+        "points": [
+          "right_hip",
+          "right_knee",
+          "right_ankle"
+        ]
+      },
+      "pass": {
+        "op": "lte",
+        "value": 110.0
+      },
+      "excellent": {
+        "op": "lte",
+        "value": 95.0
+      },
+      "attempt": {
+        "op": "lte",
+        "value": 110.0
+      },
+      "reset": {
+        "op": "gte",
+        "value": 170.0
+      },
+      "fail_hint": "右膝再弯曲一些"
+    },
+    {
+      "id": "std_2",
+      "name_cn": "躯干保持直立",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "abs_degrees_from_vertical",
+        "from": "mid_hip",
+        "to": "mid_shoulder",
+        "points": []
+      },
+      "pass": {
+        "op": "lte",
+        "value": 25.0
+      },
+      "excellent": {
+        "op": "lte",
+        "value": 15.0
+      },
+      "attempt": {
+        "op": "lte",
+        "value": 25.0
+      },
+      "reset": {
+        "op": "gte",
+        "value": 45.0
+      },
+      "fail_hint": "背部挺直不要过度前倾"
+    },
+    {
+      "id": "std_3",
+      "name_cn": "右腿伸直",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "angle_3point",
+        "output": "",
+        "from": null,
+        "to": null,
+        "points": [
+          "right_hip",
+          "right_knee",
+          "right_ankle"
+        ]
+      },
+      "pass": {
+        "op": "gte",
+        "value": 165.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 175.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 140.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 110.0
+      },
+      "fail_hint": "右腿完全站直"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 0.5
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1",
+          "std_2"
+        ],
+        "t": 3.2,
+        "metric_id": "std_1",
+        "name_cn": "屈右膝下蹲"
+      },
+      {
+        "role": "peak",
+        "id": "peak_2",
+        "metric_ids": [
+          "std_3"
+        ],
+        "t": 4.2,
+        "metric_id": "std_3",
+        "name_cn": "站起还原"
+      },
+      {
+        "role": "cycle_end",
+        "t": 4.5
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1",
+      "std_2",
+      "std_3"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "单腿椅前蹲",
+    "cycle_start": 0.5,
+    "cycle_end": 4.5,
+    "keypoints": [
+      {
+        "name_cn": "伸左腿",
+        "t": 1.2,
+        "how_cn": "左腿向前伸直抬起离地",
+        "scored": false,
+        "skip_reason": "侧身站立，正面骨架无法测量腿部前伸角度"
+      },
+      {
+        "name_cn": "屈右膝下蹲",
+        "t": 3.2,
+        "how_cn": "右膝弯曲下蹲至臀部近椅面",
+        "scored": true,
+        "skip_reason": ""
+      },
+      {
+        "name_cn": "站起还原",
+        "t": 4.2,
+        "how_cn": "右腿发力站起恢复直立",
+        "scored": true,
+        "skip_reason": ""
+      }
+    ]
+  }
+}

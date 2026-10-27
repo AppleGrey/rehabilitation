@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4402",
+  "title_cn": "仰卧腘窝垫巾伸膝",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "右膝伸直",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "angle_3point",
+        "output": "",
+        "from": null,
+        "to": null,
+        "points": [
+          "right_hip",
+          "right_knee",
+          "right_ankle"
+        ]
+      },
+      "pass": {
+        "op": "gte",
+        "value": 165.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 175.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 140.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 110.0
+      },
+      "fail_hint": "右膝再伸直一些"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 2.0
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1"
+        ],
+        "t": 5.5,
+        "metric_id": "std_1",
+        "name_cn": "伸直右腿"
+      },
+      {
+        "role": "cycle_end",
+        "t": 7.0
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "仰卧腘窝垫巾伸膝",
+    "cycle_start": 2.0,
+    "cycle_end": 7.0,
+    "keypoints": [
+      {
+        "name_cn": "伸直右腿",
+        "t": 5.5,
+        "how_cn": "右腿放在毛巾卷上自然伸直",
+        "scored": true,
+        "skip_reason": ""
+      }
+    ]
+  }
+}

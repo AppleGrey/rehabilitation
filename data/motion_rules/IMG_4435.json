@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4435",
+  "title_cn": "坐姿踝关节屈伸",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "左膝伸直",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "angle_3point",
+        "output": "",
+        "from": null,
+        "to": null,
+        "points": [
+          "left_hip",
+          "left_knee",
+          "left_ankle"
+        ]
+      },
+      "pass": {
+        "op": "gte",
+        "value": 160.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 175.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 140.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 120.0
+      },
+      "fail_hint": "左膝再伸直一些"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 0.5
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1"
+        ],
+        "t": 2.8,
+        "metric_id": "std_1",
+        "name_cn": "左腿伸直"
+      },
+      {
+        "role": "cycle_end",
+        "t": 4.8
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "坐姿踝关节屈伸",
+    "cycle_start": 0.5,
+    "cycle_end": 4.8,
+    "keypoints": [
+      {
+        "name_cn": "左腿伸直",
+        "t": 2.8,
+        "how_cn": "左膝伸直，小腿平放在凳面上",
+        "scored": true,
+        "skip_reason": ""
+      },
+      {
+        "name_cn": "勾左脚",
+        "t": 4.2,
+        "how_cn": "脚尖回勾，拉伸小腿后侧",
+        "scored": false,
+        "skip_reason": "踝关节和脚趾动作无法用给定骨架点测量"
+      }
+    ]
+  }
+}

@@ -1,0 +1,163 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4227",
+  "title_cn": "台阶单腿侧摆",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "右大腿外展",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "right_hip",
+        "to": "right_knee",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 20.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 30.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 10.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 5.0
+      },
+      "fail_hint": "右腿再向外抬高一些"
+    },
+    {
+      "id": "std_2",
+      "name_cn": "躯干保持直立",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "abs_degrees_from_vertical",
+        "from": "mid_hip",
+        "to": "mid_shoulder",
+        "points": []
+      },
+      "pass": {
+        "op": "lte",
+        "value": 10.0
+      },
+      "excellent": {
+        "op": "lte",
+        "value": 5.0
+      },
+      "attempt": {
+        "op": "lte",
+        "value": 10.0
+      },
+      "reset": {
+        "op": "gte",
+        "value": 20.0
+      },
+      "fail_hint": "身体不要过度倾斜"
+    },
+    {
+      "id": "std_3",
+      "name_cn": "右大腿复位",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "right_hip",
+        "to": "right_knee",
+        "points": []
+      },
+      "pass": {
+        "op": "lte",
+        "value": 8.0
+      },
+      "excellent": {
+        "op": "lte",
+        "value": 5.0
+      },
+      "attempt": {
+        "op": "lte",
+        "value": 8.0
+      },
+      "reset": {
+        "op": "gte",
+        "value": 25.0
+      },
+      "fail_hint": "右腿放回垂直位置"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 1.5
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1",
+          "std_2"
+        ],
+        "t": 4.2,
+        "metric_id": "std_1",
+        "name_cn": "右腿侧摆"
+      },
+      {
+        "role": "peak",
+        "id": "peak_2",
+        "metric_ids": [
+          "std_3"
+        ],
+        "t": 6.8,
+        "metric_id": "std_3",
+        "name_cn": "右腿回落"
+      },
+      {
+        "role": "cycle_end",
+        "t": 7.5
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1",
+      "std_2",
+      "std_3"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "台阶单腿侧摆",
+    "cycle_start": 1.5,
+    "cycle_end": 7.5,
+    "keypoints": [
+      {
+        "name_cn": "右腿侧摆",
+        "t": 4.2,
+        "how_cn": "右腿向外侧抬起，保持膝盖伸直",
+        "scored": true,
+        "skip_reason": ""
+      },
+      {
+        "name_cn": "右腿回落",
+        "t": 6.8,
+        "how_cn": "右腿缓慢放下回到起始位置",
+        "scored": true,
+        "skip_reason": ""
+      }
+    ]
+  }
+}

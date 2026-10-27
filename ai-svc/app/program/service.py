@@ -189,6 +189,7 @@ def run_plan_worker(program_id: str) -> None:
 def _process_baseline_task(task: dict) -> Optional[dict]:
     from ..assessment import tasks as _tasks
     from ..assessment.assessment import evaluate_baseline
+    from ..core.llm_runtime import vision_profile
     from ..media.matching import ensure_playable_mp4_path
     from ..media.storage import download_to_path
 
@@ -202,23 +203,38 @@ def _process_baseline_task(task: dict) -> Optional[dict]:
         return None
     tmp = Path(tempfile.mkdtemp(prefix="baseline-"))
     try:
-        std_key = ensure_playable_mp4_path(std_id)
-        if not std_key:
-            if user_feel:
-                return {"video_id": std_id, "overall_score": None, "range_of_motion": None,
-                        "notes": f"用户感受：{user_feel}"}
-            return None
-        std_p, usr_p = tmp / "std.mp4", tmp / "usr.mp4"
-        download_to_path(std_key, std_p)
+        concat_standard = vision_profile().concat_standard_video
+        std_p: Path | None = None
+        if concat_standard:
+            std_key = ensure_playable_mp4_path(std_id)
+            if not std_key:
+                if user_feel:
+                    return {"video_id": std_id, "overall_score": None, "range_of_motion": None,
+                            "notes": f"用户感受：{user_feel}"}
+                return None
+            std_p = tmp / "std.mp4"
+            download_to_path(std_key, std_p)
+        usr_p = tmp / "usr.mp4"
         download_to_path(usr_key, usr_p)
         _tasks.update_task(task["task_id"], status="processing")
-        a = evaluate_baseline(std_p, usr_p)
+        a = evaluate_baseline(std_p, usr_p, video_id=str(std_id))
         _tasks.update_task(task["task_id"], status="done", assessment=a)
+        checks = []
+        for item in a.get("standard_checks") or []:
+            if not isinstance(item, dict):
+                continue
+            name = str(item.get("name") or "").strip()
+            result = str(item.get("result") or "").strip()
+            piece = "：".join(part for part in (name, result) if part)
+            detail = str(item.get("detail") or "").strip()
+            checks.append(f"{piece}：{detail}" if detail else piece)
         notes = "；".join(filter(None, [
             str(a.get("movement_quality") or ""),
+            ("要点:" + "；".join(checks)) if checks else "",
             ("受限:" + "、".join(a.get("limitations") or [])) if a.get("limitations") else "",
             ("代偿:" + "、".join(a.get("compensations") or [])) if a.get("compensations") else "",
             ("建议侧重:" + "、".join(a.get("suggested_focus") or [])) if a.get("suggested_focus") else "",
+            str(a.get("plan_notes") or "").strip(),
             (f"用户感受：{user_feel}" if user_feel else ""),
         ]))
         return {"video_id": std_id, "overall_score": None, "range_of_motion": None, "notes": notes}

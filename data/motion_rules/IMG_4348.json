@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4348",
+  "title_cn": "仰卧单膝抱胸",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "右膝靠近胸部",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "angle_3point",
+        "output": "",
+        "from": null,
+        "to": null,
+        "points": [
+          "right_hip",
+          "right_knee",
+          "right_shoulder"
+        ]
+      },
+      "pass": {
+        "op": "lte",
+        "value": 45.0
+      },
+      "excellent": {
+        "op": "lte",
+        "value": 30.0
+      },
+      "attempt": {
+        "op": "lte",
+        "value": 45.0
+      },
+      "reset": {
+        "op": "gte",
+        "value": 110.0
+      },
+      "fail_hint": "右膝再往胸口拉近一些"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 0.5
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1"
+        ],
+        "t": 4.0,
+        "metric_id": "std_1",
+        "name_cn": "抱右膝"
+      },
+      {
+        "role": "cycle_end",
+        "t": 13.5
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "仰卧单膝抱胸",
+    "cycle_start": 0.5,
+    "cycle_end": 13.5,
+    "keypoints": [
+      {
+        "name_cn": "抱右膝",
+        "t": 4.0,
+        "how_cn": "双手抱右膝拉向胸口，左腿踩地",
+        "scored": true,
+        "skip_reason": ""
+      }
+    ]
+  }
+}

@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4278",
+  "title_cn": "站立手腕屈伸拉伸",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "右臂抬平",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "right_shoulder",
+        "to": "right_wrist",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 80.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 90.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 45.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 20.0
+      },
+      "fail_hint": "手臂再抬高一些"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 1.5
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1"
+        ],
+        "t": 3.0,
+        "metric_id": "std_1",
+        "name_cn": "双臂前平举"
+      },
+      {
+        "role": "cycle_end",
+        "t": 13.5
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "站立手腕屈伸拉伸",
+    "cycle_start": 1.5,
+    "cycle_end": 13.5,
+    "keypoints": [
+      {
+        "name_cn": "双臂前平举",
+        "t": 3.0,
+        "how_cn": "双臂向前平举至接近水平",
+        "scored": true,
+        "skip_reason": ""
+      },
+      {
+        "name_cn": "左手辅助拉伸",
+        "t": 5.0,
+        "how_cn": "左手握住右手腕辅助拉伸",
+        "scored": false,
+        "skip_reason": "手腕屈伸属手指细小动作，正面骨架无法测量"
+      }
+    ]
+  }
+}

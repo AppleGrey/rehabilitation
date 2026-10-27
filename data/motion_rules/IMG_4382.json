@@ -1,0 +1,219 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4382",
+  "title_cn": "仰卧直腿抬高",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "右膝伸直",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "angle_3point",
+        "output": "",
+        "from": null,
+        "to": null,
+        "points": [
+          "right_hip",
+          "right_knee",
+          "right_ankle"
+        ]
+      },
+      "pass": {
+        "op": "gte",
+        "value": 160.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 175.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 140.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 120.0
+      },
+      "fail_hint": "右腿再伸直一些"
+    },
+    {
+      "id": "std_2",
+      "name_cn": "右腿抬高",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "right_hip",
+        "to": "right_knee",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 40.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 50.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 25.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 10.0
+      },
+      "fail_hint": "右腿再抬高一些"
+    },
+    {
+      "id": "std_3",
+      "name_cn": "右膝保持伸直",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "angle_3point",
+        "output": "",
+        "from": null,
+        "to": null,
+        "points": [
+          "right_hip",
+          "right_knee",
+          "right_ankle"
+        ]
+      },
+      "pass": {
+        "op": "gte",
+        "value": 160.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 175.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 140.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 120.0
+      },
+      "fail_hint": "抬腿时右膝不要弯曲"
+    },
+    {
+      "id": "std_4",
+      "name_cn": "右腿放下",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "right_hip",
+        "to": "right_knee",
+        "points": []
+      },
+      "pass": {
+        "op": "lte",
+        "value": 15.0
+      },
+      "excellent": {
+        "op": "lte",
+        "value": 5.0
+      },
+      "attempt": {
+        "op": "lte",
+        "value": 15.0
+      },
+      "reset": {
+        "op": "gte",
+        "value": 50.0
+      },
+      "fail_hint": "右腿再放低一些"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 1.5
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1"
+        ],
+        "t": 3.5,
+        "metric_id": "std_1",
+        "name_cn": "伸直右腿"
+      },
+      {
+        "role": "peak",
+        "id": "peak_2",
+        "metric_ids": [
+          "std_2",
+          "std_3"
+        ],
+        "t": 7.5,
+        "metric_id": "std_2",
+        "name_cn": "抬右腿"
+      },
+      {
+        "role": "peak",
+        "id": "peak_3",
+        "metric_ids": [
+          "std_4"
+        ],
+        "t": 11.5,
+        "metric_id": "std_4",
+        "name_cn": "放下右腿"
+      },
+      {
+        "role": "cycle_end",
+        "t": 12.5
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1",
+      "std_2",
+      "std_3",
+      "std_4"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "仰卧直腿抬高",
+    "cycle_start": 1.5,
+    "cycle_end": 12.5,
+    "keypoints": [
+      {
+        "name_cn": "伸直右腿",
+        "t": 3.5,
+        "how_cn": "右腿伸直平放，左膝保持弯曲",
+        "scored": true,
+        "skip_reason": ""
+      },
+      {
+        "name_cn": "抬右腿",
+        "t": 7.5,
+        "how_cn": "右腿伸直上抬至约45度",
+        "scored": true,
+        "skip_reason": ""
+      },
+      {
+        "name_cn": "放下右腿",
+        "t": 11.5,
+        "how_cn": "右腿缓慢下放回起始位置",
+        "scored": true,
+        "skip_reason": ""
+      }
+    ]
+  }
+}

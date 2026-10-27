@@ -1,0 +1,135 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4413",
+  "title_cn": "扶墙弓箭步拉伸小腿",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "右膝伸直",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "angle_3point",
+        "output": "",
+        "from": null,
+        "to": null,
+        "points": [
+          "right_hip",
+          "right_knee",
+          "right_ankle"
+        ]
+      },
+      "pass": {
+        "op": "gte",
+        "value": 165.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 175.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 150.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 130.0
+      },
+      "fail_hint": "右腿再伸直一些"
+    },
+    {
+      "id": "std_2",
+      "name_cn": "躯干前倾",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "abs_degrees_from_vertical",
+        "from": "mid_hip",
+        "to": "mid_shoulder",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 25.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 35.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 15.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 5.0
+      },
+      "fail_hint": "身体再往前倾一些"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 1.5
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1"
+        ],
+        "t": 4.0,
+        "metric_id": "std_1",
+        "name_cn": "右腿后伸"
+      },
+      {
+        "role": "peak",
+        "id": "peak_2",
+        "metric_ids": [
+          "std_2"
+        ],
+        "t": 8.0,
+        "metric_id": "std_2",
+        "name_cn": "重心前移"
+      },
+      {
+        "role": "cycle_end",
+        "t": 14.5
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1",
+      "std_2"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "扶墙弓箭步拉伸小腿",
+    "cycle_start": 1.5,
+    "cycle_end": 14.5,
+    "keypoints": [
+      {
+        "name_cn": "右腿后伸",
+        "t": 4.0,
+        "how_cn": "右腿向后迈出呈弓箭步，后腿伸直",
+        "scored": true,
+        "skip_reason": ""
+      },
+      {
+        "name_cn": "重心前移",
+        "t": 8.0,
+        "how_cn": "身体前倾压向墙面，拉伸右小腿后侧",
+        "scored": true,
+        "skip_reason": ""
+      }
+    ]
+  }
+}

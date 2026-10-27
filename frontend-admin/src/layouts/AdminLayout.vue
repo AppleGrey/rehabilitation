@@ -28,6 +28,7 @@ function logout() {
       <RouterLink class="nav-link" to="/uploads">用户跟练视频</RouterLink>
       <RouterLink class="nav-link" to="/users">用户管理</RouterLink>
       <RouterLink class="nav-link" to="/releases">App 版本</RouterLink>
+      <RouterLink class="nav-link" to="/settings">配置管理</RouterLink>
       <div class="spacer" />
       <span class="me" :title="me?.phone">
         {{ me?.nickname || me?.phone || '—' }}

@@ -1,0 +1,135 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4434",
+  "title_cn": "坐姿右腿伸直拉伸",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "右膝伸直",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "angle_3point",
+        "output": "",
+        "from": null,
+        "to": null,
+        "points": [
+          "right_hip",
+          "right_knee",
+          "right_ankle"
+        ]
+      },
+      "pass": {
+        "op": "gte",
+        "value": 160.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 175.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 140.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 120.0
+      },
+      "fail_hint": "右膝再伸直一些"
+    },
+    {
+      "id": "std_2",
+      "name_cn": "上身前倾幅度",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "abs_degrees_from_vertical",
+        "from": "mid_hip",
+        "to": "mid_shoulder",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 15.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 25.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 8.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 2.0
+      },
+      "fail_hint": "上身再往前倾一些"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 0.0
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1"
+        ],
+        "t": 2.0,
+        "metric_id": "std_1",
+        "name_cn": "伸右膝"
+      },
+      {
+        "role": "peak",
+        "id": "peak_2",
+        "metric_ids": [
+          "std_2"
+        ],
+        "t": 6.0,
+        "metric_id": "std_2",
+        "name_cn": "躯干前倾"
+      },
+      {
+        "role": "cycle_end",
+        "t": 10.5
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1",
+      "std_2"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "坐姿右腿伸直拉伸",
+    "cycle_start": 0.0,
+    "cycle_end": 10.5,
+    "keypoints": [
+      {
+        "name_cn": "伸右膝",
+        "t": 2.0,
+        "how_cn": "右腿在椅面伸直，膝盖不弯曲",
+        "scored": true,
+        "skip_reason": ""
+      },
+      {
+        "name_cn": "躯干前倾",
+        "t": 6.0,
+        "how_cn": "上身缓慢前倾拉伸大腿后侧",
+        "scored": true,
+        "skip_reason": ""
+      }
+    ]
+  }
+}

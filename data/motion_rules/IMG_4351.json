@@ -1,0 +1,135 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4351",
+  "title_cn": "仰卧屈膝胸椎旋转",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "右膝弯曲",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "angle_3point",
+        "output": "",
+        "from": null,
+        "to": null,
+        "points": [
+          "right_hip",
+          "right_knee",
+          "right_ankle"
+        ]
+      },
+      "pass": {
+        "op": "lte",
+        "value": 100.0
+      },
+      "excellent": {
+        "op": "lte",
+        "value": 80.0
+      },
+      "attempt": {
+        "op": "lte",
+        "value": 100.0
+      },
+      "reset": {
+        "op": "gte",
+        "value": 170.0
+      },
+      "fail_hint": "右膝再弯曲一些"
+    },
+    {
+      "id": "std_2",
+      "name_cn": "右臂下压",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "right_shoulder",
+        "to": "right_wrist",
+        "points": []
+      },
+      "pass": {
+        "op": "lte",
+        "value": 30.0
+      },
+      "excellent": {
+        "op": "lte",
+        "value": 10.0
+      },
+      "attempt": {
+        "op": "lte",
+        "value": 30.0
+      },
+      "reset": {
+        "op": "gte",
+        "value": 90.0
+      },
+      "fail_hint": "右手再往地面压低一些"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 2.0
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1"
+        ],
+        "t": 5.5,
+        "metric_id": "std_1",
+        "name_cn": "屈膝侧倒"
+      },
+      {
+        "role": "peak",
+        "id": "peak_2",
+        "metric_ids": [
+          "std_2"
+        ],
+        "t": 8.5,
+        "metric_id": "std_2",
+        "name_cn": "转臂触地"
+      },
+      {
+        "role": "cycle_end",
+        "t": 11.5
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1",
+      "std_2"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "仰卧屈膝胸椎旋转",
+    "cycle_start": 2.0,
+    "cycle_end": 11.5,
+    "keypoints": [
+      {
+        "name_cn": "屈膝侧倒",
+        "t": 5.5,
+        "how_cn": "双膝弯曲并向身体一侧倒下贴地",
+        "scored": true,
+        "skip_reason": ""
+      },
+      {
+        "name_cn": "转臂触地",
+        "t": 8.5,
+        "how_cn": "上方手臂向对侧画弧直到手背触地",
+        "scored": true,
+        "skip_reason": ""
+      }
+    ]
+  }
+}

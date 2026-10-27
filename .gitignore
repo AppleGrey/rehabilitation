@@ -122,3 +122,4 @@ data/tasks/
 docs/
 
 frp/
+.codex-tmp/

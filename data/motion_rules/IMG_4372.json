@@ -1,0 +1,131 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4372",
+  "title_cn": "侧支撑抬髋",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "躯干抬离地面",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "mid_shoulder",
+        "to": "mid_hip",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 75.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 85.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 55.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 35.0
+      },
+      "fail_hint": "髋部再抬高一些"
+    },
+    {
+      "id": "std_2",
+      "name_cn": "躯干不下塌",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "mid_shoulder",
+        "to": "mid_hip",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 75.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 85.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 65.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 50.0
+      },
+      "fail_hint": "核心收紧，不要塌腰"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 0.5
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1"
+        ],
+        "t": 2.5,
+        "metric_id": "std_1",
+        "name_cn": "抬起髋部"
+      },
+      {
+        "role": "peak",
+        "id": "peak_2",
+        "metric_ids": [
+          "std_2"
+        ],
+        "t": 8.0,
+        "metric_id": "std_2",
+        "name_cn": "保持直线"
+      },
+      {
+        "role": "cycle_end",
+        "t": 15.5
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1",
+      "std_2"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "侧支撑抬髋",
+    "cycle_start": 0.5,
+    "cycle_end": 15.5,
+    "keypoints": [
+      {
+        "name_cn": "抬起髋部",
+        "t": 2.5,
+        "how_cn": "髋部向上抬起至身体呈直线",
+        "scored": true,
+        "skip_reason": ""
+      },
+      {
+        "name_cn": "保持直线",
+        "t": 8.0,
+        "how_cn": "保持身体呈直线不塌腰",
+        "scored": true,
+        "skip_reason": ""
+      }
+    ]
+  }
+}

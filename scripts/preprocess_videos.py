@@ -21,11 +21,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "ai-svc"))
 load_dotenv(ROOT / ".env")
 
-from app.core.config import (  # noqa: E402
-    DASHSCOPE_API_KEY,
-    DASHSCOPE_BASE_URL,
-    DASHSCOPE_MODEL,
-)
+from app.core.llm_runtime import vision_profile  # noqa: E402
 
 # ==================== 配置区域 ====================
 VIDEO_DIR = Path("assets/videos")
@@ -33,11 +29,6 @@ OUTPUT_DIR = Path("data/metadata")
 TMP_DIR = Path("data/tmp")
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 TMP_DIR.mkdir(parents=True, exist_ok=True)
-
-# qwen3.6-plus API 配置（与 app/config.py 一致，从环境变量加载）
-BASE_URL = DASHSCOPE_BASE_URL.rstrip("/")
-API_KEY = DASHSCOPE_API_KEY
-MODEL = DASHSCOPE_MODEL
 
 MAX_VIDEOS = 0  # 0 = 处理目录内全部视频；>0 时仅扫描排序后的前 N 个文件
 MAX_WORKERS = 20  # 并发处理视频数
@@ -55,11 +46,6 @@ os.environ.pop("http_proxy", None)
 os.environ.pop("https_proxy", None)
 os.environ.pop("ALL_PROXY", None)
 os.environ.pop("all_proxy", None)
-
-HEADERS = {
-    "Authorization": f"Bearer {API_KEY}",
-    "Content-Type": "application/json",
-}
 
 VL_SYSTEM_PROMPT = """\
 你是一位专业的运动康复动作分析师，精通人体解剖学、康复医学和运动生物力学。
@@ -174,11 +160,14 @@ def call_qwen(source_video: Path, label: str) -> dict:
 
 
 def _call_qwen_api(display_name: str, data_url: str, label: str) -> dict:
+    vision = vision_profile()
+    if not vision.api_key:
+        raise RuntimeError("视觉大模型 API Key 未配置，请在管理平台的配置管理中填写")
 
     resp = requests.post(
-        f"{BASE_URL}/chat/completions",
+        vision.chat_completions_url(),
         json={
-            "model": MODEL,
+            "model": vision.model,
             "messages": [
                 {"role": "system", "content": VL_SYSTEM_PROMPT},
                 {
@@ -195,9 +184,13 @@ def _call_qwen_api(display_name: str, data_url: str, label: str) -> dict:
                     ],
                 },
             ],
-            "max_tokens": 2048,
+            "max_tokens": vision.max_tokens,
+            "enable_thinking": vision.enable_thinking,
         },
-        headers=HEADERS,
+        headers={
+            "Authorization": f"Bearer {vision.api_key}",
+            "Content-Type": "application/json",
+        },
         timeout=REQUEST_TIMEOUT,
     )
     if resp.status_code != 200:
@@ -326,8 +319,9 @@ def process_video_task(video_file: Path, store: MetadataStore) -> bool:
 
 
 def main():
-    if not API_KEY:
-        print("请先在脚本中设置 API_KEY。")
+    vision = vision_profile()
+    if not vision.api_key:
+        print("请先在管理平台「配置管理」里填写视觉大模型的 API Key。")
         return
 
     # 检查 FFmpeg 是否可用
@@ -351,7 +345,8 @@ def main():
     log(f"扫描到 {len(videos)} 个视频，已处理 {skipped} 个，待处理 {len(pending)} 个")
     if MAX_VIDEOS > 0:
         log(f"（MAX_VIDEOS={MAX_VIDEOS}，仅扫描排序后的前 {MAX_VIDEOS} 个文件）")
-    log(f"Base URL：{BASE_URL}")
+    log(f"模型：{vision.model}")
+    log(f"Base URL：{vision.base_url}")
     log(f"并发数：{MAX_WORKERS}")
     log(f"输出文件：{OUTPUT_FILE}")
     log(f"视频大小上限：{MAX_FILE_SIZE_MB} MB（超出将使用 FFmpeg 压缩）")

@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4261",
+  "title_cn": "站立屈肘前臂旋后",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "右肘屈曲",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "angle_3point",
+        "output": "",
+        "from": null,
+        "to": null,
+        "points": [
+          "right_shoulder",
+          "right_elbow",
+          "right_wrist"
+        ]
+      },
+      "pass": {
+        "op": "lte",
+        "value": 100.0
+      },
+      "excellent": {
+        "op": "lte",
+        "value": 90.0
+      },
+      "attempt": {
+        "op": "lte",
+        "value": 100.0
+      },
+      "reset": {
+        "op": "gte",
+        "value": 170.0
+      },
+      "fail_hint": "右肘再弯曲一些"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 0.5
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1"
+        ],
+        "t": 2.0,
+        "metric_id": "std_1",
+        "name_cn": "屈右肘"
+      },
+      {
+        "role": "cycle_end",
+        "t": 6.0
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "站立屈肘前臂旋后",
+    "cycle_start": 0.5,
+    "cycle_end": 6.0,
+    "keypoints": [
+      {
+        "name_cn": "屈右肘",
+        "t": 2.0,
+        "how_cn": "右肘屈曲约90度，大臂贴近身体",
+        "scored": true,
+        "skip_reason": ""
+      },
+      {
+        "name_cn": "前臂旋后",
+        "t": 4.0,
+        "how_cn": "保持屈肘，掌心向上翻转",
+        "scored": false,
+        "skip_reason": "前臂旋转和手腕手指动作正面骨架无法测量"
+      }
+    ]
+  }
+}

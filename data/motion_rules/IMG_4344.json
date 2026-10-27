@@ -1,0 +1,181 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4344",
+  "title_cn": "仰卧屈膝左右摆动",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "大腿抬起角度",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "left_hip",
+        "to": "left_knee",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 80.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 90.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 45.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 20.0
+      },
+      "fail_hint": "大腿再抬高一些"
+    },
+    {
+      "id": "std_2",
+      "name_cn": "保持屈膝",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "angle_3point",
+        "output": "",
+        "from": null,
+        "to": null,
+        "points": [
+          "left_hip",
+          "left_knee",
+          "left_ankle"
+        ]
+      },
+      "pass": {
+        "op": "lte",
+        "value": 100.0
+      },
+      "excellent": {
+        "op": "lte",
+        "value": 90.0
+      },
+      "attempt": {
+        "op": "lte",
+        "value": 100.0
+      },
+      "reset": {
+        "op": "gte",
+        "value": 160.0
+      },
+      "fail_hint": "膝盖弯曲角度不够"
+    },
+    {
+      "id": "std_3",
+      "name_cn": "大腿抬起角度",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "left_hip",
+        "to": "left_knee",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 80.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 90.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 45.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 20.0
+      },
+      "fail_hint": "大腿再抬高一些"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 0.5
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1",
+          "std_2"
+        ],
+        "t": 3.0,
+        "metric_id": "std_1",
+        "name_cn": "抬腿至桌面"
+      },
+      {
+        "role": "peak",
+        "id": "peak_2",
+        "metric_ids": [
+          "std_3"
+        ],
+        "t": 9.0,
+        "metric_id": "std_3",
+        "name_cn": "回正桌面姿"
+      },
+      {
+        "role": "cycle_end",
+        "t": 12.5
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1",
+      "std_2",
+      "std_3"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "仰卧屈膝左右摆动",
+    "cycle_start": 0.5,
+    "cycle_end": 12.5,
+    "keypoints": [
+      {
+        "name_cn": "抬腿至桌面",
+        "t": 3.0,
+        "how_cn": "双腿屈膝抬起，大腿垂直地面",
+        "scored": true,
+        "skip_reason": ""
+      },
+      {
+        "name_cn": "双腿倒向右侧",
+        "t": 6.5,
+        "how_cn": "双腿并拢缓慢倒向身体右侧",
+        "scored": false,
+        "skip_reason": "侧面拍摄无法测量双腿左右摆动的角度变化"
+      },
+      {
+        "name_cn": "回正桌面姿",
+        "t": 9.0,
+        "how_cn": "双腿回到中间垂直桌面姿势",
+        "scored": true,
+        "skip_reason": ""
+      },
+      {
+        "name_cn": "双腿倒向左侧",
+        "t": 11.5,
+        "how_cn": "双腿并拢缓慢倒向身体左侧",
+        "scored": false,
+        "skip_reason": "侧面拍摄无法测量双腿左右摆动的角度变化"
+      }
+    ]
+  }
+}

@@ -1,0 +1,179 @@
+{
+  "schema_version": 1,
+  "video_id": "IMG_4365",
+  "title_cn": "仰卧单腿臀桥",
+  "min_visibility": 0.45,
+  "metrics": [
+    {
+      "id": "std_1",
+      "name_cn": "髋部抬高",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "mid_shoulder",
+        "to": "mid_hip",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 50.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 65.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 30.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 10.0
+      },
+      "fail_hint": "臀部再抬高一些"
+    },
+    {
+      "id": "std_2",
+      "name_cn": "左大腿抬高",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "left_hip",
+        "to": "left_knee",
+        "points": []
+      },
+      "pass": {
+        "op": "gte",
+        "value": 110.0
+      },
+      "excellent": {
+        "op": "gte",
+        "value": 130.0
+      },
+      "attempt": {
+        "op": "gte",
+        "value": 80.0
+      },
+      "reset": {
+        "op": "lte",
+        "value": 50.0
+      },
+      "fail_hint": "左腿再抬高一些"
+    },
+    {
+      "id": "std_3",
+      "name_cn": "髋部回落",
+      "enabled": true,
+      "weight": 1.0,
+      "definition": {
+        "kind": "segment_to_axis",
+        "output": "degrees_from_down",
+        "from": "mid_shoulder",
+        "to": "mid_hip",
+        "points": []
+      },
+      "pass": {
+        "op": "lte",
+        "value": 20.0
+      },
+      "excellent": {
+        "op": "lte",
+        "value": 10.0
+      },
+      "attempt": {
+        "op": "lte",
+        "value": 20.0
+      },
+      "reset": {
+        "op": "gte",
+        "value": 60.0
+      },
+      "fail_hint": "臀部完全落回垫面"
+    }
+  ],
+  "keyframes": {
+    "points": [
+      {
+        "role": "cycle_start",
+        "t": 0.5
+      },
+      {
+        "role": "peak",
+        "id": "peak_1",
+        "metric_ids": [
+          "std_1"
+        ],
+        "t": 2.5,
+        "metric_id": "std_1",
+        "name_cn": "挺髋抬臀"
+      },
+      {
+        "role": "peak",
+        "id": "peak_2",
+        "metric_ids": [
+          "std_2"
+        ],
+        "t": 4.5,
+        "metric_id": "std_2",
+        "name_cn": "抬左腿"
+      },
+      {
+        "role": "peak",
+        "id": "peak_3",
+        "metric_ids": [
+          "std_3"
+        ],
+        "t": 6.0,
+        "metric_id": "std_3",
+        "name_cn": "落臀还原"
+      },
+      {
+        "role": "cycle_end",
+        "t": 6.5
+      }
+    ]
+  },
+  "rep_logic": {
+    "required_metric_ids": [
+      "std_1",
+      "std_2",
+      "std_3"
+    ],
+    "hold_ms": 300
+  },
+  "scoring": {
+    "bar_segments": 10
+  },
+  "guide": {
+    "title_cn": "仰卧单腿臀桥",
+    "cycle_start": 0.5,
+    "cycle_end": 6.5,
+    "keypoints": [
+      {
+        "name_cn": "挺髋抬臀",
+        "t": 2.5,
+        "how_cn": "臀部向上抬起至躯干与大腿成直线",
+        "scored": true,
+        "skip_reason": ""
+      },
+      {
+        "name_cn": "抬左腿",
+        "t": 4.5,
+        "how_cn": "左腿伸直向上抬起，保持臀部高度",
+        "scored": true,
+        "skip_reason": ""
+      },
+      {
+        "name_cn": "落臀还原",
+        "t": 6.0,
+        "how_cn": "放下左腿，臀部缓慢落回垫面",
+        "scored": true,
+        "skip_reason": ""
+      }
+    ]
+  }
+}
