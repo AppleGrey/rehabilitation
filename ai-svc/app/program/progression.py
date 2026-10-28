@@ -100,8 +100,12 @@ def _aggregate(program_id: str, stage_no: int) -> dict:
     }
 
 
-def decide_and_apply(program_id: str) -> Optional[dict]:
-    """做完本轮 → 决策 → 推进疗程。返回 {decision, rationale, metrics, view}。"""
+def decide_and_apply(program_id: str, background=None) -> Optional[dict]:
+    """做完本轮 → 决策 → 推进疗程。返回 {decision, rationale, metrics, view}。
+
+    background: FastAPI BackgroundTasks。提供时，下一阶段方案改为后台生成并立即返回，
+    前端看到 generating 状态后轮询（生成期间可放心离开页面），避免请求被 LLM 拖住。
+    """
     prog = core_client.get_program(program_id)
     if not prog:
         return None
@@ -124,7 +128,7 @@ def decide_and_apply(program_id: str) -> Optional[dict]:
         decision, rationale = _llm_decide(impression, stage_type, metrics)
         decision, rationale = _guard_advance(decision, rationale, metrics)
 
-    _apply(program_id, decision, stage_type, stage_no, metrics)
+    _apply(program_id, decision, stage_type, stage_no, metrics, background=background)
     _save_decision(program_id, stage_no, decision, rationale, metrics)
 
     return {
@@ -199,8 +203,19 @@ def _carryover(metrics: dict) -> list[dict]:
 
 
 def _apply(program_id: str, decision: str, stage_type: str, stage_no: int,
-           metrics: Optional[dict] = None) -> None:
+           metrics: Optional[dict] = None, *, background=None) -> None:
     carry = _carryover(metrics or {})
+
+    def _generate(*, st: str, sn: int) -> None:
+        """置 generating 并出下一版方案。有 background 时改为后台任务（前端轮询）。"""
+        core_client.set_status(program_id, "generating")
+        if background is not None:
+            background.add_task(service.generate_stage_plan, program_id,
+                                baseline_results=carry, stage_type=st, stage_no=sn)
+        else:
+            service.generate_stage_plan(program_id, baseline_results=carry,
+                                        stage_type=st, stage_no=sn)
+
     if decision == "discharge":
         core_client.set_status(program_id, "discharged")
     elif decision == "refer":
@@ -210,19 +225,13 @@ def _apply(program_id: str, decision: str, stage_type: str, stage_no: int,
         if nxt is None:
             core_client.set_status(program_id, "discharged")
         else:
-            core_client.set_status(program_id, "generating")
-            service.generate_stage_plan(program_id, baseline_results=carry,
-                                        stage_type=nxt, stage_no=stage_no + 1)
+            _generate(st=nxt, sn=stage_no + 1)
     elif decision == "regress":
         prev_idx = max(0, staging.STAGE_ORDER.index(stage_type) - 1) if stage_type in staging.STAGE_ORDER else 0
         prev = staging.STAGE_ORDER[prev_idx]
-        core_client.set_status(program_id, "generating")
-        service.generate_stage_plan(program_id, baseline_results=carry,
-                                    stage_type=prev, stage_no=stage_no)
+        _generate(st=prev, sn=stage_no)
     else:  # hold：同分期再出一版方案
-        core_client.set_status(program_id, "generating")
-        service.generate_stage_plan(program_id, baseline_results=carry,
-                                    stage_type=stage_type, stage_no=stage_no)
+        _generate(st=stage_type, sn=stage_no)
 
 
 def _save_decision(program_id: str, stage_no: int, decision: str, rationale: str, metrics: dict) -> None:

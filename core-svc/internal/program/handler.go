@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/minio/minio-go/v7"
 
+	"rehabilitation/core-svc/internal/auth"
 	"rehabilitation/core-svc/internal/storage"
 )
 
@@ -166,11 +167,20 @@ func (h *Handler) SaveDecision(c *gin.Context) {
 }
 
 // PlayUpload 流式播放用户跟练上传视频（by assessment task_id），支持 Range。
+// 服务令牌 / 管理员可看任意任务；登录用户只能回看自己疗程下的上传。
 func (h *Handler) PlayUpload(c *gin.Context) {
 	taskID := strings.TrimSpace(c.Param("task_id"))
 	if taskID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"detail": "task_id required"})
 		return
+	}
+	if claims := auth.CurrentClaims(c); claims != nil &&
+		!auth.IsServiceCall(c) && !auth.IsAdminRole(claims.Role) {
+		owned, oerr := h.repo.UploadOwnedBy(c.Request.Context(), taskID, claims.UserID)
+		if oerr != nil || !owned {
+			c.JSON(http.StatusNotFound, gin.H{"detail": "upload not found"})
+			return
+		}
 	}
 	key, err := h.repo.ResolveUploadKey(c.Request.Context(), taskID)
 	if err != nil {

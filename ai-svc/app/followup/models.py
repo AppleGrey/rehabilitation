@@ -305,6 +305,10 @@ class StrategySession(_Model):
     strategy_source: StrategySource = StrategySource.TREE
     # 前端恢复用的「展示态」：{is_done, spec:{answer_type,options}, result:{...}}。退出重进可还原结论卡片/预选项/锁定态。
     resume_view: dict = Field(default_factory=dict)
+    # 会话归属用户（问诊历史存服务端，换设备也能看到；老会话为 None）
+    user_id: Optional[str] = None
+    # 对话记录：[{role: user/assistant, text}]，供「问诊历史」列表与回看
+    transcript: list[dict] = Field(default_factory=list)
 
     # ── 便捷查询 ──
     def slot(self, slot_id: str) -> Optional[Slot]:

@@ -8,6 +8,8 @@ class TrainingHit {
   final String status;
   final double? score;
   final DateTime? at;
+  final String taskId;
+  final int? pain;
 
   const TrainingHit({
     required this.title,
@@ -16,6 +18,8 @@ class TrainingHit {
     required this.status,
     this.score,
     this.at,
+    this.taskId = '',
+    this.pain,
   });
 
   bool get done => status == 'done';
@@ -68,6 +72,10 @@ class RehabOverview {
             status: t['status']?.toString() ?? 'none',
             score: _asDouble(t['overall_score']),
             at: DateTime.tryParse(t['created_at']?.toString() ?? ''),
+            taskId: t['task_id']?.toString() ?? '',
+            pain: t['pain_reported'] is num
+                ? (t['pain_reported'] as num).toInt()
+                : null,
           ),
         );
       }

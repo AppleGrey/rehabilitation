@@ -517,3 +517,24 @@ class TagWidget extends StatelessWidget {
     );
   }
 }
+
+/// 全局统一的返回按钮：与设计系统一致的箭头风格（替代默认 Material 返回箭头）。
+class AppBackButton extends StatelessWidget {
+  final VoidCallback? onTap;
+  final Color? color;
+
+  const AppBackButton({super.key, this.onTap, this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      onPressed: onTap ?? () => Navigator.of(context).maybePop(),
+      tooltip: '返回',
+      icon: Icon(
+        Icons.arrow_back_ios_new_rounded,
+        size: 19,
+        color: color ?? AppTheme.textPrimary,
+      ),
+    );
+  }
+}

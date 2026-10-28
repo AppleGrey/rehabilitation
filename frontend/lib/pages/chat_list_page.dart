@@ -4,9 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../theme/app_theme.dart';
+import '../services/auth_api.dart';
+import '../services/auth_store.dart';
+import '../services/consult_api.dart';
 import '../widgets/common_widgets.dart';
+import 'profile_edit_page.dart';
 
-/// 存在本地的单条会话摘要
+/// 单条会话摘要（服务端列表项 / 本地缓存共用）
 class ConversationRecord {
   final String sessionId;
   final String title;
@@ -16,6 +20,9 @@ class ConversationRecord {
   final String? recommendedVideoId;
   final String? recommendedVideoUrl;
 
+  /// 来自服务端列表、完整对话尚未拉取（点击后再补）
+  final bool remote;
+
   const ConversationRecord({
     required this.sessionId,
     required this.title,
@@ -24,6 +31,7 @@ class ConversationRecord {
     required this.messages,
     this.recommendedVideoId,
     this.recommendedVideoUrl,
+    this.remote = false,
   });
 
   Map<String, dynamic> toJson() => {
@@ -34,6 +42,7 @@ class ConversationRecord {
     'messages': messages,
     'recommendedVideoId': recommendedVideoId,
     'recommendedVideoUrl': recommendedVideoUrl,
+    'remote': remote,
   };
 
   factory ConversationRecord.fromJson(Map<String, dynamic> j) =>
@@ -51,6 +60,7 @@ class ConversationRecord {
             [],
         recommendedVideoId: j['recommendedVideoId'] as String?,
         recommendedVideoUrl: j['recommendedVideoUrl'] as String?,
+        remote: j['remote'] as bool? ?? false,
       );
 }
 
@@ -113,6 +123,7 @@ class ChatListPage extends StatefulWidget {
 class _ChatListPageState extends State<ChatListPage> {
   List<ConversationRecord> _records = [];
   bool _loading = true;
+  bool _serverLoaded = false;
 
   @override
   void initState() {
@@ -121,7 +132,16 @@ class _ChatListPageState extends State<ChatListPage> {
   }
 
   Future<void> _load() async {
-    final list = await ConversationStorage.loadAll();
+    // 优先服务端（换设备/重装也能看到）；失败时回落到本机缓存
+    List<ConversationRecord> list;
+    try {
+      final remote = await ConsultApi.sessions();
+      list = remote.map(_fromServer).toList();
+      _serverLoaded = true;
+    } catch (_) {
+      list = await ConversationStorage.loadAll();
+      _serverLoaded = false;
+    }
     if (mounted) {
       setState(() {
         _records = list;
@@ -130,25 +150,128 @@ class _ChatListPageState extends State<ChatListPage> {
     }
   }
 
+  ConversationRecord _fromServer(Map<String, dynamic> s) {
+    final at =
+        DateTime.tryParse(s['updated_at']?.toString() ?? '') ?? DateTime.now();
+    final title = s['title']?.toString().trim() ?? '';
+    return ConversationRecord(
+      sessionId: s['session_id']?.toString() ?? '',
+      title: title.isEmpty ? '问诊记录' : title,
+      previewText: s['preview']?.toString() ?? '',
+      createdAt: at.toLocal(),
+      messages: const [],
+      remote: true,
+    );
+  }
+
+  /// 打开一条记录：服务端列表只有摘要，先拉取完整对话再进入问诊页。
+  Future<void> _open(ConversationRecord r) async {
+    var record = r;
+    if (r.remote && r.messages.isEmpty) {
+      try {
+        final data = await ConsultApi.transcript(r.sessionId);
+        final msgs = (data['transcript'] as List<dynamic>? ?? [])
+            .whereType<Map>()
+            .map(
+              (e) => {
+                'role': e['role']?.toString() ?? 'assistant',
+                'text': e['text']?.toString() ?? '',
+              },
+            )
+            .toList();
+        record = ConversationRecord(
+          sessionId: r.sessionId,
+          title: r.title,
+          previewText: r.previewText,
+          createdAt: r.createdAt,
+          messages: msgs,
+        );
+        try {
+          await ConversationStorage.save(record);
+        } catch (_) {}
+      } catch (_) {
+        // 拉取失败也进入：问诊页会从 /state 恢复展示态
+      }
+    }
+    widget.onOpenChat(record);
+  }
+
+  /// 发起新问诊前的个人资料提示（每个用户只提示一次；不填也放行）。
+  Future<void> _startNew() async {
+    final uid = AuthStore.user?.id ?? 'anon';
+    var prompted = false;
+    SharedPreferences? prefs;
+    try {
+      prefs = await SharedPreferences.getInstance();
+      prompted = prefs.getBool('consult_profile_prompted_v1_$uid') ?? false;
+    } catch (_) {}
+    if (!prompted) {
+      final profile = await AuthApi.getProfile();
+      if (mounted && profile != null && _profileEmpty(profile)) {
+        final go = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('完善个人资料，问诊更准确'),
+            content: const Text(
+              '填写性别、年龄、基础病史等信息后，AI 能更快问到重点（1 分钟，可不填全）。',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: const Text('暂不填写'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(ctx).pop(true),
+                child: const Text('去填写'),
+              ),
+            ],
+          ),
+        );
+        if (go == true && mounted) {
+          await Navigator.of(context).push(
+            MaterialPageRoute<void>(builder: (_) => const ProfileEditPage()),
+          );
+        }
+      }
+      try {
+        await prefs?.setBool('consult_profile_prompted_v1_$uid', true);
+      } catch (_) {}
+    }
+    if (mounted) widget.onOpenChat(null);
+  }
+
+  bool _profileEmpty(Map<String, dynamic> profile) {
+    const keys = [
+      'gender',
+      'birth_year',
+      'height_cm',
+      'weight_kg',
+      'activity_level',
+      'chronic_conditions',
+      'surgery_history',
+      'allergies',
+    ];
+    for (final k in keys) {
+      final v = profile[k];
+      if (v == null) continue;
+      if (v is String && v.trim().isEmpty) continue;
+      if (v is List && v.isEmpty) continue;
+      return false;
+    }
+    return true;
+  }
+
   Future<void> _delete(ConversationRecord r) async {
+    // 服务端删除（失败也不阻断本地清理；本地只是缓存）
+    try {
+      await ConsultApi.deleteSession(r.sessionId);
+    } catch (_) {}
     await ConversationStorage.delete(r.sessionId);
     await _load();
     if (!mounted) return;
     ScaffoldMessenger.of(context)
       ..clearSnackBars()
-      ..showSnackBar(
-        SnackBar(
-          content: const Text('问诊记录已删除'),
-          action: SnackBarAction(
-            label: '撤销',
-            textColor: AppTheme.mint,
-            onPressed: () async {
-              await ConversationStorage.save(r);
-              await _load();
-            },
-          ),
-        ),
-      );
+      ..showSnackBar(const SnackBar(content: Text('问诊记录已删除')));
   }
 
   Future<void> _confirmDelete(ConversationRecord r) async {
@@ -156,7 +279,7 @@ class _ChatListPageState extends State<ChatListPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('删除这条问诊记录？'),
-        content: const Text('将从本机的问诊历史中移除，之后短时间内可以撤销。'),
+        content: const Text('记录将从服务器与本机一并删除，删除后无法恢复。'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -213,7 +336,8 @@ class _ChatListPageState extends State<ChatListPage> {
                     if (!_loading && _records.isNotEmpty)
                       SectionHeader(
                         title: '历史问诊',
-                        subtitle: '共 ${_records.length} 条 · 左滑可删除',
+                        subtitle:
+                            '共 ${_records.length} 条 · ${_serverLoaded ? '已同步到你的账号' : '仅存本机'} · 左滑可删除',
                       ),
                   ]),
                 ),
@@ -232,7 +356,7 @@ class _ChatListPageState extends State<ChatListPage> {
                       title: '还没有问诊记录',
                       body: '从一次简单的描述开始，我们会逐步了解你的情况。',
                       actionLabel: '开始第一次问诊',
-                      onAction: () => widget.onOpenChat(null),
+                      onAction: _startNew,
                     ),
                   ),
                 )
@@ -297,7 +421,7 @@ class _ChatListPageState extends State<ChatListPage> {
           ),
           const SizedBox(height: 20),
           ElevatedButton.icon(
-            onPressed: () => widget.onOpenChat(null),
+            onPressed: _startNew,
             icon: const Icon(Icons.add_rounded, size: 20),
             label: const Text('发起新问诊'),
           ),
@@ -351,7 +475,7 @@ class _ChatListPageState extends State<ChatListPage> {
           color: Colors.transparent,
           child: InkWell(
             borderRadius: BorderRadius.circular(22),
-            onTap: () => widget.onOpenChat(r),
+            onTap: () => _open(r),
             child: AppCard(
               padding: const EdgeInsets.all(16),
               child: Row(

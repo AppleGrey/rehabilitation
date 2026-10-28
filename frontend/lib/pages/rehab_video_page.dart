@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io' show Platform;
+import 'dart:io' show File, Platform;
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
@@ -11,8 +11,12 @@ import 'package:video_player/video_player.dart';
 
 import '../config/api_config.dart';
 import '../pose/follow_models.dart';
+import '../services/app_feedback.dart';
 import '../services/auth_store.dart';
+import '../services/error_text.dart';
+import '../services/screen_awake.dart';
 import '../theme/app_theme.dart';
+import '../widgets/common_widgets.dart';
 import '../widgets/follow_live_stage.dart';
 
 // ── 阶段 ─────────────────────────────────────────────────────────────────────
@@ -30,6 +34,7 @@ enum _Phase {
   preview,
   countdown,
   recording,
+  rest, // 组间休息（多组训练）
   uploading,
   polling,
   result,
@@ -91,6 +96,14 @@ class RehabVideoPage extends StatefulWidget {
   final String? programId;
   final int? stageNo;
 
+  /// 多组训练：本次录第几组 / 共几组 / 组间休息秒数（单次训练保持默认 1）
+  final int setNo;
+  final int setTotal;
+  final int restSeconds;
+
+  /// 目标剂量文案（如「3 组 × 12 次」），录制现场浮层展示
+  final String? dosageText;
+
   const RehabVideoPage({
     super.key,
     required this.onBack,
@@ -101,6 +114,10 @@ class RehabVideoPage extends StatefulWidget {
     this.uploadMode = 'legacy',
     this.programId,
     this.stageNo,
+    this.setNo = 1,
+    this.setTotal = 1,
+    this.restSeconds = 60,
+    this.dosageText,
   });
 
   @override
@@ -139,6 +156,19 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
   Timer? _pollTimer;
   String _pollingMessage = '视觉 AI 正在对比标准动作与您的训练视频…';
 
+  // ── 多组训练：组进度 / 组间休息 ─────────────────────────────────────────
+  late int _setNo = widget.setNo;
+  late final int _setTotal = widget.setTotal;
+  int _restRemaining = 60;
+  Timer? _restTimer;
+
+  // ── 上传失败可重试（复用本地文件，不必重录） ─────────────────────────────
+  String? _pendingUploadPath;
+  ({String notes, int? pain})? _lastFeel;
+
+  // ── 首次跟做的拍摄小贴士（只出现一次） ──────────────────────────────────
+  bool _showTips = false;
+
   // SharedPreferences key
   String get _taskPrefKey =>
       'assess_task_${widget.sessionId ?? ''}_${widget.videoId ?? ''}';
@@ -146,7 +176,28 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
   @override
   void initState() {
     super.initState();
+    // 训练期间保持屏幕常亮（C5）
+    ScreenAwake.enable();
+    _loadTipsFlag();
     _checkExistingTask();
+  }
+
+  Future<void> _loadTipsFlag() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (!mounted) return;
+      setState(() {
+        _showTips = !(prefs.getBool('training_tips_seen_v1') ?? false);
+      });
+    } catch (_) {}
+  }
+
+  Future<void> _dismissTips() async {
+    setState(() => _showTips = false);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('training_tips_seen_v1', true);
+    } catch (_) {}
   }
 
   // ── 检查是否有未完成 / 已完成的历史任务 ──────────────────────────────────
@@ -317,6 +368,7 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
 
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (t) async {
       if (_countdownValue > 1) {
+        AppFeedback.tick();
         setState(() => _countdownValue--);
       } else {
         t.cancel();
@@ -325,10 +377,22 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
     });
   }
 
+  /// 倒计时阶段允许取消，回到准备状态。
+  void _cancelCountdown() {
+    _countdownTimer?.cancel();
+    setState(() => _phase = _Phase.preview);
+  }
+
   // ── 开始录制 ─────────────────────────────────────────────────────────────
 
   Future<void> _startRecording() async {
-    if (_camCtrl == null || !_camCtrl!.value.isInitialized) return;
+    if (_camCtrl == null || !_camCtrl!.value.isInitialized) {
+      if (mounted) {
+        _preparingCamera = false;
+        setState(() => _phase = _Phase.preview);
+      }
+      return;
+    }
     try {
       _startDemoLoop();
       await _liveKey.currentState?.releaseStreamForRecording();
@@ -348,6 +412,7 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
           setState(() => _recordingDuration += const Duration(seconds: 1));
         }
       });
+      AppFeedback.start();
       setState(() => _phase = _Phase.recording);
     } catch (e) {
       if (Platform.isAndroid && _camCtrl != null) {
@@ -367,11 +432,12 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
   Future<void> _stopAndUpload() async {
     if (_camCtrl == null) return;
     _recordingTimer?.cancel();
-    HapticFeedback.mediumImpact();
+    AppFeedback.stop();
     setState(() => _phase = _Phase.uploading);
 
     try {
       final xfile = await _camCtrl!.stopVideoRecording();
+      // 不保留相机：下一组重新进入预览时再初始化，跨组更稳
       await _camCtrl!.dispose();
       _camCtrl = null;
       _videoCtrl?.pause(); // 停止后台演示小窗播放
@@ -389,9 +455,88 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
     }
   }
 
+  /// C3：取消本组录制（丢弃刚录内容，回到可重录状态）。
+  Future<void> _cancelRecording() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('取消本组录制？'),
+        content: const Text('刚刚录的内容会被丢弃，本组需要重新录制。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('继续录制'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: TextButton.styleFrom(foregroundColor: AppTheme.error),
+            child: const Text('放弃本组'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    _recordingTimer?.cancel();
+    try {
+      final xfile = await _camCtrl?.stopVideoRecording();
+      final path = xfile?.path;
+      if (path != null) {
+        try {
+          final f = File(path);
+          if (await f.exists()) await f.delete();
+        } catch (_) {}
+      }
+    } catch (_) {}
+    await _camCtrl?.dispose();
+    _camCtrl = null;
+    _recordingDuration = Duration.zero;
+    if (!mounted) return;
+    // 重新准备摄像头，回到「开始录制」状态
+    await _enterPreview();
+  }
+
+  /// 进入组间休息（多组训练）。
+  void _enterRest() {
+    _restRemaining = widget.restSeconds <= 0 ? 30 : widget.restSeconds;
+    setState(() => _phase = _Phase.rest);
+    _restTimer?.cancel();
+    _restTimer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!mounted) return;
+      if (_restRemaining <= 1) {
+        t.cancel();
+        setState(() => _restRemaining = 0);
+        AppFeedback.done();
+      } else {
+        AppFeedback.tick();
+        setState(() => _restRemaining--);
+      }
+    });
+  }
+
+  /// 休息好了，开始下一组：组号 +1，重新准备摄像头并进入倒计时。
+  Future<void> _startNextSet() async {
+    _restTimer?.cancel();
+    setState(() {
+      _setNo += 1;
+      _phase = _Phase.preview;
+      _recordingDuration = Duration.zero;
+    });
+    await _enterPreview();
+    if (!mounted) return;
+    if (_camCtrl == null || _phase != _Phase.preview) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('摄像头还没有准备好，点「开始录制」可重试')),
+      );
+      return;
+    }
+    _startCountdown();
+  }
+
   /// 基线/训练模式：录完可写感受 + 自评疼痛，再上传并返回。
-  Future<void> _uploadAndReturn(String videoPath) async {
-    final feel = await _askFeelingNotes();
+  /// 多组训练：不是最后一组时，上传成功后进入组间休息。
+  Future<void> _uploadAndReturn(String videoPath, {bool skipFeeling = false}) async {
+    final feel = skipFeeling ? _lastFeel : await _askFeelingNotes();
+    _lastFeel = feel;
     if (!mounted) return;
     final notes = feel?.notes ?? '';
     final pain = feel?.pain;
@@ -420,7 +565,9 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
               ..fields['program_id'] = widget.programId ?? ''
               ..fields['stage_no'] = '${widget.stageNo ?? 1}'
               ..fields['video_id'] = widget.videoId ?? ''
-              ..fields['purpose'] = 'training';
+              ..fields['purpose'] = 'training'
+              ..fields['set_no'] = '$_setNo'
+              ..fields['set_total'] = '$_setTotal';
       }
       if (notes.isNotEmpty) req.fields['user_notes'] = notes;
       if (pain != null) req.fields['pain_reported'] = '$pain';
@@ -435,79 +582,143 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
       final streamed = await req.send().timeout(const Duration(minutes: 2));
       await streamed.stream.drain<void>();
       if (!mounted) return;
-      widget.onBack();
+      _pendingUploadPath = null;
+      _lastFeel = null;
+      if (widget.uploadMode == 'training' && _setNo < _setTotal) {
+        // 还有下一组：进入组间休息
+        _enterRest();
+      } else {
+        widget.onBack();
+      }
     } catch (e) {
       if (!mounted) return;
+      // 保留本地文件与感受，允许「重试上传」而不必重录（C3）
+      _pendingUploadPath = videoPath;
       setState(() {
-        _uploadError = '上传失败：$e';
+        _uploadError = friendlyError(e, fallback: '上传失败，请检查网络后重试');
         _phase = _Phase.result;
       });
     }
   }
 
+  static const _painQuick = [
+    (0, '无痛', Icons.sentiment_very_satisfied_rounded),
+    (2, '轻微', Icons.sentiment_satisfied_rounded),
+    (5, '明显', Icons.sentiment_dissatisfied_rounded),
+    (8, '很痛', Icons.sentiment_very_dissatisfied_rounded),
+  ];
+
   /// 可选：写跟做/训练后的主观感受 + 0-10 自评疼痛。
-  /// 疼痛是进阶/回退的关键闸门（视觉评估看不出来），所以单独用滑块采集。
+  /// 减负设计：四档快捷按钮一点即选；滑块、备注都折叠为可选，两次点击即可提交。
   Future<({String notes, int? pain})?> _askFeelingNotes() async {
     if (widget.uploadMode != 'baseline' && widget.uploadMode != 'training') {
       return null;
     }
     final controller = TextEditingController();
-    double pain = 0;
-    bool painTouched = false;
+    int? pain;
+    bool precise = false;
+    double slider = 0;
+    bool notesOpen = false;
     final result = await showDialog<({String notes, int? pain})>(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setLocal) => AlertDialog(
-          title: const Text('说说刚才的感受'),
+          title: Text(
+            _setTotal > 1 ? '第 $_setNo 组做完，感觉如何？' : '这个动作做完感觉怎么样？',
+          ),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
                   children: [
-                    const Text('这个动作有多疼？', style: TextStyle(fontSize: 14)),
-                    const Spacer(),
-                    Text(
-                      painTouched ? '${pain.round()} / 10' : '未选',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: painTouched
-                            ? AppTheme.primary
-                            : AppTheme.textTertiary,
+                    for (final (value, label, icon) in _painQuick)
+                      ChoiceChip(
+                        avatar: Icon(icon, size: 18),
+                        label: Text(label),
+                        selected: !precise && pain == value,
+                        onSelected: (_) => setLocal(() {
+                          pain = value;
+                          precise = false;
+                        }),
                       ),
-                    ),
                   ],
                 ),
-                Slider(
-                  value: pain,
-                  min: 0,
-                  max: 10,
-                  divisions: 10,
-                  label: '${pain.round()}',
-                  onChanged: (v) => setLocal(() {
-                    pain = v;
-                    painTouched = true;
+                const SizedBox(height: 6),
+                if (precise) ...[
+                  Row(
+                    children: [
+                      const Text('疼痛程度', style: TextStyle(fontSize: 13)),
+                      const Spacer(),
+                      Text(
+                        '${slider.round()} / 10',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Slider(
+                    value: slider,
+                    min: 0,
+                    max: 10,
+                    divisions: 10,
+                    label: '${slider.round()}',
+                    onChanged: (v) => setLocal(() {
+                      slider = v;
+                      pain = v.round();
+                    }),
+                  ),
+                ],
+                TextButton(
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  onPressed: () => setLocal(() {
+                    precise = !precise;
+                    if (precise) {
+                      slider = (pain ?? 0).toDouble();
+                    } else {
+                      pain = null;
+                    }
                   }),
+                  child: Text(
+                    precise ? '收起精确选择' : '更精确一点（0–10 滑块）',
+                    style: const TextStyle(fontSize: 12.5),
+                  ),
                 ),
+                if (!notesOpen)
+                  TextButton(
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    onPressed: () => setLocal(() => notesOpen = true),
+                    child: const Text(
+                      '补充说明（可选）',
+                      style: TextStyle(fontSize: 12.5),
+                    ),
+                  )
+                else
+                  TextField(
+                    controller: controller,
+                    maxLines: 2,
+                    decoration: const InputDecoration(
+                      hintText: '例如：肩前侧有点酸、比上次顺…',
+                      hintStyle: TextStyle(fontSize: 13),
+                    ),
+                  ),
+                const SizedBox(height: 6),
                 const Text(
-                  '0 = 完全不疼，3 以内可继续，超过 3 建议降低强度',
-                  style: TextStyle(
-                    fontSize: 11.5,
-                    color: AppTheme.textTertiary,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                TextField(
-                  controller: controller,
-                  maxLines: 3,
-                  decoration: const InputDecoration(
-                    labelText: '其他感受（可选）',
-                    hintText: '例如：肩前侧有点酸、做到一半费力、比上次顺…',
-                    border: OutlineInputBorder(),
-                  ),
+                  '0 = 完全不疼；3 分以内可继续，超过 3 建议降低强度。',
+                  style: TextStyle(fontSize: 11, color: AppTheme.textTertiary),
                 ),
               ],
             ),
@@ -519,8 +730,8 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
             ),
             ElevatedButton(
               onPressed: () => Navigator.of(ctx).pop((
-                notes: controller.text.trim(),
-                pain: painTouched ? pain.round() : null,
+                notes: notesOpen ? controller.text.trim() : '',
+                pain: pain,
               )),
               child: const Text('提交'),
             ),
@@ -588,7 +799,7 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
       });
     } catch (e) {
       setState(() {
-        _uploadError = '上传失败：$e';
+        _uploadError = friendlyError(e, fallback: '上传失败，请检查网络后重试');
         _phase = _Phase.result;
       });
     }
@@ -661,9 +872,11 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
     _pageDisposed = true;
     _countdownTimer?.cancel();
     _recordingTimer?.cancel();
+    _restTimer?.cancel();
     _pollTimer?.cancel();
     _videoCtrl?.dispose();
     _camCtrl?.dispose();
+    ScreenAwake.disable();
     super.dispose();
   }
 
@@ -683,10 +896,7 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
           backgroundColor: Colors.black,
           foregroundColor: Colors.white,
           systemOverlayStyle: SystemUiOverlayStyle.light,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-            onPressed: widget.onBack,
-          ),
+          leading: AppBackButton(onTap: widget.onBack, color: Colors.white),
           title: Text(
             widget.videoTitle ?? '康复训练',
             style: const TextStyle(color: Colors.white, fontSize: 16),
@@ -700,6 +910,7 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
           _Phase.preview ||
           _Phase.countdown ||
           _Phase.recording => _buildLiveSession(),
+          _Phase.rest => _buildRest(),
           _Phase.uploading => _buildUploading(),
           _Phase.polling => _buildPolling(),
           _Phase.result => _buildResult(),
@@ -811,6 +1022,56 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
                   textAlign: TextAlign.center,
                   style: TextStyle(color: Colors.white54, fontSize: 12),
                 ),
+                if ((widget.dosageText ?? '').isNotEmpty || _setTotal > 1) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    [
+                      if (_setTotal > 1) '第 $_setNo/$_setTotal 组',
+                      if ((widget.dosageText ?? '').isNotEmpty)
+                        '目标剂量：${widget.dosageText}',
+                      if (_setTotal > 1) '组间休息 ${widget.restSeconds} 秒',
+                    ].join(' · '),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: AppTheme.mint,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+                if (_showTips) ...[
+                  const SizedBox(height: 10),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.06),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            '拍摄小贴士：手机竖放在 1–2 米外，尽量让全身入画；光线充足、背景干净。',
+                            style: TextStyle(
+                              color: Colors.white60,
+                              fontSize: 12,
+                              height: 1.5,
+                            ),
+                          ),
+                        ),
+                        TextButton(
+                          style: TextButton.styleFrom(
+                            foregroundColor: AppTheme.mint,
+                            visualDensity: VisualDensity.compact,
+                          ),
+                          onPressed: _dismissTips,
+                          child: const Text('知道了'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 if (_videoLoadError != null) ...[
                   const SizedBox(height: 8),
                   SizedBox(
@@ -905,7 +1166,8 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
           const Center(
             child: Text('正在连接摄像头…', style: TextStyle(color: Colors.white70)),
           ),
-        if (_phase == _Phase.countdown)
+        Positioned(left: 16, top: 16, child: _dosageChip()),
+        if (_phase == _Phase.countdown) ...[
           Center(
             child: Text(
               '$_countdownValue',
@@ -917,6 +1179,12 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
               ),
             ),
           ),
+          Positioned(
+            top: 16,
+            right: 16,
+            child: _roundChip(label: '取消', onTap: _cancelCountdown),
+          ),
+        ],
         if (_phase == _Phase.recording)
           Positioned(
             top: 16,
@@ -961,27 +1229,46 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
           child: SafeArea(
             top: false,
             child: _phase == _Phase.recording
-                ? SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF4CAF50),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                ? Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF4CAF50),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          onPressed: _stopAndUpload,
+                          icon: const Icon(Icons.check_circle, size: 20),
+                          label: Text(
+                            _setTotal > 1 ? '本组完成（第 $_setNo 组）' : '训练完成',
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ),
                       ),
-                      onPressed: _stopAndUpload,
-                      icon: const Icon(Icons.check_circle, size: 20),
-                      label: const Text(
-                        '训练完成',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
+                      const SizedBox(width: 10),
+                      OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.white70,
+                          side: const BorderSide(color: Colors.white38),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 14,
+                            horizontal: 16,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
+                        onPressed: _cancelRecording,
+                        child: const Text('取消'),
                       ),
-                    ),
+                    ],
                   )
                 : _phase == _Phase.preview
                 ? SizedBox(
@@ -1010,6 +1297,94 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
           ),
         ),
       ],
+    );
+  }
+
+  // ── 组间休息（多组训练） ──────────────────────────────────────────────────
+
+  Widget _buildRest() {
+    final next = _setNo + 1;
+    final ready = _restRemaining <= 0;
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(28, 12, 28, 28),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.check_circle_rounded,
+              color: Color(0xFF4CAF50),
+              size: 64,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              '第 $_setNo / $_setTotal 组完成',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              ready ? '休息好啦，可以开始下一组！' : '组间休息 ${_fmt(Duration(seconds: _restRemaining))}',
+              style: TextStyle(
+                color: ready ? AppTheme.mint : Colors.white70,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              (widget.dosageText ?? '').isNotEmpty
+                  ? '本组目标：${widget.dosageText}'
+                  : '休息一下，别让身体冷下来太久',
+              style: const TextStyle(color: Colors.white38, fontSize: 12.5),
+            ),
+            const SizedBox(height: 28),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF4CAF50),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 15),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: _startNextSet,
+                icon: const Icon(Icons.play_arrow_rounded, size: 20),
+                label: Text(
+                  '开始第 $next 组',
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.white70,
+                  side: const BorderSide(color: Colors.white24),
+                ),
+                onPressed: widget.onBack,
+                child: const Text('先退出，稍后继续'),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              '已录的组都保存好了：下次进入这个动作会从第 $next 组继续。',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.white38, fontSize: 12),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -1082,7 +1457,9 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
               ),
               onPressed: widget.onBack,
               icon: const Icon(Icons.home, size: 18),
-              label: const Text('返回首页（结果将保留）'),
+              label: Text(
+                widget.uploadMode == 'legacy' ? '返回首页（结果将保留）' : '先返回（结果会保留）',
+              ),
             ),
           ],
         ),
@@ -1284,6 +1661,7 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
   }
 
   Widget _buildErrorResult() {
+    final canRetryUpload = _pendingUploadPath != null;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -1298,6 +1676,30 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
+            if (canRetryUpload) ...[
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  onPressed: () async {
+                    final path = _pendingUploadPath;
+                    if (path == null) return;
+                    setState(() {
+                      _uploadError = null;
+                      _phase = _Phase.uploading;
+                    });
+                    await _uploadAndReturn(path, skipFeeling: true);
+                  },
+                  icon: const Icon(Icons.cloud_upload_outlined, size: 18),
+                  label: const Text('重试上传（不用重录）'),
+                ),
+              ),
+              const SizedBox(height: 10),
+            ],
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -1310,12 +1712,14 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
                     final prefs = await SharedPreferences.getInstance();
                     await prefs.remove(_taskPrefKey);
                     if (!mounted) return;
+                    _pendingUploadPath = null;
+                    _lastFeel = null;
                     _uploadError = null;
                     setState(() => _phase = _Phase.loading);
                     _initVideo();
                   },
                   icon: const Icon(Icons.replay, size: 18),
-                  label: const Text('重新训练'),
+                  label: const Text('重新录制'),
                 ),
                 const SizedBox(width: 12),
                 ElevatedButton.icon(
@@ -1325,11 +1729,54 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
                   ),
                   onPressed: widget.onBack,
                   icon: const Icon(Icons.home),
-                  label: const Text('返回首页'),
+                  label: Text(widget.uploadMode == 'legacy' ? '返回首页' : '返回'),
                 ),
               ],
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  /// C1：录制现场的剂量浮层（手机放在 1-2 米外时唯一的「目标」提示）。
+  Widget _dosageChip() {
+    final dose = widget.dosageText?.trim() ?? '';
+    final parts = <String>[
+      if (_setTotal > 1) '第 $_setNo/$_setTotal 组',
+      if (dose.isNotEmpty) dose,
+    ];
+    if (parts.isEmpty) return const SizedBox.shrink();
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        parts.join(' · '),
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 12.5,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  Widget _roundChip({required String label, required VoidCallback onTap}) {
+    return Material(
+      color: Colors.black.withValues(alpha: 0.45),
+      shape: const StadiumBorder(),
+      child: InkWell(
+        customBorder: const StadiumBorder(),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+          child: Text(
+            label,
+            style: const TextStyle(color: Colors.white, fontSize: 12.5),
+          ),
         ),
       ),
     );

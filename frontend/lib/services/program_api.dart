@@ -127,6 +127,49 @@ class ProgramApi {
     return null;
   }
 
+  /// 评估失败/卡死的兜底：让后端复位任务并重新评估。
+  static Future<void> retryAssess(String taskId) async {
+    final resp = await http
+        .post(Uri.parse('$_base/api/ai/assess/retry/$taskId'), headers: AuthStore.headers())
+        .timeout(const Duration(seconds: 25));
+    _decode(resp, '重试评估失败');
+  }
+
+  /// 某个训练项的历史评估（多组训练按组逐条，新的在前）。
+  static Future<List<Map<String, dynamic>>> assessHistory(
+    String programId,
+    String videoId, {
+    int limit = 20,
+  }) async {
+    final resp = await http
+        .get(
+          Uri.parse(
+            '$_base/api/ai/assess/history?program_id=${Uri.encodeQueryComponent(programId)}'
+            '&video_id=${Uri.encodeQueryComponent(videoId)}&limit=$limit',
+          ),
+          headers: AuthStore.headers(),
+        )
+        .timeout(const Duration(seconds: 25));
+    final data = _decode(resp, '加载历史记录失败');
+    return (data['history'] as List<dynamic>? ?? [])
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
+  }
+
+  /// 最近完成的训练评估（跨疗程、倒序）：进度页「随时间」趋势。
+  static Future<List<Map<String, dynamic>>> timeline({int limit = 30}) async {
+    final resp = await http
+        .get(Uri.parse('$_base/api/ai/assess/timeline?limit=$limit'),
+            headers: AuthStore.headers())
+        .timeout(const Duration(seconds: 20));
+    final data = _decode(resp, '加载训练趋势失败');
+    return (data['timeline'] as List<dynamic>? ?? [])
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
+  }
+
   /// K4：做完本轮训练 → 进阶决策。
   static Future<Map<String, dynamic>> progress(String programId) async {
     final resp = await http

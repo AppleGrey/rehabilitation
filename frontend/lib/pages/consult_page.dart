@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import '../theme/app_theme.dart';
 import '../config/api_config.dart';
 import '../services/auth_store.dart';
+import '../services/error_text.dart';
 import '../services/program_api.dart';
 import '../widgets/common_widgets.dart';
 import 'baseline_page.dart';
@@ -67,6 +68,9 @@ class _ConsultPageState extends State<ConsultPage> {
   bool _isSending = false;
   bool _isInitializing = true;
   bool _isDone = false;
+
+  /// 后台正在做什么（「正在思考 / 查询知识库…」），来自 SSE status 事件
+  String? _statusLabel;
 
   /// 本会话已有方案时的 program_id（结束卡传送门）
   String? _existingProgramId;
@@ -178,6 +182,11 @@ class _ConsultPageState extends State<ConsultPage> {
       case 'text':
         final ai = _streaming ?? _appendAi();
         ai.text += (event['content'] as String? ?? '');
+        _statusLabel = null;
+        break;
+      case 'status':
+        // 大模型思考中 / 查询知识库 / 建策略树：给用户一点「它在干什么」的反馈
+        _statusLabel = event['text'] as String? ?? '';
         break;
       case 'input_spec':
         _spec = _Spec(
@@ -196,6 +205,7 @@ class _ConsultPageState extends State<ConsultPage> {
             event['should_stop'] == true &&
             (event['outcome'] as String?) != 'continue';
         _spec = null;
+        _statusLabel = null;
         if (_isDone) {
           // ignore: unawaited_futures
           _refreshExistingProgram();
@@ -296,9 +306,9 @@ class _ConsultPageState extends State<ConsultPage> {
       }
       await _saveHistory();
     } on TimeoutException {
-      ai.text = '${ai.text}\n（等待回复超时，请检查网络或后端配置后重试）';
+      ai.text = '${ai.text}\n（等待回复超时，请检查网络后重试）';
     } catch (e) {
-      ai.text = '连接错误：$e';
+      ai.text = '${ai.text}\n（${friendlyError(e)}）';
     } finally {
       ai.streaming = false;
       _streaming = null;
@@ -375,13 +385,8 @@ class _ConsultPageState extends State<ConsultPage> {
     return Scaffold(
       backgroundColor: AppTheme.bgSecondary,
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: AppTheme.textPrimary,
-            size: 19,
-          ),
-          onPressed: () async {
+        leading: AppBackButton(
+          onTap: () async {
             await _saveHistory();
             widget.onBack();
           },
@@ -453,19 +458,38 @@ class _ConsultPageState extends State<ConsultPage> {
     final pct = ((_progress!['pct'] as num?)?.toDouble() ?? 0).clamp(0.0, 1.0);
     final pending = _progress!['pending'] as String? ?? '';
     final known = (_progress!['known'] as List<dynamic>? ?? []).length;
+    final etaMin = (_progress!['eta_min'] as num?)?.toInt();
+    final etaMax = (_progress!['eta_max'] as num?)?.toInt();
+    final etaText = (etaMin != null && etaMax != null)
+        ? '预计还需约 $etaMin–$etaMax 个问题'
+        : null;
     return Container(
       color: AppTheme.primaryLight,
       padding: const EdgeInsets.fromLTRB(18, 12, 18, 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '已了解 $known 项 · 正在确认$pending',
-            style: const TextStyle(
-              fontSize: 11.5,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.primaryDark,
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '已了解 $known 项 · 正在确认$pending',
+                  style: const TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.primaryDark,
+                  ),
+                ),
+              ),
+              if (etaText != null && !_isDone)
+                Text(
+                  etaText,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppTheme.primaryDark,
+                  ),
+                ),
+            ],
           ),
           const SizedBox(height: 8),
           ClipRRect(
@@ -537,7 +561,7 @@ class _ConsultPageState extends State<ConsultPage> {
                 ],
               ),
               child: msg.streaming && msg.text.isEmpty
-                  ? const _TypingDots()
+                  ? _TypingDots(label: msg == _streaming ? _statusLabel : null)
                   : Text(
                       msg.text,
                       style: TextStyle(
@@ -628,18 +652,14 @@ class _ConsultPageState extends State<ConsultPage> {
               ),
             ],
             if (impression.isNotEmpty) ...[
-              const SizedBox(height: 14),
-              const Text(
-                '临床方向（内部参考，非诊断）',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: AppTheme.textTertiary,
-                  fontWeight: FontWeight.w600,
+              const SizedBox(height: 12),
+              Text(
+                '倾向：${_topImpressionText(impression)}',
+                style: const TextStyle(
+                  fontSize: 13,
+                  height: 1.5,
+                  color: AppTheme.textSecondary,
                 ),
-              ),
-              const SizedBox(height: 8),
-              ...impression.map(
-                (h) => _impressionRow(h as Map<String, dynamic>),
               ),
             ],
             const SizedBox(height: 14),
@@ -687,15 +707,7 @@ class _ConsultPageState extends State<ConsultPage> {
                   ),
                   onPressed: _sessionId == null
                       ? null
-                      : () async {
-                          await Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (_) =>
-                                  BaselinePage(sessionId: _sessionId!),
-                            ),
-                          );
-                          if (mounted) await _refreshExistingProgram();
-                        },
+                      : () => _generatePlanFlow(),
                   icon: Icon(
                     _existingProgramId != null
                         ? Icons.refresh
@@ -703,7 +715,7 @@ class _ConsultPageState extends State<ConsultPage> {
                     size: 18,
                   ),
                   label: Text(
-                    _existingProgramId != null ? '重新生成康复方案' : '生成我的康复方案',
+                    _existingProgramId != null ? '生成新的康复方案' : '生成我的康复方案',
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ),
@@ -731,42 +743,51 @@ class _ConsultPageState extends State<ConsultPage> {
     );
   }
 
-  Widget _impressionRow(Map<String, dynamic> h) {
-    final name = h['name'] as String? ?? '';
-    final conf = (h['confidence'] as num?)?.toDouble() ?? 0;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 5,
-            child: Text(
-              name,
-              style: const TextStyle(fontSize: 13, color: AppTheme.textPrimary),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+  /// 生成 / 重新生成方案。已有方案时先说明「旧方案会保留」，避免误解为覆盖。
+  Future<void> _generatePlanFlow() async {
+    final sid = _sessionId;
+    if (sid == null) return;
+    if (_existingProgramId != null) {
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('生成新的康复方案？'),
+          content: const Text(
+            '将基于本次问诊生成一份新方案；已有方案会保留在「方案」列表里，不会被覆盖。',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('取消'),
             ),
-          ),
-          Expanded(
-            flex: 4,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: LinearProgressIndicator(
-                value: conf.clamp(0.0, 1.0),
-                minHeight: 6,
-                backgroundColor: AppTheme.bgTertiary,
-                valueColor: const AlwaysStoppedAnimation(AppTheme.primary),
-              ),
+            FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text('继续'),
             ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            conf.toStringAsFixed(2),
-            style: const TextStyle(fontSize: 12, color: AppTheme.textTertiary),
-          ),
-        ],
-      ),
+          ],
+        ),
+      );
+      if (ok != true || !mounted) return;
+    }
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => BaselinePage(sessionId: sid)),
     );
+    if (mounted) await _refreshExistingProgram();
+  }
+
+  /// 结论卡只展示一条：最可能的临床方向 + 可能性档位（不展示两位小数）。
+  String _topImpressionText(List<dynamic> impression) {
+    final top = impression.first;
+    if (top is! Map) return '';
+    final name = top['name'] as String? ?? '';
+    final conf = (top['confidence'] as num?)?.toDouble() ?? 0;
+    return '$name · 可能性${_confidenceLabel(conf)}';
+  }
+
+  String _confidenceLabel(double conf) {
+    if (conf >= 0.6) return '高';
+    if (conf >= 0.4) return '中';
+    return '低';
   }
 
   Widget _buildInputBar() {
@@ -859,9 +880,11 @@ class _ConsultPageState extends State<ConsultPage> {
   }
 }
 
-/// 三点「正在输入」指示
+/// 「正在输入」指示：三点动画 + 可选的状态文案（正在思考 / 查询知识库…）
 class _TypingDots extends StatefulWidget {
-  const _TypingDots();
+  final String? label;
+
+  const _TypingDots({this.label});
   @override
   State<_TypingDots> createState() => _TypingDotsState();
 }
@@ -881,7 +904,7 @@ class _TypingDotsState extends State<_TypingDots>
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
+    final dots = SizedBox(
       width: 40,
       height: 16,
       child: AnimatedBuilder(
@@ -908,6 +931,20 @@ class _TypingDotsState extends State<_TypingDots>
           );
         },
       ),
+    );
+    final label = widget.label;
+    if (label == null || label.isEmpty) return dots;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        dots,
+        const SizedBox(height: 6),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+        ),
+      ],
     );
   }
 }

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -239,13 +240,14 @@ func (r *Repo) GetProgram(ctx context.Context, programID string) (map[string]any
 		condition, bodyPart, sessionID, userID *string
 		currentStageNo                         int
 		profile, impression, baseline          []byte
+		createdAt, updatedAt                   time.Time
 	)
 	err := r.pool.QueryRow(ctx, `
 		SELECT id::text, status, condition, body_part, session_id::text, user_id::text,
-		       current_stage_no, profile, impression, baseline
+		       current_stage_no, profile, impression, baseline, created_at, updated_at
 		FROM rehab_programs WHERE id=$1::uuid
 	`, programID).Scan(&id, &status, &condition, &bodyPart, &sessionID, &userID,
-		&currentStageNo, &profile, &impression, &baseline)
+		&currentStageNo, &profile, &impression, &baseline, &createdAt, &updatedAt)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, nil
@@ -261,6 +263,8 @@ func (r *Repo) GetProgram(ctx context.Context, programID string) (map[string]any
 		"session_id":       sessionID,
 		"user_id":          userID,
 		"current_stage_no": currentStageNo,
+		"created_at":       createdAt,
+		"updated_at":       updatedAt,
 		"profile":          decodeJSON(profile, map[string]any{}),
 		"impression":       decodeJSON(impression, []any{}),
 		"baseline":         decodeJSON(baseline, map[string]any{}),
@@ -300,11 +304,13 @@ func (r *Repo) currentPlan(ctx context.Context, programID string, stageNo int) (
 	var (
 		planID, summary string
 		precautions     []byte
+		expectedDays    *int
+		planCreatedAt   time.Time
 	)
 	err = r.pool.QueryRow(ctx, `
-		SELECT id::text, COALESCE(summary_text,''), precautions
+		SELECT id::text, COALESCE(summary_text,''), precautions, expected_duration_days, created_at
 		FROM stage_plans WHERE stage_id=$1::uuid ORDER BY version DESC LIMIT 1
-	`, stageID).Scan(&planID, &summary, &precautions)
+	`, stageID).Scan(&planID, &summary, &precautions, &expectedDays, &planCreatedAt)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return map[string]any{"stage": stage, "plan": nil, "items": []any{}}, nil
@@ -346,7 +352,12 @@ func (r *Repo) currentPlan(ctx context.Context, programID string, stageNo int) (
 	}
 	return map[string]any{
 		"stage": stage,
-		"plan":  map[string]any{"summary_text": summary, "precautions": decodeJSON(precautions, []any{})},
+		"plan": map[string]any{
+			"summary_text":           summary,
+			"precautions":            decodeJSON(precautions, []any{}),
+			"expected_duration_days": expectedDays,
+			"created_at":             planCreatedAt,
+		},
 		"items": items,
 	}, rows.Err()
 }
@@ -363,6 +374,19 @@ func (r *Repo) ResolveUploadKey(ctx context.Context, taskID string) (string, err
 		return "", err
 	}
 	return key, nil
+}
+
+// UploadOwnedBy 判断该评估任务是否属于指定用户的疗程（C 端回看自己上传的视频用）。
+func (r *Repo) UploadOwnedBy(ctx context.Context, taskID, userID string) (bool, error) {
+	var ok bool
+	err := r.pool.QueryRow(ctx, `
+		SELECT EXISTS (
+			SELECT 1 FROM assessment_tasks t
+			JOIN rehab_programs p ON p.id = t.program_id
+			WHERE t.task_id = $1::uuid AND p.user_id = $2::uuid
+		)
+	`, taskID, userID).Scan(&ok)
+	return ok, err
 }
 
 func decodeJSON(raw []byte, fallback any) any {

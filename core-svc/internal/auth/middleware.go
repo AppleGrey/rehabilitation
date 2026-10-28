@@ -94,6 +94,25 @@ func (g *Guard) RequireServiceOrAdmin() gin.HandlerFunc {
 	}
 }
 
+// RequireAnyAuth 放行两类调用者：服务令牌，或任意已登录账号（含普通用户）。
+// 用于 C 端也要访问、但需要按归属自行校验的资源（如用户上传回放）。
+func (g *Guard) RequireAnyAuth() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if g.serviceTokenOK(c) {
+			c.Set(ctxServiceKey, true)
+			c.Next()
+			return
+		}
+		claims, err := g.claimsFrom(c, "")
+		if err != nil {
+			abort(c, http.StatusUnauthorized, "需要登录或服务令牌")
+			return
+		}
+		c.Set(ctxClaimsKey, claims)
+		c.Next()
+	}
+}
+
 func (g *Guard) claimsFrom(c *gin.Context, scope string) (*Claims, error) {
 	raw := BearerToken(c.GetHeader("Authorization"))
 	if raw == "" {

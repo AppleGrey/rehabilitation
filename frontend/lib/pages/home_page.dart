@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../services/assess_notifications.dart';
 import '../services/auth_store.dart';
 import '../services/rehab_overview.dart';
 import '../theme/app_theme.dart';
@@ -12,7 +13,15 @@ class HomePage extends StatefulWidget {
   final VoidCallback onConsult;
   final int refreshTick;
 
-  const HomePage({super.key, required this.onConsult, this.refreshTick = 0});
+  /// 最近完成但没看过的评估数量（用于底栏「方案」角标）
+  final ValueChanged<int>? onUnseenAssessments;
+
+  const HomePage({
+    super.key,
+    required this.onConsult,
+    this.refreshTick = 0,
+    this.onUnseenAssessments,
+  });
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -47,6 +56,11 @@ class _HomePageState extends State<HomePage> {
         _overview = overview;
         _loading = false;
       });
+      // 最近完成、还没看过的评估 → 底栏「方案」角标
+      try {
+        final unseen = await AssessNotifications.unseen(overview);
+        widget.onUnseenAssessments?.call(unseen.length);
+      } catch (_) {}
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -56,7 +70,7 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void _openProgram(Map<String, dynamic> program) {
+  void _openProgram(Map<String, dynamic> program, {bool focusNext = true}) {
     final pid = program['program_id']?.toString();
     if (pid == null || pid.isEmpty) return;
     Navigator.of(context)
@@ -65,6 +79,8 @@ class _HomePageState extends State<HomePage> {
             builder: (_) => ProgramPage(
               programId: pid,
               sessionId: program['session_id']?.toString(),
+              focusNext: focusNext,
+              onStartConsult: widget.onConsult,
             ),
           ),
         )
@@ -657,6 +673,7 @@ class _HomePageState extends State<HomePage> {
     final done = status == 'done';
     final score = training is Map ? training['overall_score'] : null;
     final assessing = status == 'pending' || status == 'processing';
+    final subtitle = _tileSubtitle(status, done, score, item, training);
     final row = Row(
       children: [
         Container(
@@ -695,11 +712,7 @@ class _HomePageState extends State<HomePage> {
               ),
               const SizedBox(height: 6),
               Text(
-                assessing
-                    ? '动作评估中'
-                    : done && score != null
-                    ? '已完成 · 本次 $score 分'
-                    : (done ? '已完成 · 可再次跟练' : _dose(item)),
+                subtitle,
                 style: const TextStyle(
                   fontSize: 12,
                   color: AppTheme.textSecondary,
@@ -743,6 +756,27 @@ class _HomePageState extends State<HomePage> {
     if (hold != null) return '保持 $hold 秒';
     final freq = item['frequency']?.toString() ?? '';
     return freq.isEmpty ? '待完成' : freq;
+  }
+
+  /// 动作列表的副标题：评估中 / 多组进度 / 已完成 / 剂量。
+  String _tileSubtitle(
+    String status,
+    bool done,
+    dynamic score,
+    Map<String, dynamic> item,
+    dynamic training,
+  ) {
+    if (status == 'pending' || status == 'processing') return '动作评估中';
+    if (status == 'partial' && training is Map) {
+      final doneSets = (training['sets_done'] as List?)?.length ?? 0;
+      final totalSets = training['sets_total'] ?? 1;
+      final next = training['next_set'] ?? (doneSets + 1);
+      return '已录 $doneSets/$totalSets 组 · 继续第 $next 组';
+    }
+    if (status == 'error') return '上次评估失败 · 可重试';
+    if (done && score != null) return '已完成 · 本次 $score 分';
+    if (done) return '已完成 · 可再次跟练';
+    return _dose(item);
   }
 
   Widget _startCard(bool isFirst) {

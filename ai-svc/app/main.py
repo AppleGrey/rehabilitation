@@ -14,6 +14,7 @@ FastAPI 入口（对话驱动完整版 v4.0）。
 """
 from __future__ import annotations
 
+import functools
 import json
 import logging
 import shutil
@@ -63,7 +64,7 @@ from .assessment.assessment import evaluate_motion_grounded
 from .core.llm_runtime import consult_profile, vision_profile
 from .core.config import ASSETS_DIR as _ASSETS_DIR
 from .consult.sessions import load_session, save_session
-from .assessment.tasks import create_task, load_task, update_task
+from .assessment.tasks import create_task, list_tasks, load_task, reset_task_for_retry, update_task
 from .consult.questionnaire import build_questionnaire_report
 from .media.storage import (
     UPLOAD_PREFIX,
@@ -86,6 +87,11 @@ def _on_startup() -> None:
     try:
         init_schema()
         logger.info("[DB] PostgreSQL 已连接，表结构就绪")
+        # 上次进程中断留下的「评估中」任务：标成可重试的错误，避免 App 里永远转圈
+        from .assessment.tasks import mark_stale_processing_as_error
+        stale = mark_stale_processing_as_error(older_than_minutes=30)
+        if stale:
+            logger.info("[DB] 清理中断的评估任务 %d 条（用户可在 App 内重试）", stale)
     except Exception as exc:  # noqa: BLE001
         logger.warning("[DB] 初始化失败（问诊将退化为内存态，不落库）：%s", exc)
     try:
@@ -361,7 +367,7 @@ class ConsultRequest(BaseModel):
 def ai_consult_new(user_id: str = Depends(current_user_id)):
     """新建策略树问诊会话，返回 session_id 与开场事件。"""
     sid = str(uuid.uuid4())
-    session, events = _planner.new_session(sid)
+    session, events = _planner.new_session(sid, user_id=user_id)
     _strategy_sessions[sid] = session
     return {"session_id": sid, "events": events}
 
@@ -380,10 +386,29 @@ async def ai_consult(req: ConsultRequest, user_id: str = Depends(current_user_id
 
     async def event_stream():
         loop = asyncio.get_running_loop()
+        queue: asyncio.Queue = asyncio.Queue()
+
+        def _emit(ev: dict) -> None:
+            # 工作线程 → 事件循环：把「思考中 / 查询知识库」等中间状态即时推给前端
+            loop.call_soon_threadsafe(queue.put_nowait, ev)
+
         try:
-            events = await loop.run_in_executor(
-                None, _planner.consult_turn, session, req.user_message, conversation_text
+            future = loop.run_in_executor(
+                None, functools.partial(
+                    _planner.consult_turn, session, req.user_message, conversation_text,
+                    emit=_emit,
+                )
             )
+            while True:
+                while not queue.empty():
+                    yield _sse(queue.get_nowait())
+                if future.done():
+                    break
+                await asyncio.sleep(0.05)
+            # 收尾：把最后一批状态事件排空，再推最终结果事件
+            while not queue.empty():
+                yield _sse(queue.get_nowait())
+            events = future.result()
             _strategy_sessions[req.session_id] = session
             for ev in events:
                 yield _sse(ev)
@@ -414,6 +439,30 @@ def ai_consult_state(session_id: str, user_id: str = Depends(current_user_id)):
         raise HTTPException(status_code=404, detail="会话不存在")
     view = getattr(session, "resume_view", None) or {}
     return {"session_id": session_id, "resume_view": view}
+
+
+@app.get("/api/ai/consult/sessions")
+def ai_consult_sessions(limit: int = 50, user_id: str = Depends(current_user_id)):
+    """当前用户的问诊历史列表（服务端存储：换设备/重装也能看到）。"""
+    return {"sessions": _fp.list_sessions(user_id, limit=limit)}
+
+
+@app.get("/api/ai/consult/{session_id}/transcript")
+def ai_consult_transcript(session_id: str, user_id: str = Depends(current_user_id)):
+    """某个问诊会话的完整对话记录（回看 / 断点续聊用）。"""
+    data = _fp.get_session_transcript(session_id, user_id)
+    if data is None:
+        raise HTTPException(status_code=404, detail="问诊记录不存在")
+    return data
+
+
+@app.delete("/api/ai/consult/{session_id}")
+def ai_consult_delete(session_id: str, user_id: str = Depends(current_user_id)):
+    """删除一条问诊记录（状态 + 快照 + 事件）。"""
+    if not _fp.delete_session(session_id, user_id):
+        raise HTTPException(status_code=404, detail="问诊记录不存在")
+    _strategy_sessions.pop(session_id, None)
+    return {"ok": True, "session_id": session_id}
 
 
 @app.get("/api/ai/kg/health")
@@ -558,11 +607,13 @@ def ai_program_delete(program_id: str, user_id: str = Depends(current_user_id)):
 
 
 @app.post("/api/ai/program/{program_id}/progress")
-def ai_program_progress(program_id: str, user_id: str = Depends(current_user_id)):
-    """K4：做完本轮训练 → 大模型据表现决定进阶/保持/回退/转诊/结业，并推进疗程。"""
+def ai_program_progress(program_id: str, background_tasks: BackgroundTasks,
+                        user_id: str = Depends(current_user_id)):
+    """K4：做完本轮训练 → 大模型据表现决定进阶/保持/回退/转诊/结业，并推进疗程。
+    下一阶段方案在后台生成（前端看到 generating 后轮询），请求本身很快返回。"""
     _assert_owns(program_id, user_id)
     from .program import progression as _prog
-    result = _prog.decide_and_apply(program_id)
+    result = _prog.decide_and_apply(program_id, background=background_tasks)
     if result is None:
         raise HTTPException(status_code=404, detail="疗程不存在")
     return result
@@ -695,6 +746,8 @@ async def assess_motion(
     purpose: str = Form("training"),
     user_notes: str | None = Form(None),
     pain_reported: int | None = Form(None),
+    set_no: int | None = Form(None),
+    set_total: int | None = Form(None),
     user_id: str = Depends(current_user_id),
 ):
     """
@@ -752,6 +805,8 @@ async def assess_motion(
         video_id=video_id or standard_video_id, purpose=purpose,
         user_notes=user_notes,
         pain_reported=None if pain_reported is None else max(0, min(int(pain_reported), 10)),
+        set_no=None if set_no is None else max(1, int(set_no)),
+        set_total=None if set_total is None else max(1, int(set_total)),
     )
     background_tasks.add_task(_run_assessment, task_id)
 
@@ -788,3 +843,60 @@ def assess_status(task_id: str, user_id: str = Depends(current_user_id)):
         "error": task.get("error"),
         "updated_at": task.get("updated_at"),
     }
+
+
+@app.post("/api/ai/assess/retry/{task_id}")
+def assess_retry(task_id: str, background_tasks: BackgroundTasks,
+                 user_id: str = Depends(current_user_id)):
+    """评估卡死/失败的兜底：把任务复位为 pending 并重新跑一遍。"""
+    task = load_task(task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail=f"任务 {task_id} 不存在")
+    if task.get("program_id"):
+        _assert_owns(str(task["program_id"]), user_id)
+    if task.get("status") == "done":
+        return {"task_id": task_id, "status": "done"}
+    if not reset_task_for_retry(task_id):
+        raise HTTPException(status_code=409, detail="当前状态不可重试，请重新录制")
+    background_tasks.add_task(_run_assessment, task_id)
+    return {"task_id": task_id, "status": "pending"}
+
+
+@app.get("/api/ai/assess/history")
+def assess_history(program_id: str, video_id: str, limit: int = 20,
+                   user_id: str = Depends(current_user_id)):
+    """某个训练项的历史评估（多组训练按组逐条）：结果回看与录像回放的入口。"""
+    _assert_owns(program_id, user_id)
+    rows = [t for t in list_tasks(program_id, "training")
+            if str(t.get("video_id") or "") == video_id]
+    rows.sort(key=lambda t: str(t.get("created_at") or ""), reverse=True)
+    out = []
+    for t in rows[: max(1, min(int(limit), 50))]:
+        assess = t.get("assessment") if isinstance(t.get("assessment"), dict) else {}
+        out.append({
+            "task_id": t.get("task_id"),
+            "set_no": t.get("set_no"),
+            "set_total": t.get("set_total"),
+            "status": t.get("status"),
+            "overall_score": assess.get("overall_score"),
+            "pain_reported": t.get("pain_reported"),
+            "summary": t.get("summary"),
+            "error": t.get("error"),
+            "created_at": t.get("created_at"),
+            "video_url": f"/api/uploads/{t.get('task_id')}/play",
+        })
+    return {"history": out}
+
+
+@app.get("/api/ai/assess/timeline")
+def assess_timeline(limit: int = 30, user_id: str = Depends(current_user_id)):
+    """当前用户最近完成的训练评估（跨疗程、倒序）：进度页「随时间」趋势用。"""
+    from .assessment.tasks import timeline as _timeline
+    from .media.video_metadata import load_video
+    rows = _timeline(user_id, limit=limit)
+    out = []
+    for r in rows:
+        meta = load_video(r.get("video_id") or "") or {}
+        name = str(meta.get("action_name") or meta.get("description_cn") or "").strip()
+        out.append({**r, "title": name or (r.get("video_id") or "训练动作")})
+    return {"timeline": out}

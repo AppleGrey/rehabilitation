@@ -1,11 +1,13 @@
 package auth
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/gin-gonic/gin"
 )
@@ -158,6 +160,156 @@ func (h *Handler) ChangePassword(c *gin.Context) {
 		return
 	}
 	h.issue(c, u, claims.Scope)
+}
+
+// ── C 端：个人资料 ──
+//
+// 个人资料帮助问诊与方案更贴合（性别/年龄/身高体重/基础病史等）。
+// 不强制填全：缺什么问诊里还会再问。字段白名单 + 轻校验，避免塞进奇怪内容。
+
+var profileFieldAllowed = map[string]bool{
+	"gender": true, "birth_year": true, "height_cm": true, "weight_kg": true,
+	"activity_level": true, "chronic_conditions": true, "surgery_history": true,
+	"allergies": true, "note": true,
+}
+
+var activityLevels = map[string]bool{
+	"sedentary": true, "light": true, "moderate": true, "active": true,
+}
+
+// ProfileGet 返回个人资料（JSONB 原文，未填写时为空对象）。
+func (h *Handler) ProfileGet(c *gin.Context) {
+	claims := CurrentClaims(c)
+	if claims == nil {
+		fail(c, http.StatusUnauthorized, "未登录")
+		return
+	}
+	raw, err := h.repo.Profile(c.Request.Context(), claims.UserID)
+	if err != nil {
+		fail(c, statusForRepoErr(err), err.Error())
+		return
+	}
+	c.Data(http.StatusOK, "application/json", raw)
+}
+
+type profilePayload struct {
+	Nickname string         `json:"nickname"`
+	Fields   map[string]any `json:"fields"`
+}
+
+// ProfilePut 保存个人资料；昵称随之更新（传空则不动）。
+func (h *Handler) ProfilePut(c *gin.Context) {
+	claims := CurrentClaims(c)
+	if claims == nil {
+		fail(c, http.StatusUnauthorized, "未登录")
+		return
+	}
+	var req profilePayload
+	if err := c.ShouldBindJSON(&req); err != nil {
+		fail(c, http.StatusBadRequest, "请求格式不正确")
+		return
+	}
+	nickname := strings.TrimSpace(req.Nickname)
+	if utf8.RuneCountInString(nickname) > 20 {
+		fail(c, http.StatusBadRequest, "昵称最多 20 个字")
+		return
+	}
+	clean := map[string]any{}
+	for k, v := range req.Fields {
+		if !profileFieldAllowed[k] {
+			continue
+		}
+		if val, ok := sanitizeProfileField(k, v); ok {
+			clean[k] = val
+		}
+	}
+	raw, err := json.Marshal(clean)
+	if err != nil || len(raw) > 4096 {
+		fail(c, http.StatusBadRequest, "资料内容过大")
+		return
+	}
+	if err := h.repo.UpdateProfile(c.Request.Context(), claims.UserID, raw, nickname); err != nil {
+		fail(c, statusForRepoErr(err), err.Error())
+		return
+	}
+	u, err := h.repo.GetByID(c.Request.Context(), claims.UserID)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{"ok": true, "fields": clean})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"ok": true, "user": u, "fields": clean})
+}
+
+// sanitizeProfileField 逐字段轻校验：范围不对/类型不对的字段直接丢弃，不报错中断整体保存。
+func sanitizeProfileField(key string, v any) (any, bool) {
+	switch key {
+	case "gender":
+		s, _ := v.(string)
+		if s != "male" && s != "female" && s != "other" {
+			return nil, false
+		}
+		return s, true
+	case "birth_year":
+		n, ok := toFloat(v)
+		if !ok || n < 1900 || n > 2025 {
+			return nil, false
+		}
+		return int(n), true
+	case "height_cm":
+		n, ok := toFloat(v)
+		if !ok || n < 60 || n > 250 {
+			return nil, false
+		}
+		return n, true
+	case "weight_kg":
+		n, ok := toFloat(v)
+		if !ok || n < 20 || n > 300 {
+			return nil, false
+		}
+		return n, true
+	case "activity_level":
+		s, _ := v.(string)
+		if !activityLevels[s] {
+			return nil, false
+		}
+		return s, true
+	case "chronic_conditions":
+		arr, ok := v.([]any)
+		if !ok || len(arr) > 12 {
+			return nil, false
+		}
+		out := make([]string, 0, len(arr))
+		for _, item := range arr {
+			s, _ := item.(string)
+			s = strings.TrimSpace(s)
+			if s == "" || utf8.RuneCountInString(s) > 20 {
+				continue
+			}
+			out = append(out, s)
+		}
+		return out, true
+	case "surgery_history", "allergies", "note":
+		s, _ := v.(string)
+		s = strings.TrimSpace(s)
+		if utf8.RuneCountInString(s) > 200 {
+			s = string([]rune(s)[:200])
+		}
+		return s, true
+	}
+	return nil, false
+}
+
+func toFloat(v any) (float64, bool) {
+	switch n := v.(type) {
+	case float64:
+		return n, true
+	case int:
+		return float64(n), true
+	case json.Number:
+		f, err := n.Float64()
+		return f, err == nil
+	}
+	return 0, false
 }
 
 // ── 管理平台：用户管理 ──

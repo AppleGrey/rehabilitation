@@ -54,6 +54,9 @@ def _row_to_task(row: dict) -> dict:
         "meets_exit_criteria": row.get("meets_exit_criteria"),
         "kg_sources": row.get("kg_sources") or [],
         "pain_reported": row.get("pain_reported"),
+        # 多组训练：第几组 / 共几组（旧数据为 None → 按单次训练处理）
+        "set_no": row.get("set_no"),
+        "set_total": row.get("set_total"),
     }
 
 
@@ -69,6 +72,8 @@ def create_task(
     status: str = "pending",
     user_notes: str | None = None,
     pain_reported: int | None = None,
+    set_no: int | None = None,
+    set_total: int | None = None,
 ) -> str:
     """创建一个新的评估任务，返回 task_id。program_id/purpose 用于绑定康复方案训练/基线。"""
     task_id = str(uuid.uuid4())
@@ -79,12 +84,12 @@ def create_task(
             INSERT INTO assessment_tasks (
                 task_id, session_id, standard_video_id, user_video_path,
                 status, program_id, stage_no, video_id, purpose, user_notes,
-                pain_reported, created_at, updated_at
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                pain_reported, set_no, set_total, created_at, updated_at
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """,
             (task_id, session_id, standard_video_id, user_video_path,
              status, program_id, stage_no, video_id or standard_video_id, purpose,
-             (user_notes or "").strip() or None, pain_reported, now, now),
+             (user_notes or "").strip() or None, pain_reported, set_no, set_total, now, now),
         )
     return task_id
 
@@ -229,3 +234,78 @@ def update_task(task_id: str, **kwargs) -> None:
         cur.execute(sql, values)
         if cur.rowcount == 0:
             logger.error("[TASK] 不存在，无法更新: %s", task_id)
+
+
+def mark_stale_processing_as_error(*, older_than_minutes: int = 30) -> int:
+    """服务启动时清理：把长时间卡在 pending/processing 的任务标为可重试的错误，
+    避免服务重启后任务永远停在「评估中」。"""
+    try:
+        with db_cursor() as cur:
+            cur.execute(
+                """
+                UPDATE assessment_tasks
+                SET status='error',
+                    error='评估中断（服务重启或任务超时），请重试',
+                    updated_at=NOW()
+                WHERE status IN ('pending','processing')
+                  AND updated_at < NOW() - (%s * INTERVAL '1 minute')
+                """,
+                (older_than_minutes,),
+            )
+            return cur.rowcount or 0
+    except Exception:
+        logger.exception("[TASK] 清理僵死任务失败")
+        return 0
+
+
+def reset_task_for_retry(task_id: str) -> bool:
+    """把失败/中断的任务复位为 pending，供重新跑评估。"""
+    try:
+        with db_cursor() as cur:
+            cur.execute(
+                """
+                UPDATE assessment_tasks
+                SET status='pending', error=NULL, updated_at=NOW()
+                WHERE task_id=%s AND status IN ('error','pending','processing')
+                """,
+                (task_id,),
+            )
+            return (cur.rowcount or 0) > 0
+    except Exception:
+        logger.exception("[TASK] 重置任务失败 task=%s", task_id)
+        return False
+
+
+def timeline(user_id: str, limit: int = 30) -> list[dict]:
+    """当前用户最近完成的训练评估（跨疗程、按时间倒序）：进度页「随时间」趋势用。"""
+    if not user_id:
+        return []
+    try:
+        with db_cursor(commit=False) as cur:
+            cur.execute(
+                """
+                SELECT t.task_id, t.video_id, t.created_at, t.pain_reported,
+                       t.assessment, t.set_no, t.set_total
+                FROM assessment_tasks t
+                JOIN rehab_programs p ON p.id = t.program_id
+                WHERE p.user_id = %s AND t.purpose = 'training' AND t.status = 'done'
+                ORDER BY t.created_at DESC LIMIT %s
+                """,
+                (user_id, max(1, min(int(limit), 100))),
+            )
+            out = []
+            for r in cur.fetchall():
+                assess = r.get("assessment") if isinstance(r.get("assessment"), dict) else {}
+                out.append({
+                    "task_id": str(r["task_id"]),
+                    "video_id": r.get("video_id"),
+                    "created_at": _iso(r.get("created_at")),
+                    "pain_reported": r.get("pain_reported"),
+                    "score": assess.get("overall_score"),
+                    "set_no": r.get("set_no"),
+                    "set_total": r.get("set_total"),
+                })
+            return out
+    except Exception:
+        logger.exception("[TASK] 训练时间线查询失败 user=%s", user_id)
+        return []

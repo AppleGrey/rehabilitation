@@ -3,11 +3,13 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 import '../services/auth_api.dart';
 import '../services/auth_store.dart';
+import '../services/error_text.dart';
 import '../services/ota_updater.dart';
 import '../services/program_store.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common_widgets.dart';
 import '../widgets/motion.dart';
+import 'profile_edit_page.dart';
 
 class ProfileCenterPage extends StatefulWidget {
   /// 退出登录后回调，由 AuthGate 切回登录页。
@@ -110,7 +112,7 @@ class _ProfileCenterPageState extends State<ProfileCenterPage> {
       _toast('密码已修改');
     } catch (e) {
       if (!mounted) return;
-      _toast(e.toString().replaceFirst('Exception: ', ''));
+      _toast(friendlyError(e, fallback: '修改失败，请稍后重试'));
     }
   }
 
@@ -436,6 +438,14 @@ class _ProfileCenterPageState extends State<ProfileCenterPage> {
         const SectionHeader(title: '账号与支持'),
         const SizedBox(height: 12),
         _buildMenuCard([
+          _MenuItem(
+            icon: Icons.badge_outlined,
+            title: '个人资料',
+            subtitle: '性别、年龄、基础病史（帮助问诊更准确）',
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const ProfileEditPage()),
+            ),
+          ),
           _MenuItem(
             icon: Icons.lock_outline_rounded,
             title: '修改密码',

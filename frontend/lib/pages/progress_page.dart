@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../services/program_api.dart';
 import '../services/rehab_overview.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common_widgets.dart';
@@ -18,6 +19,7 @@ class ProgressPage extends StatefulWidget {
 
 class _ProgressPageState extends State<ProgressPage> {
   RehabOverview? _overview;
+  List<Map<String, dynamic>> _timeline = const [];
   bool _loading = true;
   String? _error;
 
@@ -40,9 +42,15 @@ class _ProgressPageState extends State<ProgressPage> {
     });
     try {
       final overview = await RehabOverview.load();
+      // 趋势数据单独取（跨疗程的完成历史）；失败退回空列表，不挡主数据
+      List<Map<String, dynamic>> timeline = const [];
+      try {
+        timeline = await ProgramApi.timeline();
+      } catch (_) {}
       if (!mounted) return;
       setState(() {
         _overview = overview;
+        _timeline = timeline;
         _loading = false;
       });
     } catch (_) {
@@ -228,6 +236,8 @@ class _ProgressPageState extends State<ProgressPage> {
       const SizedBox(height: 16),
       metrics,
       const SizedBox(height: 20),
+      _trendCard(),
+      const SizedBox(height: 20),
       _weekCard(week),
       const SizedBox(height: 28),
       historyPane,
@@ -253,42 +263,51 @@ class _ProgressPageState extends State<ProgressPage> {
         Expanded(
           child: KeyedSubtree(
             key: const Key('landscape-progress-main'),
-            child: Column(
-              children: [
-                _summaryCard(
-                  ratio: ratio,
-                  total: total,
-                  focus: focus,
-                  streak: streak,
-                  compact: true,
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _stat(
-                        '${overview.programs.length}',
-                        '康复疗程',
-                        Icons.assignment_outlined,
+            // 横屏高度不足时整个左列可滚动，避免小高度平板溢出
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  _summaryCard(
+                    ratio: ratio,
+                    total: total,
+                    focus: focus,
+                    streak: streak,
+                    compact: true,
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _stat(
+                          '${overview.programs.length}',
+                          '康复疗程',
+                          Icons.assignment_outlined,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: _stat('$assessed', '完成动作', Icons.task_alt_rounded),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: _stat(
-                        avg == null ? '—' : avg.round().toString(),
-                        '平均得分',
-                        Icons.auto_graph_rounded,
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _stat(
+                          '$assessed',
+                          '完成动作',
+                          Icons.task_alt_rounded,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Expanded(child: _weekCard(overview.weekCounts, fill: true)),
-              ],
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _stat(
+                          avg == null ? '—' : avg.round().toString(),
+                          '平均得分',
+                          Icons.auto_graph_rounded,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  _trendCard(compact: true),
+                  const SizedBox(height: 12),
+                  _weekCard(overview.weekCounts),
+                ],
+              ),
             ),
           ),
         ),
@@ -371,6 +390,103 @@ class _ProgressPageState extends State<ProgressPage> {
         ],
       ),
     );
+  }
+
+  /// F2 趋势：最近 10 次训练的得分与疼痛随时间变化（数据来自完成历史）。
+  Widget _trendCard({bool compact = false}) {
+    final entries = _timeline
+        .map(
+          (e) => (
+            at: DateTime.tryParse(
+              e['created_at']?.toString() ?? '',
+            )?.toLocal(),
+            score: (e['score'] as num?)?.toDouble(),
+            pain: (e['pain_reported'] as num?)?.toDouble(),
+          ),
+        )
+        .where((e) => e.at != null)
+        .toList()
+      ..sort((a, b) => a.at!.compareTo(b.at!));
+    final recent = entries.length > 10
+        ? entries.sublist(entries.length - 10)
+        : entries;
+    final scores = recent
+        .map((e) => e.score)
+        .where((s) => s != null)
+        .toList();
+    final pains = recent.map((e) => e.pain).toList();
+    final firstScore = scores.isEmpty ? null : scores.first;
+    final lastScore = scores.isEmpty ? null : scores.last;
+    final delta = (firstScore != null && lastScore != null && scores.length >= 2)
+        ? (lastScore - firstScore).round()
+        : null;
+    return AppCard(
+      padding: compact
+          ? const EdgeInsets.fromLTRB(16, 14, 16, 12)
+          : const EdgeInsets.fromLTRB(18, 20, 18, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SectionHeader(
+            title: '训练趋势',
+            subtitle: '最近的得分与疼痛，看疗效最直观',
+          ),
+          const SizedBox(height: 4),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Text(
+              scores.length < 2
+                  ? '完成 2 次以上训练后开始画趋势'
+                  : '最近 ${recent.length} 次 · ${_shortDate(recent.first.at!)}–${_shortDate(recent.last.at!)}',
+              style: const TextStyle(
+                fontSize: 11.5,
+                color: AppTheme.textTertiary,
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          if (scores.length < 2)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 14),
+              child: Text(
+                '再多练几次，这里会画出你的进步曲线。',
+                style: TextStyle(fontSize: 12.5, color: AppTheme.textTertiary),
+              ),
+            )
+          else ...[
+            _TrendRow(
+              label: '得分',
+              trailing: delta == null
+                  ? null
+                  : (delta >= 0 ? '较首次 +$delta' : '较首次 $delta'),
+              trailingColor: (delta ?? 0) >= 0
+                  ? AppTheme.success
+                  : AppTheme.warning,
+              values: recent.map((e) => e.score).toList(),
+              color: AppTheme.primary,
+              fixedMin: 0,
+              fixedMax: 100,
+              height: compact ? 52 : 62,
+            ),
+            const SizedBox(height: 8),
+            if (pains.any((p) => p != null))
+              _TrendRow(
+                label: '疼痛',
+                values: pains,
+                color: AppTheme.secondary,
+                fixedMin: 0,
+                fixedMax: 10,
+                height: compact ? 52 : 62,
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  String _shortDate(DateTime at) {
+    final local = at.toLocal();
+    return '${local.month}/${local.day}';
   }
 
   Widget _summaryCard({
@@ -623,4 +739,147 @@ class _ProgressPageState extends State<ProgressPage> {
     if (day == today.subtract(const Duration(days: 1))) return '昨天 $hm';
     return '${local.month}/${local.day} $hm';
   }
+}
+
+/// 带标签的迷你趋势行：一列值，缺口自动跳过。
+class _TrendRow extends StatelessWidget {
+  final String label;
+  final List<double?> values;
+  final Color color;
+  final double height;
+  final double? fixedMin;
+  final double? fixedMax;
+  final String? trailing;
+  final Color trailingColor;
+
+  const _TrendRow({
+    required this.label,
+    required this.values,
+    required this.color,
+    this.height = 60,
+    this.fixedMin,
+    this.fixedMax,
+    this.trailing,
+    this.trailingColor = AppTheme.textSecondary,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.textSecondary,
+              ),
+            ),
+            const Spacer(),
+            if (trailing != null)
+              Text(
+                trailing!,
+                style: TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                  color: trailingColor,
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        SizedBox(
+          height: height,
+          width: double.infinity,
+          child: CustomPaint(
+            painter: _TrendPainter(
+              values: values,
+              color: color,
+              fixedMin: fixedMin,
+              fixedMax: fixedMax,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// 迷你折线：折线 + 淡色面积 + 首尾圆点，不画坐标轴，保持克制。
+class _TrendPainter extends CustomPainter {
+  final List<double?> values;
+  final Color color;
+  final double? fixedMin;
+  final double? fixedMax;
+
+  _TrendPainter({
+    required this.values,
+    required this.color,
+    this.fixedMin,
+    this.fixedMax,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final present = values.whereType<double>().toList();
+    if (present.length < 2) return;
+    var minV = fixedMin ?? present.reduce((a, b) => a < b ? a : b);
+    var maxV = fixedMax ?? present.reduce((a, b) => a > b ? a : b);
+    if (maxV - minV < 1e-6) maxV = minV + 1;
+    const pad = 6.0;
+    final dx = values.length <= 1
+        ? 0.0
+        : (size.width - pad * 2) / (values.length - 1);
+    Offset point(int i, double v) => Offset(
+      pad + dx * i,
+      pad + (1 - (v - minV) / (maxV - minV)) * (size.height - pad * 2),
+    );
+
+    final linePaint = Paint()
+      ..color = color
+      ..strokeWidth = 2.4
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    final areaPaint = Paint()..color = color.withValues(alpha: 0.10);
+    final dotPaint = Paint()..color = color;
+
+    final path = Path();
+    final area = Path();
+    var started = false;
+    double? lastX;
+    for (var i = 0; i < values.length; i++) {
+      final v = values[i];
+      if (v == null) continue;
+      final p = point(i, v);
+      if (!started) {
+        path.moveTo(p.dx, p.dy);
+        area.moveTo(p.dx, size.height);
+        area.lineTo(p.dx, p.dy);
+        started = true;
+      } else {
+        path.lineTo(p.dx, p.dy);
+        area.lineTo(p.dx, p.dy);
+      }
+      lastX = p.dx;
+    }
+    if (!started || lastX == null) return;
+    area.lineTo(lastX, size.height);
+    area.close();
+    canvas.drawPath(area, areaPaint);
+    canvas.drawPath(path, linePaint);
+
+    for (final idx in [0, values.length - 1]) {
+      final v = values[idx];
+      if (v == null) continue;
+      canvas.drawCircle(point(idx, v), 3.2, dotPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _TrendPainter old) =>
+      old.values != values || old.color != color;
 }

@@ -81,7 +81,14 @@ def _ev_progress(session: StrategySession) -> dict:
     total = max(1, len(session.slots))
     pct = round(len([s for s in session.slots if s.status == SlotStatus.KNOWN.value]) / total, 2)
     pending = "安全信息" if pending_s else ("训练偏好" if pending_p else "临床方向")
-    return {"type": "progress", "known": known, "pending": pending, "pct": pct}
+    # 预计还要几个问题（给用户时长预期；不暴露内部推理，只是数量区间）
+    n_max = int(getattr(session.budget, "n_max", 9) or 9)
+    remaining = max(1, n_max - session.budget.asked)
+    gap = len(pending_s) + len(pending_p)
+    eta_min = max(1, min(gap, remaining))
+    eta_max = max(eta_min, min(remaining, gap + 2))
+    return {"type": "progress", "known": known, "pending": pending, "pct": pct,
+            "eta_min": eta_min, "eta_max": eta_max, "asked": session.budget.asked}
 
 
 def _ev_done(outcome: str, session: StrategySession, *, summary: str = "") -> dict:
@@ -97,16 +104,39 @@ def _ev_done(outcome: str, session: StrategySession, *, summary: str = "") -> di
     }
 
 
+def _emit(emit, stage: str, text: str) -> None:
+    """把「AI 正在做什么」推给前端（思考、建树、查库都算）。emit 由 SSE 层注入。"""
+    if emit is None:
+        return
+    try:
+        emit({"type": "status", "stage": stage, "text": text})
+    except Exception:  # noqa: BLE001
+        logger.debug("[PLANNER] 状态事件推送失败", exc_info=True)
+
+
+def _append_transcript(session: StrategySession, role: str, text: str) -> None:
+    """服务端保存对话记录：问诊历史存服务器，换设备/重装也能看到。"""
+    text = (text or "").strip()
+    if not text:
+        return
+    session.transcript.append({"role": role, "text": text})
+    if len(session.transcript) > 400:
+        session.transcript = session.transcript[-400:]
+
+
 # ─────────────────── 会话生命周期 ───────────────────
 
-def new_session(session_id: str) -> tuple[StrategySession, list[dict]]:
+def new_session(session_id: str, user_id: Optional[str] = None) -> tuple[StrategySession, list[dict]]:
     """新建策略问诊会话，返回开场事件（无需 LLM）。"""
-    session = StrategySession(session_id=session_id, phase=Phase.WARMUP)
+    session = StrategySession(session_id=session_id, phase=Phase.WARMUP, user_id=user_id)
     events = [
         _ev_text("你好，我是你的康复助手。为了给你更合适的建议，先简单了解一下情况～"
                  "你现在主要是哪个部位不舒服，大概是什么样的问题呢？"),
         _ev_input("free_text", []),
     ]
+    for ev in events:
+        if ev.get("type") == "text" and ev.get("content"):
+            _append_transcript(session, "assistant", str(ev["content"]))
     session.resume_view = _resume_view_from_events(events)
     persistence.save_strategy_state(session)
     return session, events
@@ -130,18 +160,29 @@ def _resume_view_from_events(events: list[dict]) -> dict:
 
 # ─────────────────── 主入口 ───────────────────
 
-def consult_turn(session: StrategySession, user_message: str, conversation_text: str) -> list[dict]:
-    """处理用户一轮回答，返回要推送的 SSE 事件序列。异常已在内部兜底。"""
+def consult_turn(session: StrategySession, user_message: str, conversation_text: str,
+                 emit=None) -> list[dict]:
+    """处理用户一轮回答，返回要推送的 SSE 事件序列。异常已在内部兜底。
+
+    emit: 可选回调，用于在 LLM / KG 调用的等待期间实时推送
+    {"type": "status", "stage": ..., "text": ...}（「思考中 / 查询知识库」）；
+    不传则只返回最终事件（测试与后台脚本用）。
+    """
     session.turn_no += 1
     session.budget.asked = session.turn_no
+    _append_transcript(session, "user", user_message)
     try:
+        _emit(emit, "thinking", "正在理解你的描述…")
         if session.phase == Phase.WARMUP.value:
-            events = _warmup_turn(session, user_message, conversation_text)
+            events = _warmup_turn(session, user_message, conversation_text, emit=emit)
         else:
-            events = _tree_turn(session, user_message)
+            events = _tree_turn(session, user_message, emit=emit)
     except Exception:  # noqa: BLE001
         logger.exception("[PLANNER] turn 处理异常，返回安全兜底问题")
         events = _safe_fallback(session)
+    for ev in events:
+        if ev.get("type") == "text" and ev.get("content"):
+            _append_transcript(session, "assistant", str(ev["content"]))
     session.resume_view = _resume_view_from_events(events)
     persistence.save_strategy_state(session)
     return events
@@ -149,7 +190,8 @@ def consult_turn(session: StrategySession, user_message: str, conversation_text:
 
 # ─────────────────── 粗问阶段 ───────────────────
 
-def _warmup_turn(session: StrategySession, user_message: str, conversation_text: str) -> list[dict]:
+def _warmup_turn(session: StrategySession, user_message: str, conversation_text: str,
+                 emit=None) -> list[dict]:
     trace: list = []
     res = extractor.extract_seed(session, conversation_text, trace=trace)
 
@@ -158,7 +200,7 @@ def _warmup_turn(session: StrategySession, user_message: str, conversation_text:
                       trace=trace)
 
     if session.seed.ready_to_build():
-        return _enter_tree_phase(session)
+        return _enter_tree_phase(session, emit=emit)
 
     # 信息还不够，继续粗问（留痕本轮粗问，便于后台看到问诊全过程）
     q = res.next_question or _warmup_fallback_question(session)
@@ -177,12 +219,14 @@ def _warmup_fallback_question(session: StrategySession) -> str:
     return "为了更好地了解，你最想通过康复改善的是什么？"
 
 
-def _enter_tree_phase(session: StrategySession) -> list[dict]:
+def _enter_tree_phase(session: StrategySession, emit=None) -> list[dict]:
     """粗问达标 → 装配 P 槽 → 检索 → 建首棵树 → 提第一个树问题。"""
     session.phase = Phase.TREE.value
     catalog.init_tree_slots(session)
     trace: list = []
+    _emit(emit, "kg", "正在查询康复知识库…")
     kg = kg_client.retrieve(session, "followup_points", trace=trace)
+    _emit(emit, "tree", "正在规划下一步问题…")
     session.tree = tree_builder.build_tree(session, kg, trace=trace)
     session.current_tree_node_id = session.tree.selected_question_id
     return _select_and_ask(session, kg_context_used=kg, prev_answer=None, trace=trace)
@@ -190,12 +234,13 @@ def _enter_tree_phase(session: StrategySession) -> list[dict]:
 
 # ─────────────────── 按树问诊阶段（§3.3）───────────────────
 
-def _tree_turn(session: StrategySession, user_message: str) -> list[dict]:
+def _tree_turn(session: StrategySession, user_message: str, emit=None) -> list[dict]:
     tree = session.tree
     prev_node_id = session.current_tree_node_id
     trace: list = []
 
     # 1) 感知更新（LLM-A）：抽事实 + 更新信念
+    _emit(emit, "kg", "正在查询康复知识库…")
     kg = kg_client.retrieve(session, "followup_points", trace=trace)  # 命中缓存则不发请求
     before_top = [h.hyp_id for h in session.top_hypotheses(fset.MAX_CANDIDATES)]
     percept = extractor.perceive(session, user_message, kg, trace=trace)
@@ -234,7 +279,9 @@ def _tree_turn(session: StrategySession, user_message: str) -> list[dict]:
                   "candidate_shift": candidate_shift, "horizon_exhausted": horizon_exhausted})
 
     if tree is None or rebuild:
+        _emit(emit, "kg", "正在查询康复知识库…")
         kg2 = kg_client.retrieve(session, "followup_points", trace=trace)
+        _emit(emit, "tree", "正在调整提问思路…")
         session.tree = tree_builder.build_tree(
             session, kg2, refresh_reason=reason or "initial_tree_build", trace=trace)
         session.current_tree_node_id = session.tree.selected_question_id

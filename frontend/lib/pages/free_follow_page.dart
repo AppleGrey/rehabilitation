@@ -10,6 +10,9 @@ import 'package:video_player/video_player.dart';
 import '../config/api_config.dart';
 import '../pose/follow_models.dart';
 import '../pose/keypoint_counter.dart';
+import '../services/app_feedback.dart';
+import '../services/error_text.dart';
+import '../services/screen_awake.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common_widgets.dart';
 import '../widgets/follow_live_stage.dart';
@@ -134,7 +137,7 @@ class _FreeFollowPageState extends State<FreeFollowPage> {
     } catch (error) {
       if (!mounted) return;
       setState(() {
-        _error = error.toString();
+        _error = friendlyError(error, fallback: '动作列表没加载出来，请重试');
         _loading = false;
       });
     }
@@ -230,12 +233,16 @@ class _FreeFollowPageState extends State<FreeFollowPage> {
         _followNote = rule == null ? '这个动作还没有评分规则，先跟着做' : null;
         _starting = false;
       });
+      // 跟做期间保持屏幕常亮
+      unawaited(ScreenAwake.enable());
     } catch (error) {
       if (!mounted) return;
       setState(() => _starting = false);
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('$error')));
+      ).showSnackBar(
+        SnackBar(content: Text(friendlyError(error, fallback: '暂时打不开这个动作，请重试'))),
+      );
     }
   }
 
@@ -281,6 +288,7 @@ class _FreeFollowPageState extends State<FreeFollowPage> {
       await camera.stopImageStream();
     }
     await camera?.dispose();
+    unawaited(ScreenAwake.disable());
   }
 
   void _onFrame(PoseFrame frame, DateTime at) {
@@ -400,6 +408,12 @@ class _FreeFollowPageState extends State<FreeFollowPage> {
     _holdSince = null;
     _bannerSerial += 1;
     _bannerTimer?.cancel();
+    // 判定反馈：规范「叮+重震」，不规范给一次提醒震动
+    if (standard) {
+      AppFeedback.done();
+    } else {
+      AppFeedback.warn();
+    }
     setState(() {
       if (standard) _count += 1;
       _banner = standard ? '规范' : '不规范';
@@ -456,10 +470,7 @@ class _FreeFollowPageState extends State<FreeFollowPage> {
     return Scaffold(
       backgroundColor: AppTheme.bgSecondary,
       appBar: AppBar(
-        leading: IconButton(
-          onPressed: widget.onBack,
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 19),
-        ),
+        leading: AppBackButton(onTap: widget.onBack),
         title: const Text('自由跟做'),
         bottom: const PreferredSize(
           preferredSize: Size.fromHeight(28),
@@ -595,10 +606,7 @@ class _FreeFollowPageState extends State<FreeFollowPage> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
-        leading: IconButton(
-          onPressed: _closeFollow,
-          icon: const Icon(Icons.arrow_back),
-        ),
+        leading: AppBackButton(onTap: _closeFollow, color: Colors.white),
         title: Text(action.title, overflow: TextOverflow.ellipsis),
       ),
       body: Stack(

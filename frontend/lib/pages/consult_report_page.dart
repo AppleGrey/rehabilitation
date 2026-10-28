@@ -5,7 +5,9 @@ import 'package:http/http.dart' as http;
 
 import '../config/api_config.dart';
 import '../services/auth_store.dart';
+import '../services/error_text.dart';
 import '../theme/app_theme.dart';
+import '../widgets/common_widgets.dart';
 
 /// 「问诊过程与结果」：读取策略树最新快照，展示临床方向、已采集信息、安全排查与进度。
 /// （替代原「AI 个性化康复评估问卷」页；数据源 /api/ai/session/{id}/strategy）
@@ -59,7 +61,7 @@ class _ConsultReportPageState extends State<ConsultReportPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = '无法连接服务器：$e';
+        _error = friendlyError(e, fallback: '加载失败，请稍后重试');
         _loading = false;
       });
     }
@@ -70,6 +72,7 @@ class _ConsultReportPageState extends State<ConsultReportPage> {
     return Scaffold(
       backgroundColor: AppTheme.bgSecondary,
       appBar: AppBar(
+        leading: const AppBackButton(),
         backgroundColor: Colors.white,
         elevation: 0.5,
         title: const Text('问诊过程与结果',
@@ -217,14 +220,25 @@ class _ConsultReportPageState extends State<ConsultReportPage> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                Text(conf.toStringAsFixed(2),
-                    style: const TextStyle(fontSize: 12, color: AppTheme.textTertiary)),
+                SizedBox(
+                  width: 30,
+                  child: Text(_confidenceLabel(conf),
+                      textAlign: TextAlign.right,
+                      style: const TextStyle(fontSize: 12, color: AppTheme.textTertiary)),
+                ),
               ]),
             );
           }),
         ],
       ),
     );
+  }
+
+  /// 置信度用「高/中/低」表达，避免把内部小数暴露给用户。
+  String _confidenceLabel(double conf) {
+    if (conf >= 0.6) return '高';
+    if (conf >= 0.4) return '中';
+    return '低';
   }
 
   Widget _slotCard(String title, IconData icon, Color color, List<Map<String, dynamic>> slots) {

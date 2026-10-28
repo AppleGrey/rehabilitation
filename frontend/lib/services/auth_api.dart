@@ -78,6 +78,41 @@ class AuthApi {
     await _consumeSession(resp, '修改密码失败');
   }
 
+  /// 读取个人资料。网络失败/未登录返回 null（调用方据此跳过「请填写资料」提示）。
+  static Future<Map<String, dynamic>?> getProfile() async {
+    try {
+      final resp = await http
+          .get(Uri.parse('$kCoreBase/api/auth/profile'), headers: AuthStore.headers())
+          .timeout(const Duration(seconds: 12));
+      if (resp.statusCode != 200) return null;
+      final body = jsonDecode(utf8.decode(resp.bodyBytes));
+      if (body is Map) return body.cast<String, dynamic>();
+    } catch (_) {}
+    return null;
+  }
+
+  /// 保存个人资料；nickname 传空表示不改昵称。
+  static Future<AuthUser?> saveProfile({
+    required Map<String, dynamic> fields,
+    String nickname = '',
+  }) async {
+    final resp = await http
+        .put(
+          Uri.parse('$kCoreBase/api/auth/profile'),
+          headers: AuthStore.headers({'Content-Type': 'application/json'}),
+          body: jsonEncode({'nickname': nickname, 'fields': fields}),
+        )
+        .timeout(const Duration(seconds: 15));
+    final body = _decode(resp, '保存个人资料失败');
+    final rawUser = body['user'];
+    if (rawUser is Map) {
+      final user = AuthUser.fromJson(rawUser.cast<String, dynamic>());
+      await AuthStore.save(AuthStore.token, user);
+      return user;
+    }
+    return AuthStore.user;
+  }
+
   static Future<void> logout() => AuthStore.clear();
 
   static Future<AuthUser> _consumeSession(http.Response resp, String errPrefix) async {

@@ -45,6 +45,8 @@ func NewRouter(
 	{
 		authed.GET("/me", authHandler.Me)
 		authed.POST("/password", authHandler.ChangePassword)
+		authed.GET("/profile", authHandler.ProfileGet)
+		authed.PUT("/profile", authHandler.ProfilePut)
 	}
 
 	// ── 闭环康复方案：ai-svc 用服务令牌写入，管理员可读 ──
@@ -59,9 +61,11 @@ func NewRouter(
 		programs.POST("/programs/:id/decision", programHandler.SaveDecision)
 		programs.GET("/programs/:id", programHandler.Get)
 		programs.DELETE("/programs/:id", programHandler.Delete)
-		// 用户跟练上传视频：属于用户隐私数据，同样不公开
-		programs.GET("/uploads/:task_id/play", programHandler.PlayUpload)
 	}
+
+	// 用户跟练上传回放（用户隐私数据，不公开）：
+	// 服务令牌 / 管理员可看任意任务；C 端登录用户由 handler 按归属校验。
+	r.GET("/api/uploads/:task_id/play", guard.RequireAnyAuth(), programHandler.PlayUpload)
 
 	// ── 管理平台：用户管理 ──
 	admin := r.Group("/api/admin",

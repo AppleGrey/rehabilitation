@@ -124,6 +124,43 @@ func (r *Repo) SetRole(ctx context.Context, id, role string) error {
 	return nil
 }
 
+// ── C 端：个人资料（JSONB）──
+
+// Profile 读取个人资料原文；未填写时为空对象。
+func (r *Repo) Profile(ctx context.Context, id string) ([]byte, error) {
+	var raw []byte
+	err := r.pool.QueryRow(ctx,
+		`SELECT COALESCE(profile, '{}'::jsonb) FROM users WHERE id = $1::uuid`, id).Scan(&raw)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrUserNotFound
+	}
+	return raw, err
+}
+
+// UpdateProfile 整体保存个人资料；nickname 非空时顺带更新昵称。
+func (r *Repo) UpdateProfile(ctx context.Context, id string, profile []byte, nickname string) error {
+	var (
+		tag pgconn.CommandTag
+		err error
+	)
+	if nickname != "" {
+		tag, err = r.pool.Exec(ctx,
+			`UPDATE users SET profile = $2::jsonb, nickname = $3, updated_at = NOW() WHERE id = $1::uuid`,
+			id, string(profile), nickname)
+	} else {
+		tag, err = r.pool.Exec(ctx,
+			`UPDATE users SET profile = $2::jsonb, updated_at = NOW() WHERE id = $1::uuid`,
+			id, string(profile))
+	}
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrUserNotFound
+	}
+	return nil
+}
+
 // ── 管理平台：用户列表与详情 ──
 
 type ListFilter struct {

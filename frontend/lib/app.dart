@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'theme/app_theme.dart';
+import 'pages/onboarding_page.dart';
 import 'pages/training_page.dart';
 import 'pages/result_page.dart';
 import 'pages/plan_page.dart';
@@ -27,17 +30,27 @@ class RehabilitationApp extends StatelessWidget {
       title: '运动康复',
       theme: AppTheme.theme,
       debugShowCheckedModeBanner: false,
+      // 中文本地化：系统控件（复制/粘贴菜单等）与辅助功能文案跟随中文
+      locale: const Locale('zh', 'CN'),
+      supportedLocales: const [Locale('zh', 'CN'), Locale('en')],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       home: const AuthGate(),
-      builder: (context, child) => AnnotatedRegion<SystemUiOverlayStyle>(
-        value: const SystemUiOverlayStyle(
-          statusBarColor: Colors.transparent,
-          statusBarIconBrightness: Brightness.dark,
-          statusBarBrightness: Brightness.light,
-          systemNavigationBarColor: AppTheme.bgPrimary,
-          systemNavigationBarIconBrightness: Brightness.dark,
-          systemNavigationBarDividerColor: Colors.transparent,
+      builder: (context, child) => OrientationGate(
+        child: AnnotatedRegion<SystemUiOverlayStyle>(
+          value: const SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            statusBarIconBrightness: Brightness.dark,
+            statusBarBrightness: Brightness.light,
+            systemNavigationBarColor: AppTheme.bgPrimary,
+            systemNavigationBarIconBrightness: Brightness.dark,
+            systemNavigationBarDividerColor: Colors.transparent,
+          ),
+          child: child ?? const SizedBox.shrink(),
         ),
-        child: child ?? const SizedBox.shrink(),
       ),
     );
   }
@@ -73,7 +86,10 @@ class _AuthGateState extends State<AuthGate> {
     if (!_loggedIn) {
       return LoginPage(onSuccess: () => setState(() => _loggedIn = true));
     }
-    return AppNavigator(onLoggedOut: () => setState(() => _loggedIn = false));
+    // 首次登录后先看一遍上手引导（每个用户只出现一次）
+    return _OnboardingGate(
+      child: AppNavigator(onLoggedOut: () => setState(() => _loggedIn = false)),
+    );
   }
 }
 
@@ -94,6 +110,7 @@ class _AppNavigatorState extends State<AppNavigator> {
   bool _showBottomNav = true;
   int _planRefreshTick = 0;
   int _chatListRefreshTick = 0;
+  int _assessBadge = 0;
   bool _otaChecked = false;
 
   String? _rehabVideoUrl;
@@ -216,8 +233,10 @@ class _AppNavigatorState extends State<AppNavigator> {
         bottomNavigationBar: _showBottomNav
             ? NavBar(
                 currentIndex: _bottomNavIndex,
+                badgeCount: _assessBadge,
                 onTap: (i) => setState(() {
                   _bottomNavIndex = i;
+                  if (i == 1) _assessBadge = 0; // 进入方案页即视为查看
                   if (i == 0 || i == 1 || i == 2) _planRefreshTick++;
                 }),
               )
@@ -265,6 +284,11 @@ class _AppNavigatorState extends State<AppNavigator> {
       HomePage(
         refreshTick: _planRefreshTick,
         onConsult: () => _navigateToMain(tabIndex: 3),
+        onUnseenAssessments: (n) {
+          if (mounted && n != _assessBadge) {
+            setState(() => _assessBadge = n);
+          }
+        },
       ),
       PlanPage(refreshTick: _planRefreshTick),
       ProgressPage(refreshTick: _planRefreshTick),
@@ -281,5 +305,108 @@ class _AppNavigatorState extends State<AppNavigator> {
       ),
     ];
     return AppTabStack(index: _bottomNavIndex, children: pages);
+  }
+}
+
+/// 横竖屏策略：手机（最短边 < 600dp）锁定竖屏；平板放开横竖屏。
+/// 首页 / 进度页有专门的横屏分栏布局，平板上可以自然使用。
+class OrientationGate extends StatefulWidget {
+  final Widget child;
+
+  const OrientationGate({super.key, required this.child});
+
+  @override
+  State<OrientationGate> createState() => _OrientationGateState();
+}
+
+class _OrientationGateState extends State<OrientationGate>
+    with WidgetsBindingObserver {
+  bool? _tablet;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _sync());
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeMetrics() {
+    WidgetsBinding.instance.addPostFrameCallback((_) => _sync());
+  }
+
+  void _sync() {
+    if (!mounted) return;
+    final shortest = MediaQuery.sizeOf(context).shortestSide;
+    final tablet = shortest >= 600;
+    if (tablet == _tablet) return;
+    _tablet = tablet;
+    SystemChrome.setPreferredOrientations(
+      tablet
+          ? const []
+          : const [
+              DeviceOrientation.portraitUp,
+              DeviceOrientation.portraitDown,
+            ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
+}
+
+/// 首次上手引导闸门：每个用户只出现一次，看完即进入主界面。
+class _OnboardingGate extends StatefulWidget {
+  final Widget child;
+
+  const _OnboardingGate({required this.child});
+
+  @override
+  State<_OnboardingGate> createState() => _OnboardingGateState();
+}
+
+class _OnboardingGateState extends State<_OnboardingGate> {
+  bool? _done;
+
+  String get _key => 'onboarding_done_v1_${AuthStore.user?.id ?? 'anon'}';
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final p = await SharedPreferences.getInstance();
+      if (!mounted) return;
+      setState(() => _done = p.getBool(_key) ?? false);
+    } catch (_) {
+      // 本地存储不可用时直接放行，不挡主流程
+      if (mounted) setState(() => _done = true);
+    }
+  }
+
+  Future<void> _finish() async {
+    try {
+      final p = await SharedPreferences.getInstance();
+      await p.setBool(_key, true);
+    } catch (_) {}
+    if (!mounted) return;
+    setState(() => _done = true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final done = _done;
+    if (done == null) return const SizedBox.shrink();
+    if (!done) return OnboardingPage(onDone: _finish);
+    return widget.child;
   }
 }

@@ -7,6 +7,7 @@ from __future__ import annotations
 import logging
 import shutil
 import tempfile
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
@@ -330,22 +331,141 @@ def generate_stage_plan(program_id: str, baseline_results: Optional[list[dict]] 
 
 # ─────────────────── 全景（合并 baseline 已录 + 训练状态）───────────────────
 
+def _parse_dt(value) -> Optional[datetime]:
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
+def _score_of(task: dict):
+    a = task.get("assessment") if isinstance(task.get("assessment"), dict) else {}
+    return a.get("overall_score")
+
+
+def _task_metrics(t: dict) -> dict:
+    """把一个评估任务拍平成前端展示字段（列优先，回落到 assessment JSONB）。"""
+    assess = t.get("assessment") if isinstance(t.get("assessment"), dict) else {}
+    return {
+        "task_id": t.get("task_id"),
+        "overall_score": assess.get("overall_score"),
+        # K3 接地结果
+        "rom_target_ratio": t.get("rom_target_ratio") if t.get("rom_target_ratio") is not None
+        else assess.get("rom_target_ratio"),
+        "compensations": t.get("compensations") or assess.get("compensations") or [],
+        "meets_exit_criteria": t.get("meets_exit_criteria")
+        if t.get("meets_exit_criteria") is not None else assess.get("meets_exit_criteria"),
+        "pain_reported": t.get("pain_reported"),
+        "grounded": bool(t.get("kg_sources") or assess.get("kg_sources")),
+        "created_at": t.get("created_at"),
+        "error": t.get("error"),
+    }
+
+
+def _training_state(tasks: list[dict]) -> dict:
+    """
+    单个训练项的状态汇总。兼容两代数据：
+      - 旧数据（无 set_total 或 =1）：一个动作一条任务，最新一条即全部；
+      - 多组训练：每组一条任务（set_no 1..N），全部录完且评估完才算 done。
+    返回 status: none / processing / partial / done / error，附带组进度与上次对比。
+    """
+    if not tasks:
+        return {"status": "none"}
+    tasks = sorted(tasks, key=lambda t: str(t.get("created_at") or ""))
+    latest = tasks[-1]
+    latest_total = latest.get("set_total")
+
+    if not latest_total or int(latest_total) <= 1:
+        out = _task_metrics(latest)
+        done_tasks = [t for t in tasks if t.get("status") == "done"]
+        out.update({
+            "sets_total": 1,
+            "sets_done": [1] if latest.get("status") == "done" else [],
+            "next_set": None if latest.get("status") == "done" else 1,
+            "recorded_sets": [1] if latest.get("status") in ("pending", "processing", "done") else [],
+        })
+        # 旧版单次训练：状态原样透出（pending/processing/done/error）
+        raw = latest.get("status") or "none"
+        out["status"] = raw if raw in ("pending", "processing", "done", "error") else "processing"
+        if len(done_tasks) >= 2:
+            out["previous_score"] = _score_of(done_tasks[-2])
+        return out
+
+    total = max(1, int(latest_total))
+    # 只统计与最新一次录制同配置（同 set_total）的任务，避免改剂量后旧组混入
+    cur = [t for t in tasks if (t.get("set_total") or 1) == total]
+    latest_by_set: dict[int, dict] = {}
+    for t in cur:
+        latest_by_set[int(t.get("set_no") or 1)] = t
+    recorded = sorted(k for k, v in latest_by_set.items()
+                      if v.get("status") in ("pending", "processing", "done"))
+    done_sets = sorted(k for k, v in latest_by_set.items() if v.get("status") == "done")
+    any_processing = any(v.get("status") in ("pending", "processing")
+                         for v in latest_by_set.values())
+    missing = [k for k in range(1, total + 1) if k not in recorded]
+
+    if any_processing:
+        status = "processing"
+    elif not missing and len(done_sets) >= total:
+        status = "done"
+    elif recorded:
+        status = "partial"
+    else:
+        status = "error"
+
+    done_sorted = sorted((v for v in latest_by_set.values() if v.get("status") == "done"),
+                         key=lambda t: str(t.get("created_at") or ""))
+    ref = done_sorted[-1] if done_sorted else latest
+    out = _task_metrics(ref)
+    out.update({
+        "status": status,
+        "sets_total": total,
+        "sets_done": done_sets,
+        "next_set": missing[0] if missing else None,
+        "recorded_sets": recorded,
+    })
+    if len(done_sorted) >= 2:
+        out["previous_score"] = _score_of(done_sorted[-2])
+    return out
+
+
 def view_program(program_id: str) -> Optional[dict]:
     from ..assessment import tasks as _tasks
     from ..media.video_metadata import load_video
     view = core_client.get_program(program_id)
     if not view:
         return None
+    all_tasks = _tasks.list_tasks(program_id, "training")
+    baseline_tasks = _tasks.list_tasks(program_id, "baseline")
+
     # baseline 已录集合
-    recorded = [t.get("video_id") for t in _tasks.list_tasks(program_id, "baseline") if t.get("video_id")]
+    recorded = [t.get("video_id") for t in baseline_tasks if t.get("video_id")]
     base = view.get("baseline")
     if isinstance(base, dict):
         base["recorded"] = recorded
     else:
         view["baseline"] = {"recorded": recorded}
-    # 每个训练项的训练状态
+
     current = view.get("current") or {}
     stage_no = int(view.get("current_stage_no") or 1)
+    plan = current.get("plan") if isinstance(current.get("plan"), dict) else None
+    plan_at = _parse_dt(plan.get("created_at")) if plan else None
+
+    stage_tasks: dict[str, list[dict]] = {}
+    for t in all_tasks:
+        if t.get("stage_no") != stage_no:
+            continue
+        # hold/regress 会给同一阶段再出一版方案：旧一轮的任务不计入新一轮进度，
+        # 否则「重练一轮」时所有条目会看起来已经完成。
+        if plan_at is not None:
+            t_at = _parse_dt(t.get("created_at"))
+            if t_at is not None and t_at < plan_at:
+                continue
+        vid = str(t.get("video_id") or "")
+        stage_tasks.setdefault(vid, []).append(t)
+
     for it in (current.get("items") or []):
         vid = it.get("video_id")
         if not vid:
@@ -354,22 +474,13 @@ def view_program(program_id: str) -> Optional[dict]:
         name = str(meta.get("action_name") or meta.get("description_cn") or "").strip()
         if name:
             it["title"] = name
-        t = _tasks.latest_task(program_id, stage_no, vid)
-        if t:
-            assess = t.get("assessment") if isinstance(t.get("assessment"), dict) else {}
-            it["training"] = {
-                "task_id": t.get("task_id"), "status": t.get("status"),
-                "overall_score": assess.get("overall_score"),
-                # K3 接地结果（列优先，回落到 assessment JSONB）
-                "rom_target_ratio": t.get("rom_target_ratio") if t.get("rom_target_ratio") is not None
-                else assess.get("rom_target_ratio"),
-                "compensations": t.get("compensations") or assess.get("compensations") or [],
-                "meets_exit_criteria": t.get("meets_exit_criteria")
-                if t.get("meets_exit_criteria") is not None else assess.get("meets_exit_criteria"),
-                "pain_reported": t.get("pain_reported"),
-                "grounded": bool(t.get("kg_sources") or assess.get("kg_sources")),
-                "created_at": t.get("created_at"),
-            }
-        else:
-            it["training"] = {"status": "none"}
+        it["training"] = _training_state(stage_tasks.get(str(vid), []))
+
+    # 结业/进度统计：整个疗程完成过的训练次数与平均分
+    done = [t for t in all_tasks if t.get("status") == "done"]
+    scores = [s for s in (_score_of(t) for t in done) if isinstance(s, (int, float))]
+    view["stats"] = {
+        "trainings_done": len(done),
+        "avg_score": round(sum(scores) / len(scores), 1) if scores else None,
+    }
     return view

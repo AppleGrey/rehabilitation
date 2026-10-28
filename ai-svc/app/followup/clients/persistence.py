@@ -151,17 +151,21 @@ def load_latest_snapshot(session_id: str) -> Optional[dict]:
 # ─────────────────── 会话实时状态（StrategySession 全量）───────────────────
 
 def save_strategy_state(session: StrategySession) -> None:
-    """整份 StrategySession 落库（服务重启后可恢复）。与快照留痕分开。"""
+    """整份 StrategySession 落库（服务重启后可恢复）。与快照留痕分开。
+    同时记录 user_id：问诊历史按用户列出/回看/删除都靠它。"""
     try:
         with db_cursor() as cur:
             cur.execute(
                 """
-                INSERT INTO consult_strategy_state (session_id, state, updated_at)
-                VALUES (%s, %s, NOW())
+                INSERT INTO consult_strategy_state (session_id, state, user_id, updated_at)
+                VALUES (%s, %s, %s, NOW())
                 ON CONFLICT (session_id) DO UPDATE
-                SET state = EXCLUDED.state, updated_at = NOW()
+                SET state = EXCLUDED.state,
+                    user_id = COALESCE(EXCLUDED.user_id, consult_strategy_state.user_id),
+                    updated_at = NOW()
                 """,
-                (session.session_id, Jsonb(session.model_dump(by_alias=True))),
+                (session.session_id, Jsonb(session.model_dump(by_alias=True)),
+                 getattr(session, "user_id", None) or None),
             )
     except Exception:
         logger.exception("[FOLLOWUP] 状态落库失败 session=%s", session.session_id)
@@ -182,3 +186,100 @@ def load_strategy_state(session_id: str) -> Optional[StrategySession]:
     except Exception:
         logger.exception("[FOLLOWUP] 状态恢复失败 session=%s", session_id)
         return None
+
+
+# ─────────────────── 服务端问诊历史（列表 / 回看 / 删除）───────────────────
+
+def list_sessions(user_id: str, limit: int = 50) -> list[dict]:
+    """某用户名下的问诊会话列表（新的在前）。标题取首条用户消息，预览取末尾助手回复。"""
+    if not user_id:
+        return []
+    try:
+        with db_cursor(commit=False) as cur:
+            cur.execute(
+                """
+                SELECT state, updated_at FROM consult_strategy_state
+                WHERE user_id = %s ORDER BY updated_at DESC LIMIT %s
+                """,
+                (user_id, max(1, min(int(limit), 100))),
+            )
+            rows = cur.fetchall()
+    except Exception:
+        logger.exception("[FOLLOWUP] 会话列表失败 user=%s", user_id)
+        return []
+
+    out: list[dict] = []
+    for row in rows:
+        state = row.get("state") or {}
+        transcript = state.get("transcript") or []
+        title = ""
+        preview = ""
+        for m in transcript:
+            if m.get("role") == "user":
+                title = str(m.get("text") or "").strip()
+                if title:
+                    break
+        for m in reversed(transcript):
+            if m.get("role") == "assistant":
+                preview = str(m.get("text") or "").strip()
+                if preview:
+                    break
+        seed = state.get("seed") or {}
+        if not title:
+            title = str(seed.get("chief_complaint") or seed.get("body_region") or "").strip()
+        resume = state.get("resume_view") or {}
+        result = resume.get("result") or {}
+        updated = row.get("updated_at")
+        out.append({
+            "session_id": str(state.get("session_id") or ""),
+            "title": (title[:60] or "康复问诊"),
+            "preview": preview[:120],
+            "updated_at": updated.isoformat() if hasattr(updated, "isoformat") else (str(updated) if updated else None),
+            "is_done": bool(resume.get("is_done")),
+            "outcome": result.get("outcome"),
+            "turn_no": state.get("turn_no") or 0,
+        })
+    return [s for s in out if s["session_id"]]
+
+
+def get_session_transcript(session_id: str, user_id: str) -> Optional[dict]:
+    """某个会话的对话记录 + 展示态（仅本人可见；无主的老会话对任何登录用户可见）。"""
+    try:
+        with db_cursor(commit=False) as cur:
+            cur.execute(
+                "SELECT state, user_id::text AS uid FROM consult_strategy_state WHERE session_id = %s",
+                (session_id,),
+            )
+            row = cur.fetchone()
+    except Exception:
+        logger.exception("[FOLLOWUP] 读取会话失败 session=%s", session_id)
+        return None
+    if not row:
+        return None
+    owner = (row.get("uid") or "").strip()
+    if user_id and owner and owner != user_id:
+        return None
+    state = row.get("state") or {}
+    return {
+        "session_id": session_id,
+        "transcript": state.get("transcript") or [],
+        "resume_view": state.get("resume_view") or {},
+    }
+
+
+def delete_session(session_id: str, user_id: str) -> bool:
+    """删除一条问诊记录（状态 + 快照 + 事件）。仅本人可删。"""
+    try:
+        with db_cursor() as cur:
+            cur.execute(
+                "DELETE FROM consult_strategy_state WHERE session_id = %s AND user_id = %s",
+                (session_id, user_id),
+            )
+            removed = cur.rowcount or 0
+            if removed:
+                cur.execute("DELETE FROM consult_question_events WHERE session_id = %s", (session_id,))
+                cur.execute("DELETE FROM consult_strategy_snapshots WHERE session_id = %s", (session_id,))
+        return removed > 0
+    except Exception:
+        logger.exception("[FOLLOWUP] 删除会话失败 session=%s", session_id)
+        return False

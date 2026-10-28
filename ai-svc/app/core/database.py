@@ -53,6 +53,9 @@ ALTER TABLE assessment_tasks ADD COLUMN IF NOT EXISTS compensations JSONB;
 ALTER TABLE assessment_tasks ADD COLUMN IF NOT EXISTS meets_exit_criteria BOOLEAN;
 ALTER TABLE assessment_tasks ADD COLUMN IF NOT EXISTS kg_sources JSONB;
 ALTER TABLE assessment_tasks ADD COLUMN IF NOT EXISTS pain_reported INT;
+-- 多组训练：同一个动作每组单独录制/评估（set_no 从 1 开始；旧数据为 NULL → 按单次训练处理）
+ALTER TABLE assessment_tasks ADD COLUMN IF NOT EXISTS set_no INT;
+ALTER TABLE assessment_tasks ADD COLUMN IF NOT EXISTS set_total INT;
 
 CREATE INDEX IF NOT EXISTS idx_assessment_tasks_session_id
     ON assessment_tasks (session_id);
@@ -138,6 +141,10 @@ CREATE TABLE IF NOT EXISTS consult_strategy_state (
     state JSONB NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+-- 兼容旧表：会话归属用户（问诊历史按用户列出；老会话为 NULL，不会串号）
+ALTER TABLE consult_strategy_state ADD COLUMN IF NOT EXISTS user_id UUID;
+CREATE INDEX IF NOT EXISTS idx_strategy_state_user
+    ON consult_strategy_state (user_id, updated_at DESC);
 """
 
 

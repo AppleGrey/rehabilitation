@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../services/error_text.dart';
 import '../services/program_api.dart';
 import '../services/program_store.dart';
 import '../theme/app_theme.dart';
+import '../widgets/common_widgets.dart';
 import 'program_page.dart';
 import 'rehab_video_page.dart';
 
@@ -50,7 +52,7 @@ class _BaselinePageState extends State<BaselinePage> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = '$e';
+        _error = friendlyError(e, fallback: '基线动作没加载出来，请重试');
         _loading = false;
       });
     }
@@ -98,7 +100,9 @@ class _BaselinePageState extends State<BaselinePage> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _generating = false);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('生成方案失败：$e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(friendlyError(e, fallback: '生成方案失败，请稍后重试'))),
+      );
     }
   }
 
@@ -107,9 +111,10 @@ class _BaselinePageState extends State<BaselinePage> {
     return Scaffold(
       backgroundColor: AppTheme.bgSecondary,
       appBar: AppBar(
+        leading: const AppBackButton(),
         backgroundColor: Colors.white,
         elevation: 0.5,
-        title: const Text('基线评估',
+        title: const Text('试做基线动作',
             style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
       ),
       body: _buildBody(),
@@ -155,22 +160,33 @@ class _BaselinePageState extends State<BaselinePage> {
       );
     }
 
+    final recordedCount = _videos.where((v) => _recorded.contains(v['video_id'])).length;
+    final total = _videos.length;
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 20),
       children: [
+        _stepsHeader(total: total, recorded: recordedCount),
+        const SizedBox(height: 10),
         Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(color: AppTheme.primaryLight, borderRadius: BorderRadius.circular(12)),
           child: Row(children: [
             const Icon(Icons.tips_and_updates, color: AppTheme.primaryDark, size: 20),
             const SizedBox(width: 10),
-            Expanded(child: Text(_message, style: const TextStyle(fontSize: 13.5, color: AppTheme.primaryDark, height: 1.5))),
+            Expanded(
+              child: Text(
+                '试做 1–2 个动作，AI 会按你实际能做到的程度来定动作和剂量，方案会更贴合你；'
+                '不想做也可以跳过后直接生成。'
+                '${total > 0 ? '（已试做 $recordedCount/$total）' : ''}',
+                style: const TextStyle(fontSize: 13.5, color: AppTheme.primaryDark, height: 1.5),
+              ),
+            ),
           ]),
         ),
         const SizedBox(height: 8),
         const Padding(
           padding: EdgeInsets.fromLTRB(4, 8, 4, 4),
-          child: Text('先试着跟做（可选）',
+          child: Text('① 先试着跟做（可选）',
               style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
         ),
         if (_videos.isEmpty)
@@ -182,12 +198,72 @@ class _BaselinePageState extends State<BaselinePage> {
         else
           ..._videos.map(_videoCard),
         const SizedBox(height: 8),
-        const Padding(
-          padding: EdgeInsets.fromLTRB(4, 4, 4, 0),
-          child: Text('跟做完成后可写感受，生成方案时会一并参考。',
-              style: TextStyle(fontSize: 12, color: AppTheme.textTertiary)),
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppTheme.border),
+          ),
+          child: const Row(children: [
+            Icon(Icons.auto_awesome, color: AppTheme.primary, size: 20),
+            SizedBox(width: 10),
+            Expanded(
+              child: Text('② 点底部按钮生成方案：AI 会结合问诊和试做结果，按阶段排好训练动作。',
+                  style: TextStyle(fontSize: 13.5, color: AppTheme.textSecondary, height: 1.5)),
+            ),
+          ]),
         ),
+        if (_message.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 4, 4, 0),
+            child: Text(_message, style: const TextStyle(fontSize: 12, color: AppTheme.textTertiary, height: 1.5)),
+          ),
+        ],
       ],
+    );
+  }
+
+  Widget _stepsHeader({required int total, required int recorded}) {
+    Widget step(int no, String label, bool active, bool done) {
+      return Row(mainAxisSize: MainAxisSize.min, children: [
+        Container(
+          width: 22,
+          height: 22,
+          decoration: BoxDecoration(
+            color: done ? AppTheme.success : (active ? AppTheme.primary : AppTheme.bgTertiary),
+            shape: BoxShape.circle,
+          ),
+          alignment: Alignment.center,
+          child: done
+              ? const Icon(Icons.check, size: 14, color: Colors.white)
+              : Text('$no',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: active ? Colors.white : AppTheme.textTertiary,
+                  )),
+        ),
+        const SizedBox(width: 6),
+        Text(label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+              color: active ? AppTheme.textPrimary : AppTheme.textTertiary,
+            )),
+      ]);
+    }
+
+    final baselineDone = total > 0 && recorded >= total;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
+      child: Row(children: [
+        step(1, baselineDone ? '试做基线（已完成）' : '试做基线（可选）', !baselineDone, baselineDone),
+        const Expanded(child: Divider(indent: 8, endIndent: 8)),
+        step(2, '生成方案', baselineDone, false),
+      ]),
     );
   }
 
@@ -219,7 +295,7 @@ class _BaselinePageState extends State<BaselinePage> {
             Text(title, maxLines: 1, overflow: TextOverflow.ellipsis,
                 style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
             const SizedBox(height: 4),
-            Text(done ? '已跟做 ✓' : (v['difficulty'] != null ? '难度 ${v['difficulty']}' : '未跟做'),
+            Text(done ? '已录入 ✓ 将用于方案' : (v['difficulty'] != null ? '未试做 · 难度 ${v['difficulty']}' : '未试做（可选）'),
                 style: TextStyle(fontSize: 12, color: done ? AppTheme.success : AppTheme.textTertiary)),
           ]),
         ),
