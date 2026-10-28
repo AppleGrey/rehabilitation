@@ -596,6 +596,16 @@ def ai_program_get(program_id: str, user_id: str = Depends(current_user_id)):
     return result
 
 
+@app.get("/api/ai/program/{program_id}/rounds")
+def ai_program_rounds(program_id: str, user_id: str = Depends(current_user_id)):
+    """K2 康复历程：每一轮（一版阶段方案）的训练与进阶决策记录。"""
+    _assert_owns(program_id, user_id)
+    result = _program.program_rounds(program_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="疗程不存在")
+    return result
+
+
 @app.delete("/api/ai/program/{program_id}")
 def ai_program_delete(program_id: str, user_id: str = Depends(current_user_id)):
     """删除疗程（含评估任务）。"""

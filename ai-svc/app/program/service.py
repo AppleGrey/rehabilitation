@@ -484,3 +484,116 @@ def view_program(program_id: str) -> Optional[dict]:
         "avg_score": round(sum(scores) / len(scores), 1) if scores else None,
     }
     return view
+
+
+def program_rounds(program_id: str) -> Optional[dict]:
+    """康复历程：把方案的每一版阶段方案聚合成「一轮」。
+
+    每轮含：该轮训练（逐组，带 task_id 可回放录像）与轮末进阶决策及依据指标。
+    归属规则：训练/决策落在「同分期中开始时间不晚于它的最新一版方案」上；
+    没有决策的轮次标记 in_progress。返回按时间升序，前端自行倒序展示。
+    """
+    from ..assessment import tasks as _tasks
+    from ..media.video_metadata import load_video
+
+    hist = core_client.get_program_history(program_id)
+    if not hist:
+        return None
+
+    plans = sorted(hist.get("plans") or [], key=lambda p: str(p.get("created_at") or ""))
+    decisions = sorted(hist.get("decisions") or [], key=lambda d: str(d.get("created_at") or ""))
+    tasks = [t for t in _tasks.list_tasks(program_id, "training")
+             if t.get("stage_no") is not None]
+
+    rounds: list[dict] = []
+    for p in plans:
+        stage_type = str(p.get("stage_type") or "")
+        rounds.append({
+            "stage_no": p.get("stage_no"),
+            "stage_type": stage_type,
+            "stage_label": staging.STAGE_LABEL.get(stage_type, stage_type or "训练"),
+            "version": p.get("version") or 1,
+            "summary_text": str(p.get("summary_text") or ""),
+            "started_at": p.get("created_at"),
+            "ended_at": None,
+            "decision": None,
+            "rationale": "",
+            "metrics": None,
+            "in_progress": False,
+            "round_no": 0,
+            "trainings": [],
+        })
+    by_stage: dict = {}
+    for r in rounds:
+        by_stage.setdefault(r["stage_no"], []).append(r)
+
+    def _round_for(stage_no, at) -> Optional[dict]:
+        """同分期中开始时间不晚于 at 的最新一版方案；at 缺失则取该分期最后一版。"""
+        rs = by_stage.get(stage_no) or []
+        if not rs:
+            return None
+        chosen = None
+        for r in rs:
+            start = _parse_dt(r.get("started_at"))
+            if start is None or at is None or start <= at:
+                chosen = r
+        return chosen or rs[0]
+
+    for t in tasks:
+        r = _round_for(t.get("stage_no"), _parse_dt(t.get("created_at")))
+        if r is not None:
+            r["trainings"].append(t)
+
+    for d in decisions:
+        r = _round_for(d.get("stage_no"), _parse_dt(d.get("created_at")))
+        if r is None:
+            # 还没有任何方案版本就有决策（如未出方案即转诊）：单独成轮，不丢记录
+            r = {
+                "stage_no": d.get("stage_no"), "stage_type": "", "stage_label": "训练",
+                "version": None, "summary_text": "", "started_at": None,
+                "ended_at": None, "decision": None, "rationale": "", "metrics": None,
+                "in_progress": False, "round_no": 0, "trainings": [],
+            }
+            rounds.append(r)
+            by_stage.setdefault(r["stage_no"], []).append(r)
+        r["decision"] = str(d.get("decision") or "")
+        r["rationale"] = str(d.get("rationale") or "")
+        r["metrics"] = d.get("metrics") if isinstance(d.get("metrics"), dict) else None
+        r["ended_at"] = d.get("created_at")
+
+    rounds.sort(key=lambda r: str(r.get("started_at") or r.get("ended_at") or ""))
+
+    titles: dict[str, str] = {}
+    for idx, r in enumerate(rounds, start=1):
+        r["round_no"] = idx
+        r["in_progress"] = r["decision"] is None
+        items = []
+        for t in sorted(r["trainings"], key=lambda x: str(x.get("created_at") or "")):
+            vid = str(t.get("video_id") or "")
+            if vid and vid not in titles:
+                meta = load_video(vid) or {}
+                titles[vid] = str(meta.get("action_name") or meta.get("description_cn") or "").strip()
+            assess = t.get("assessment") if isinstance(t.get("assessment"), dict) else {}
+            items.append({
+                "task_id": t.get("task_id"),
+                "video_id": vid,
+                "title": titles.get(vid) or vid,
+                "set_no": t.get("set_no"),
+                "set_total": t.get("set_total"),
+                "status": t.get("status"),
+                "score": assess.get("overall_score"),
+                "pain_reported": t.get("pain_reported"),
+                "created_at": t.get("created_at"),
+            })
+        r["trainings"] = items
+        done = [x for x in items if x["status"] == "done"]
+        scores = [x["score"] for x in done if isinstance(x["score"], (int, float))]
+        r["trainings_done"] = len(done)
+        r["avg_score"] = round(sum(scores) / len(scores), 1) if scores else None
+
+    return {
+        "program_id": hist.get("program_id") or program_id,
+        "status": hist.get("status"),
+        "current_stage_no": hist.get("current_stage_no"),
+        "rounds": rounds,
+    }

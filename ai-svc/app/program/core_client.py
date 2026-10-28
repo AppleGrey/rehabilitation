@@ -72,6 +72,20 @@ def get_program(program_id: str) -> Optional[dict]:
         return None
 
 
+def get_program_history(program_id: str) -> Optional[dict]:
+    """康复历程数据源：每一版阶段方案 + 全部进阶决策。"""
+    try:
+        with httpx.Client(timeout=_TIMEOUT, headers=_headers()) as client:
+            r = client.get(f"{_base()}/api/programs/{program_id}/history")
+            if r.status_code == 404:
+                return None
+            r.raise_for_status()
+            return r.json()
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("[CORE] get_program_history 失败: %s", exc)
+        return None
+
+
 def get_program_by_session(session_id: str) -> Optional[dict]:
     try:
         with httpx.Client(timeout=_TIMEOUT, headers=_headers()) as client:

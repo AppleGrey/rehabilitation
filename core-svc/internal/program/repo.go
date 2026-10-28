@@ -279,6 +279,89 @@ func (r *Repo) GetProgram(ctx context.Context, programID string) (map[string]any
 	return out, nil
 }
 
+// GetProgramHistory 康复历程数据源：每个分期每一个版本的方案 + 全部进阶决策（按时间升序）。
+func (r *Repo) GetProgramHistory(ctx context.Context, programID string) (map[string]any, error) {
+	var (
+		status         string
+		currentStageNo int
+	)
+	err := r.pool.QueryRow(ctx, `
+		SELECT status, current_stage_no FROM rehab_programs WHERE id=$1::uuid
+	`, programID).Scan(&status, &currentStageNo)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("get program history: %w", err)
+	}
+
+	plans := make([]map[string]any, 0)
+	rows, err := r.pool.Query(ctx, `
+		SELECT ps.stage_no, COALESCE(ps.stage_type,''), sp.version,
+		       COALESCE(sp.summary_text,''), sp.created_at
+		FROM stage_plans sp
+		JOIN program_stages ps ON ps.id = sp.stage_id
+		WHERE ps.program_id=$1::uuid
+		ORDER BY sp.created_at, sp.version
+	`, programID)
+	if err != nil {
+		return nil, fmt.Errorf("list stage plans: %w", err)
+	}
+	for rows.Next() {
+		var (
+			stageNo, version   int
+			stageType, summary string
+			createdAt          time.Time
+		)
+		if err := rows.Scan(&stageNo, &stageType, &version, &summary, &createdAt); err != nil {
+			rows.Close()
+			return nil, err
+		}
+		plans = append(plans, map[string]any{
+			"stage_no": stageNo, "stage_type": stageType, "version": version,
+			"summary_text": summary, "created_at": createdAt,
+		})
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	decisions := make([]map[string]any, 0)
+	rows, err = r.pool.Query(ctx, `
+		SELECT COALESCE(stage_no,0), COALESCE(decision,''), COALESCE(rationale,''), metrics, created_at
+		FROM progression_decisions
+		WHERE program_id=$1::uuid ORDER BY created_at
+	`, programID)
+	if err != nil {
+		return nil, fmt.Errorf("list decisions: %w", err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var (
+			stageNo        int
+			decision, text string
+			metrics        []byte
+			createdAt      time.Time
+		)
+		if err := rows.Scan(&stageNo, &decision, &text, &metrics, &createdAt); err != nil {
+			return nil, err
+		}
+		decisions = append(decisions, map[string]any{
+			"stage_no": stageNo, "decision": decision, "rationale": text,
+			"metrics": decodeJSON(metrics, map[string]any{}), "created_at": createdAt,
+		})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return map[string]any{
+		"program_id": programID, "status": status, "current_stage_no": currentStageNo,
+		"plans": plans, "decisions": decisions,
+	}, nil
+}
+
 func (r *Repo) currentPlan(ctx context.Context, programID string, stageNo int) (map[string]any, error) {
 	var (
 		stageID, stageType         string

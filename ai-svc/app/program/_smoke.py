@@ -64,6 +64,11 @@ def _install_stubs(store: dict):
     from ..assessment import tasks as _t
     store.setdefault("tasks", [])
 
+    def _tick() -> str:
+        # 递增伪时间戳：供「康复历程」按时间归轮的离线断言
+        store["clock"] = store.get("clock", 0) + 1
+        return f"2026-01-01T00:{store['clock']:02d}:00+00:00"
+
     def _create_task(session_id, standard_video_id, user_video_path, **k):
         tid = f"task-{len(store['tasks']) + 1}"
         store["tasks"].append({
@@ -72,7 +77,7 @@ def _install_stubs(store: dict):
             "program_id": k.get("program_id"), "stage_no": k.get("stage_no"),
             "video_id": k.get("video_id") or standard_video_id,
             "purpose": k.get("purpose", "training"), "status": k.get("status", "pending"),
-            "user_notes": k.get("user_notes") or "", "assessment": None, "created_at": tid,
+            "user_notes": k.get("user_notes") or "", "assessment": None, "created_at": _tick(),
             "pain_reported": k.get("pain_reported"),
             "rom_target_ratio": None, "compensations": [], "meets_exit_criteria": None,
             "kg_sources": [],
@@ -339,6 +344,36 @@ def main() -> None:
         stage_type="sub_acute", stage_no=1, impression=[], profile=profile,
         baseline=[], candidates=[], kg_context="")
     _check(src == "fallback" and isinstance(p2, StagePlan), "无候选走 fallback")
+
+    print("15. 康复历程：训练/决策按方案版本归轮")
+    store["history"] = {
+        "program_id": "prog-1", "status": "active", "current_stage_no": 1,
+        "plans": [
+            {"stage_no": 1, "stage_type": "sub_acute", "version": 1,
+             "summary_text": "恢复期 v1", "created_at": "2026-01-01T00:00:00+00:00"},
+            {"stage_no": 1, "stage_type": "sub_acute", "version": 2,
+             "summary_text": "恢复期 v2", "created_at": "2026-01-01T00:03:00+00:00"},
+            {"stage_no": 2, "stage_type": "strengthen", "version": 1,
+             "summary_text": "强化期 v1", "created_at": "2026-01-01T00:05:00+00:00"},
+        ],
+        "decisions": [
+            {"stage_no": 1, "decision": "hold", "rationale": "动作质量还有隐患。",
+             "metrics": {"avg_overall_score": 78}, "created_at": "2026-01-01T00:02:00+00:00"},
+            {"stage_no": 1, "decision": "advance", "rationale": "本轮达标。",
+             "metrics": {"avg_overall_score": 86}, "created_at": "2026-01-01T00:04:00+00:00"},
+        ],
+    }
+    core_client.get_program_history = lambda pid: store["history"]
+    rounds = service.program_rounds("prog-1")
+    _check(rounds is not None and len(rounds["rounds"]) == 3, "聚合成三轮（含进行中）")
+    r1, r2, r3 = rounds["rounds"]
+    _check(r1["round_no"] == 1 and r1["decision"] == "hold", "第1轮收尾决策 hold")
+    _check([t["video_id"] for t in r1["trainings"]] == ["V1"], "训练按时间归入第1轮")
+    _check(r1["trainings"][0]["title"] == "直腿抬高", "训练项带动作名")
+    _check(r1["trainings_done"] == 1 and r1["avg_score"] == 92.0, "第1轮完成数与均分")
+    _check(r2["decision"] == "advance" and r2["ended_at"] is not None, "第2轮收尾决策 advance")
+    _check([t["video_id"] for t in r2["trainings"]] == ["V3"], "训练归入第2轮")
+    _check(r3["in_progress"] is True and r3["decision"] is None, "第3轮进行中（无决策）")
 
     print("\n[OK] K2/K3/K4 离线冒烟全部通过")
 

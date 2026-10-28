@@ -60,6 +60,7 @@ func NewRouter(
 		programs.POST("/programs/:id/status", programHandler.SetStatus)
 		programs.POST("/programs/:id/decision", programHandler.SaveDecision)
 		programs.GET("/programs/:id", programHandler.Get)
+		programs.GET("/programs/:id/history", programHandler.History)
 		programs.DELETE("/programs/:id", programHandler.Delete)
 	}
 

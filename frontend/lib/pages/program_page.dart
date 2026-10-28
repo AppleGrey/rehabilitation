@@ -11,6 +11,7 @@ import '../widgets/common_widgets.dart';
 import '../widgets/motion.dart';
 import 'assess_history_page.dart';
 import 'consult_report_page.dart';
+import 'program_history_page.dart';
 import 'rehab_video_page.dart';
 
 /// 「我的康复方案」——查看当前分期方案、逐项跟练与评估，做完一轮触发进阶决策。
@@ -220,6 +221,15 @@ class _ProgramPageState extends State<ProgramPage> {
     );
   }
 
+  /// 康复历程：按「轮」回看每轮训练录像与进阶决策。
+  void _openHistory() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => ProgramHistoryPage(programId: widget.programId),
+      ),
+    );
+  }
+
   Future<void> _viewResult(Map<String, dynamic> item) async {
     final training = item['training'] is Map
         ? Map<String, dynamic>.from(item['training'] as Map)
@@ -396,6 +406,14 @@ class _ProgramPageState extends State<ProgramPage> {
         leading: const AppBackButton(),
         title: const Text('我的康复方案'),
         actions: [
+          IconButton(
+            icon: const Icon(
+              Icons.timeline_rounded,
+              color: AppTheme.textSecondary,
+            ),
+            tooltip: '康复历程',
+            onPressed: _openHistory,
+          ),
           IconButton(
             icon: const Icon(
               Icons.assignment_outlined,
@@ -1330,7 +1348,13 @@ class _ProgramPageState extends State<ProgramPage> {
             ],
           ),
         ),
-        const SizedBox(height: 22),
+        const SizedBox(height: 10),
+        OutlinedButton.icon(
+          onPressed: _openHistory,
+          icon: const Icon(Icons.timeline_rounded, size: 19),
+          label: const Text('回顾康复历程'),
+        ),
+        const SizedBox(height: 10),
         ElevatedButton.icon(
           onPressed: () {
             Navigator.of(context).maybePop();

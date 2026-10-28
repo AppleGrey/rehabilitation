@@ -170,6 +170,18 @@ class ProgramApi {
         .toList();
   }
 
+  /// K2 康复历程：每一轮（一版阶段方案）的训练与进阶决策记录。
+  static Future<List<Map<String, dynamic>>> rounds(String programId) async {
+    final resp = await http
+        .get(Uri.parse('$_base/api/ai/program/$programId/rounds'), headers: AuthStore.headers())
+        .timeout(const Duration(seconds: 25));
+    final data = _decode(resp, '加载康复历程失败');
+    return (data['rounds'] as List<dynamic>? ?? [])
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
+  }
+
   /// K4：做完本轮训练 → 进阶决策。
   static Future<Map<String, dynamic>> progress(String programId) async {
     final resp = await http

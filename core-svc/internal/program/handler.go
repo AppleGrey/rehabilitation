@@ -74,6 +74,25 @@ func (h *Handler) Get(c *gin.Context) {
 	c.JSON(http.StatusOK, prog)
 }
 
+// History 康复历程：每一版阶段方案 + 全部进阶决策（ai-svc 聚合成轮次给 App）。
+func (h *Handler) History(c *gin.Context) {
+	programID := strings.TrimSpace(c.Param("id"))
+	if programID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"detail": "program id required"})
+		return
+	}
+	history, err := h.repo.GetProgramHistory(c.Request.Context(), programID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"detail": err.Error()})
+		return
+	}
+	if history == nil {
+		c.JSON(http.StatusNotFound, gin.H{"detail": "program not found"})
+		return
+	}
+	c.JSON(http.StatusOK, history)
+}
+
 func (h *Handler) GetBySession(c *gin.Context) {
 	sessionID := strings.TrimSpace(c.Param("session_id"))
 	if sessionID == "" {
