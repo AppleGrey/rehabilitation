@@ -35,6 +35,12 @@ logger = logging.getLogger(__name__)
 AGENDA_VERSION = 1
 
 _UNCERTAIN = ("不确定", "说不清", "不知道", "没注意", "记不清", "不清楚", "不太确定")
+# 用户在求助（不会描述/要选项）：这不是「不确定」，应换带选项的问法再引导一次
+_HELP_SEEKING = ("不知道怎么", "不会描述", "不好描述", "没法描述", "无法描述",
+                 "怎么描述", "怎么形容", "怎么选", "给点选项", "给些选项",
+                 "给一些选项", "给几个选项", "给个选项", "有什么选项", "有哪些选项")
+# 用户明确跳过：尊重意愿，记 unknown 继续，不再引导
+_SKIP = ("跳过", "不想说", "不想回答", "下一个问题", "先不问", "换一个问题")
 # 红旗自由文本兜底：不用单字「不」做否定——「伸不直」「走不了」恰恰是阳性描述
 _RF_NEG = ("都没有", "没有", "没出现", "没发生", "没试过", "不曾")
 _RF_AFF = ("有", "是", "会", "经常", "偶尔", "明显", "剧烈", "严重", "持续", "困难",
@@ -86,6 +92,18 @@ _AGGRAVATING = {
 }
 _AGGRAVATING_DEFAULT = ["活动时更疼", "某个动作特别疼", "久坐/久站后更明显", "不动也疼"]
 
+# 「疼痛位置」等自由作答议题的引导选项（用户说不清时用；LLM 可在此之上自己生成措辞）
+_LOCATION_CLARIFY = {
+    "膝关节": ["膝盖前面", "膝盖内侧", "膝盖外侧", "膝盖后面（腘窝）", "说不清"],
+    "肩部": ["肩膀外侧", "肩前侧", "肩后侧", "肩胛附近", "说不清"],
+    "颈部": ["后颈正中", "颈肩交界处", "脖子侧面", "说不太清"],
+    "腰部": ["腰椎正中", "腰两侧", "腰骶部（靠近屁股）", "说不太清"],
+    "踝关节": ["踝外侧", "踝内侧", "脚踝前面", "脚踝后面/跟腱", "说不清"],
+    "髋部": ["髋外侧", "腹股沟（大腿根）", "臀部深处", "说不清"],
+    "肘部": ["肘外侧", "肘内侧", "肘前侧", "说不清"],
+}
+_LOCATION_CLARIFY_DEFAULT = ["靠上一点", "靠下一点", "说不太清"]
+
 _FUNCTION = {
     "膝关节": ["走路/上下楼吃力", "蹲下起不来", "走久了要歇", "基本不受限"],
     "肩部": ["抬手/穿衣困难", "睡觉压到会醒", "拿东西吃力", "基本不受限"],
@@ -104,6 +122,7 @@ def _items_for(joint: str) -> list[dict]:
     assoc = _ASSOCIATED.get(joint) or _ASSOCIATED_DEFAULT
     aggr = _AGGRAVATING.get(joint) or _AGGRAVATING_DEFAULT
     func = _FUNCTION.get(joint) or _FUNCTION_DEFAULT
+    location_clarify = _LOCATION_CLARIFY.get(joint) or _LOCATION_CLARIFY_DEFAULT
     short = joint.replace("关节", "") or "身体"
     return [
         dict(key="red_flag", intent="red_flag", title="红旗排查", slot_id="agenda_redflag",
@@ -112,11 +131,13 @@ def _items_for(joint: str) -> list[dict]:
         dict(key="onset_mechanism", intent="stage", title="起病与诱因", slot_id="agenda_onset",
              category="D",
              question=f"{short}的情况最早是怎么出现的？大概持续多久了？有没有受过伤或做过手术？",
-             answer_type="free_text", options=[], seed_fields=("onset", "mechanism")),
+             answer_type="free_text", options=[], seed_fields=("onset", "mechanism"),
+             clarify_options=["慢慢出现的，没有明显受伤", "一次受伤/扭到之后开始的",
+                              "手术之后开始的", "说不清"]),
         dict(key="pain_location", intent="differential", title="疼痛位置", slot_id="agenda_pain_location",
              category="D",
              question=f"{short}具体是哪个位置不舒服？范围大不大，会不会往别的地方串？",
-             answer_type="free_text", options=[]),
+             answer_type="free_text", options=[], clarify_options=list(location_clarify)),
         dict(key="aggravating", intent="differential", title="加重与缓解", slot_id="agenda_aggravating",
              category="D",
              question="做什么的时候最难受？反过来，什么姿势或处理会让它轻一点？",
@@ -141,7 +162,9 @@ def _items_for(joint: str) -> list[dict]:
         dict(key="history", intent="plan_constraint", title="既往处理", slot_id="agenda_history",
              category="D",
              question="这个问题之前看过医生或做过检查吗？做过哪些处理，效果怎么样？",
-             answer_type="free_text", options=[]),
+             answer_type="free_text", options=[],
+             clarify_options=["没看过，也没检查过", "看过医生/做过检查", "自己贴膏药/按摩拉伸过",
+                              "说不清"]),
         # P 槽复用既有 slot_id（pain_score），出方案/视频匹配直接可用
         dict(key="pain_score", intent="differential", title="疼痛评分", slot_id="pain_score",
              category="P",
@@ -150,7 +173,9 @@ def _items_for(joint: str) -> list[dict]:
         dict(key="goal", intent="function", title="康复目标", slot_id="agenda_goal",
              category="D",
              question="你最希望通过康复训练改善的是哪件事？比如走路、上下楼、抬手拿东西……",
-             answer_type="free_text", options=[], seed_fields=("goal",)),
+             answer_type="free_text", options=[], seed_fields=("goal",),
+             clarify_options=["日常活动不受限就行", "上下楼/走路不疼", "恢复运动锻炼",
+                              "工作生活不受影响", "说不太清"]),
     ]
 
 
@@ -236,6 +261,25 @@ def _uncovered(session: StrategySession) -> list[dict]:
     return [it for it in (session.agenda or {}).get("items") or [] if it.get("status") == "missing"]
 
 
+def find_item(session: StrategySession, slot_id: Optional[str]) -> Optional[dict]:
+    """按 slot_id 找议程主条目（子问题/adhoc 不在其中）。"""
+    if not slot_id:
+        return None
+    for it in (session.agenda or {}).get("items") or []:
+        if it.get("slot_id") == slot_id:
+            return it
+    return None
+
+
+def take_pending_clarify(session: StrategySession) -> Optional[str]:
+    """取出并清空「需要引导式重问」的议题 slot_id。"""
+    agenda = session.agenda or {}
+    sid = agenda.get("pending_clarify")
+    if agenda:
+        agenda["pending_clarify"] = None
+    return sid or None
+
+
 def eta(session: StrategySession) -> tuple[int, int]:
     """预计还需几个问题（按覆盖度阈值折算，受议程预算约束；不含粗问轮）。"""
     covered, total = covered_count(session)
@@ -287,26 +331,41 @@ def pick_next(session: StrategySession) -> Optional[dict]:
 
 def apply_answer(session: StrategySession, current: Optional[dict], answer: str) -> bool:
     """
-    把用户对「上一问」的回答确定性落槽（不依赖 LLM-A 是否抽到），并把议程条目标记覆盖。
+    把用户对「上一问」的回答确定性落槽，并把议程条目标记覆盖。
     返回 True 表示这是红旗题且回答为肯定（应转诊）。
+
+    两种特殊情况（解决「答『不知道怎么描述』却直接跳过该议题」）：
+      - 明确跳过（不想说/换一题）→ 记 unknown、继续，不再引导；
+      - 首次说不清/求助要选项（非红旗题）→ 不记 unknown、不标覆盖，
+        下一轮换「带选项的引导问法」对该议题再问一次（每议题至多一次）。
     """
     if not current:
         return False
     a = (answer or "").strip()
-    uncertain = any(k in a for k in _UNCERTAIN)
     sid = current.get("slot_id")
     slot = session.slot(sid) if sid else None
+    item = None if current.get("is_adhoc") else find_item(session, sid)
+
+    skip = any(k in a for k in _SKIP)
+    help_seeking = any(k in a for k in _HELP_SEEKING)
+    uncertain = any(k in a for k in _UNCERTAIN) or help_seeking or skip
+
+    # 首次「说不清/要选项」：先引导（换带选项的问法）一次，不着急判不确定
+    if (uncertain and not skip and item is not None
+            and item.get("intent") not in ("red_flag", "contraindication")
+            and not item.get("clarify_used")):
+        session.agenda["pending_clarify"] = sid
+        return False
+
     if slot is not None and slot.status != SlotStatus.KNOWN.value:
         if uncertain:
             slot.status = SlotStatus.UNKNOWN.value
         else:
             slot.status = SlotStatus.KNOWN.value
             slot.value = a
-    if not current.get("is_sub") and not current.get("is_adhoc"):
-        for it in (session.agenda or {}).get("items") or []:
-            if it.get("slot_id") == sid:
-                it["status"] = "covered"
-                it["value"] = a[:120]
+    if item is not None:
+        item["status"] = "covered"
+        item["value"] = a[:120]
     if current.get("intent") in ("red_flag", "contraindication") and not uncertain:
         return _redflag_positive(session, sid, a)
     return False

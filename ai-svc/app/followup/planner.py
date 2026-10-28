@@ -410,17 +410,24 @@ def _ask_next_agenda(session: StrategySession, *, prev_answer: Optional[str],
     if stop.outcome == "best_effort_impression":
         return _best_effort(session, stop.reason or "", trace=trace)
 
-    item = agenda.pick_next(session)
+    # 引导式重问：上一答是「说不清/要选项」时，换成带选项的问法再问一次同一议题
+    clarify_slot = agenda.take_pending_clarify(session)
+    item = agenda.find_item(session, clarify_slot) if clarify_slot else None
+    clarify = item is not None
+    if item is None:
+        item = agenda.pick_next(session)
     if item is None:
         if not stopping.missing_safety_slots(session):
             return _to_plan(session, trace=trace)
         return _best_effort(session, "议程已问完", trace=trace)
 
-    phrased = agenda_phraser.phrase(session, item, recent_text=prev_answer or "", trace=trace)
+    phrased = agenda_phraser.phrase(session, item, recent_text=prev_answer or "",
+                                    clarify=clarify, trace=trace)
 
-    # ad_hoc 确定性闸门：红旗未清零不采纳；红旗议题本身不插话；不可重复；每会话限次
+    # ad_hoc 确定性闸门：红旗未清零不采纳；红旗议题不插话；引导问不插话；不可重复；每会话限次
     is_adhoc = False
-    if (phrased.ad_hoc
+    if (not clarify
+            and phrased.ad_hoc
             and not item.get("is_sub")
             and item.get("intent") != "red_flag"
             and not stopping.missing_safety_slots(session)
@@ -437,8 +444,16 @@ def _ask_next_agenda(session: StrategySession, *, prev_answer: Optional[str],
                                      "intent": "ad_hoc", "slot_id": None}
     else:
         text = (phrased.question_text or "").strip() or str(item.get("question") or "")
-        options = list(phrased.options or item.get("options") or [])
-        atype = phrased.answer_type or item.get("answer_type") or "free_text"
+        if clarify:
+            # 引导问：必须带备选选项（LLM 选项 → 条目 clarify_options → 条目原选项）
+            fallback_opts = list(item.get("clarify_options") or item.get("options") or [])
+            options = list(phrased.options or fallback_opts)
+            atype = ("single_choice" if options
+                     else (phrased.answer_type or item.get("answer_type") or "free_text"))
+            item["clarify_used"] = True
+        else:
+            options = list(phrased.options or item.get("options") or [])
+            atype = phrased.answer_type or item.get("answer_type") or "free_text"
         if item.get("is_sub"):
             session.agenda["pending_sub"] = [
                 sq for sq in session.agenda.get("pending_sub") or []

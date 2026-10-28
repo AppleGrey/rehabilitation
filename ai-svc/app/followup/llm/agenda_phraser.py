@@ -51,12 +51,30 @@ def _known_state_text(session: StrategySession) -> str:
 
 
 def phrase(session: StrategySession, item: dict, *, recent_text: str = "",
-           trace: Optional[list] = None) -> PhrasedQuestion:
-    """把议程条目（或子问题）措辞成问句。不改变选题；失败/异常一律回落模板。"""
-    fallback = PhrasedQuestion(
-        question_text=str(item.get("question") or "").strip(),
-        options=list(item.get("options") or []),
-        answer_type=item.get("answer_type"),
+           clarify: bool = False, trace: Optional[list] = None) -> PhrasedQuestion:
+    """
+    把议程条目（或子问题）措辞成问句。不改变选题；失败/异常一律回落模板。
+    clarify=True：用户刚表示不会描述/要选项，改用「带 3~4 个常见选项」的引导问法重问该话题。
+    """
+    clarify_opts = list(item.get("clarify_options") or item.get("options") or [])
+    if clarify:
+        fallback = PhrasedQuestion(
+            question_text=("没关系，选一个最接近的就行：" + str(item.get("question") or "")).strip(),
+            options=clarify_opts,
+            answer_type="single_choice" if clarify_opts else item.get("answer_type"),
+        )
+    else:
+        fallback = PhrasedQuestion(
+            question_text=str(item.get("question") or "").strip(),
+            options=list(item.get("options") or []),
+            answer_type=item.get("answer_type"),
+        )
+    clarify_hint = (
+        "\n【重要】用户刚才表示不会描述、希望给选项（原话："
+        f"{recent_text or '……'}）。请换一种更好回答的问法：给出 3~4 个最常见、彼此不重叠的选项，"
+        "语气温和，并明确「选最接近的一项就行，也可以自己输入」；answer_type 用 single_choice；"
+        f"可在这些备选基础上补充或精简：{clarify_opts or '（无，请自行生成）'}\n"
+        if clarify else ""
     )
     try:
         llm = make_json_llm(temperature=consult_profile().temperature, max_tokens=500)
@@ -68,7 +86,7 @@ def phrase(session: StrategySession, item: dict, *, recent_text: str = "",
             f"【必须了解的话题】{item.get('title') or ''}：{item.get('question') or ''}\n"
             f"【期望回答形式】{item.get('answer_type') or 'free_text'}"
             f"（备选选项：{item.get('options') or '无'}）\n"
-            f"【用户最近一句】{recent_text or '（无）'}\n\n"
+            f"【用户最近一句】{recent_text or '（无）'}\n{clarify_hint}\n"
             '请输出 JSON：{"question_text":"...","options":[],"answer_type":"...",'
             '"ad_hoc":null,"ad_hoc_answer_type":null,"ad_hoc_options":[],"ad_hoc_reason":""}'
         )
@@ -84,7 +102,7 @@ def phrase(session: StrategySession, item: dict, *, recent_text: str = "",
         if phrased.answer_type is None:
             phrased.answer_type = fallback.answer_type
         if (not phrased.options and fallback.options
-                and phrased.answer_type in ("single_choice", "multi_choice")):
+                and (clarify or phrased.answer_type in ("single_choice", "multi_choice"))):
             phrased.options = fallback.options
         if trace is not None:
             trace.append({"t": "llm_b2", "action": "议题措辞(LLM-B')", "raw": raw[:600],

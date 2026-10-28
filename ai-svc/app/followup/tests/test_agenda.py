@@ -63,7 +63,14 @@ def _install_stubs(*, phrase=None) -> None:
     extractor.extract_seed = _fake_extract_seed
     extractor.perceive = lambda session, user_message, kg_context="", trace=None: PerceptResult()
 
-    def _default_phrase(session, item, *, recent_text="", trace=None):
+    def _default_phrase(session, item, *, recent_text="", clarify=False, trace=None):
+        if clarify:
+            opts = list(item.get("clarify_options") or item.get("options") or [])
+            return PhrasedQuestion(
+                question_text="没关系，选一个最接近的就行：" + (item.get("question") or ""),
+                options=opts,
+                answer_type="single_choice" if opts else (item.get("answer_type") or "free_text"),
+            )
         return PhrasedQuestion(
             question_text=item.get("question") or "",
             options=list(item.get("options") or []),
@@ -111,6 +118,19 @@ def main() -> None:
     _check((s.agenda["current"] or {}).get("slot_id") == "agenda_pain_location",
            "下一问按议程顺序 = 疼痛位置")
 
+    print("2b. 用户「不知道怎么描述/要选项」→ 不判不确定，换带选项的问法引导一次")
+    ev = planner.consult_turn(s, "我不知道怎么描述，你能给我一些选项吗", "……")
+    item_loc = next(it for it in s.agenda["items"] if it["slot_id"] == "agenda_pain_location")
+    _check(item_loc["status"] == "missing", "疼痛位置未被标成已覆盖")
+    _check(s.slot("agenda_pain_location").status == "missing", "槽位未被记成『不确定』")
+    _check((s.agenda["current"] or {}).get("slot_id") == "agenda_pain_location",
+           "下一问仍停在疼痛位置（重问）")
+    spec = [e for e in ev if e.get("type") == "input_spec"]
+    _check(bool(spec) and bool(spec[0].get("options")), "引导问带了候选选项")
+    planner.consult_turn(s, "膝盖前面", "……")
+    _check(item_loc["status"] == "covered" and s.slot("agenda_pain_location").status == "known",
+           "选了一个选项后该议题正常覆盖")
+
     guard = 0
     while (s.agenda["current"] or {}).get("slot_id") != "agenda_associated" and guard < 10:
         planner.consult_turn(s, _answer_for(s), "……")
@@ -146,7 +166,7 @@ def main() -> None:
     n = {"i": 0}
     words = ["发烧", "体重明显变化", "夜里盗汗", "食欲下降", "脚踝也肿"]
 
-    def _phrase_with_adhoc(session, item, *, recent_text="", trace=None):
+    def _phrase_with_adhoc(session, item, *, recent_text="", clarify=False, trace=None):
         n["i"] += 1
         return PhrasedQuestion(
             question_text=item.get("question") or "",
