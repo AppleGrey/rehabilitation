@@ -56,6 +56,7 @@ class FollowLiveStageState extends State<FollowLiveStage> {
   double _score = 0;
   Map<String, double?> _angles = const {};
   bool _inflight = false;
+  DateTime? _inflightSince;
   bool _closed = false;
   InputImageRotation? _lastRotation;
 
@@ -91,9 +92,19 @@ class FollowLiveStageState extends State<FollowLiveStage> {
   }
 
   Future<void> _onFrame(CameraImage image) async {
-    if (_closed || _inflight) return;
+    if (_closed) return;
+    if (_inflight) {
+      // 看门狗：单帧处理偶发挂起（解码/检测）时不永久阻塞后续帧
+      final since = _inflightSince;
+      if (since != null &&
+          DateTime.now().difference(since) < const Duration(seconds: 3)) {
+        return;
+      }
+      _inflight = false;
+    }
     final camera = widget.camera;
     _inflight = true;
+    _inflightSince = DateTime.now();
     ui.Image? frameImage;
     try {
       final capturedAt = DateTime.now();
@@ -191,10 +202,15 @@ class FollowLiveStageState extends State<FollowLiveStage> {
         .round()
         .clamp(0, segments)
         .toInt();
+    final recording = widget.camera.value.isRecordingVideo;
     return Stack(
       fit: StackFit.expand,
       children: [
-        if (image == null)
+        if (recording && !widget.camera.value.isPreviewPaused)
+          // 录制中：原生预览持续渲染，保证用户画面实时不卡帧；
+          // 骨架/实时分依赖录像回调帧，能拿到就更新，拿不到也不影响画面
+          CameraPreview(widget.camera)
+        else if (image == null)
           widget.camera.value.isPreviewPaused
               ? const Center(
                   child: Text(

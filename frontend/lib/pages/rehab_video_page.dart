@@ -250,6 +250,8 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
       _videoCtrl = VideoPlayerController.networkUrl(Uri.parse(url));
       await _videoCtrl!.initialize();
       if (!mounted) return;
+      // 演示视频只作动作示范，不播放声音
+      await _videoCtrl!.setVolume(0);
       setState(() {
         _videoReady = true;
         _videoLoadError = null;
@@ -396,11 +398,9 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
     try {
       _startDemoLoop();
       await _liveKey.currentState?.releaseStreamForRecording();
-      // 与 feat/demo 相同：安卓先暂停原生预览，录像回调才能继续送帧。
-      // 否则插件会停掉分析帧，用户画面停在最后一帧，演示视频仍在播放。
-      if (Platform.isAndroid) {
-        await _camCtrl!.pausePreview();
-      }
+      // 录制期间不再暂停原生预览（历史上「暂停预览 + 录像回调送帧」在部分机型
+      // 会让用户画面卡在最后一帧）。跟做画面交给 CameraPreview 实时渲染；
+      // 平台若仍回调录制帧，骨架与实时分照常更新，回调不到也不影响画面实时性。
       await _camCtrl!.startVideoRecording(
         onAvailable: (image) => _liveKey.currentState?.handleFrame(image),
         enablePersistentRecording: false,
@@ -415,11 +415,6 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
       AppFeedback.start();
       setState(() => _phase = _Phase.recording);
     } catch (e) {
-      if (Platform.isAndroid && _camCtrl != null) {
-        try {
-          await _camCtrl!.resumePreview();
-        } catch (_) {}
-      }
       setState(() {
         _uploadError = '录制启动失败：$e';
         _phase = _Phase.result;
@@ -1236,6 +1231,7 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF4CAF50),
                             foregroundColor: Colors.white,
+                            minimumSize: const Size(0, 52),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -1257,6 +1253,9 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.white70,
                           side: const BorderSide(color: Colors.white38),
+                          // 主题的 minimumSize 是「无限宽」，放进 Row 会撑爆整行；
+                          // 显式归零，保证「取消」与「训练完成」都能正常渲染与点击
+                          minimumSize: const Size(0, 52),
                           padding: const EdgeInsets.symmetric(
                             vertical: 14,
                             horizontal: 16,
@@ -1707,6 +1706,7 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.white54,
                     side: const BorderSide(color: Colors.white24),
+                    minimumSize: const Size(0, 46),
                   ),
                   onPressed: () async {
                     final prefs = await SharedPreferences.getInstance();
@@ -1726,6 +1726,7 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primary,
                     foregroundColor: Colors.white,
+                    minimumSize: const Size(0, 46),
                   ),
                   onPressed: widget.onBack,
                   icon: const Icon(Icons.home),
