@@ -59,6 +59,12 @@ class FollowLiveStageState extends State<FollowLiveStage> {
   DateTime? _inflightSince;
   bool _closed = false;
   InputImageRotation? _lastRotation;
+  DateTime? _lastFrameAt;
+  int _staleTicks = 0;
+  bool _resumeAttempted = false;
+  Timer? _stallTicker;
+  bool? _tickPaused;
+  bool? _tickStale;
 
   bool get _scored => motionRuleEnablesLiveScore(widget.rule);
 
@@ -66,6 +72,52 @@ class FollowLiveStageState extends State<FollowLiveStage> {
   void initState() {
     super.initState();
     unawaited(ensureStreaming());
+    // 巡检：录制中预览会被暂停（CameraX 仅此配置允许录像与送帧并发），
+    // 一旦送帧中断超过 2 秒，自动恢复原生预览，保证画面不会一直冻结。
+    _stallTicker = Timer.periodic(
+      const Duration(seconds: 1),
+      (_) => _checkStall(),
+    );
+  }
+
+  bool _framesFresh() {
+    final at = _lastFrameAt;
+    return at != null &&
+        DateTime.now().difference(at) < const Duration(seconds: 2);
+  }
+
+  void _checkStall() {
+    if (!mounted || _closed) return;
+    final camera = widget.camera;
+    if (!camera.value.isInitialized) return;
+    final paused = camera.value.isPreviewPaused;
+    final stale = !_framesFresh();
+    // 仅在录制中兜底：预览是录制前被主动暂停的（CameraX 仅此配置允许
+    // 录像与送帧并发）。停帧后连续观察几个周期才动作，给录像启动阶段
+    // 的首帧延迟留出余量；确认送帧链路断了才恢复原生预览保证画面实时。
+    if (camera.value.isRecordingVideo && paused && stale) {
+      _staleTicks += 1;
+    } else {
+      _staleTicks = 0;
+    }
+    if (_staleTicks >= 3 && !_resumeAttempted) {
+      _resumeAttempted = true;
+      unawaited(
+        camera
+            .resumePreview()
+            .then((_) {
+              if (mounted && !_closed) setState(() {});
+            })
+            .catchError((Object error) {
+              debugPrint('follow resumePreview failed: $error');
+            }),
+      );
+    }
+    if (paused != _tickPaused || stale != _tickStale) {
+      _tickPaused = paused;
+      _tickStale = stale;
+      setState(() {});
+    }
   }
 
   Future<void> ensureStreaming() async {
@@ -79,7 +131,9 @@ class FollowLiveStageState extends State<FollowLiveStage> {
     await camera.startImageStream(handleFrame);
   }
 
-  /// 录像和图像流不能同时开。停掉预览流后，由录像回调继续送帧。
+  /// 录像前的准备：停掉预览期的图像流订阅，之后由录像回调继续送帧。
+  /// 注意：CameraX 仅在预览暂停时才允许录像与送帧并发，调用方需在
+  /// startVideoRecording 前先 pausePreview（页面在 _startRecording 里已处理）。
   Future<void> releaseStreamForRecording() async {
     final camera = widget.camera;
     if (camera.value.isStreamingImages) {
@@ -157,6 +211,8 @@ class FollowLiveStageState extends State<FollowLiveStage> {
         _landmarks = drawLandmarks;
         _detected = tracked.isNotEmpty;
         _angles = angles;
+        _lastFrameAt = DateTime.now();
+        _resumeAttempted = false;
         if (frame != null) {
           final focus = widget.focusPeakId;
           final target = focus != null && rule != null
@@ -178,6 +234,7 @@ class FollowLiveStageState extends State<FollowLiveStage> {
   @override
   void dispose() {
     _closed = true;
+    _stallTicker?.cancel();
     final camera = widget.camera;
     if (camera.value.isInitialized && camera.value.isStreamingImages) {
       unawaited(camera.stopImageStream());
@@ -202,24 +259,14 @@ class FollowLiveStageState extends State<FollowLiveStage> {
         .round()
         .clamp(0, segments)
         .toInt();
-    final recording = widget.camera.value.isRecordingVideo;
+    final paused = widget.camera.value.isPreviewPaused;
+    // 渲染策略：帧新鲜（或原生预览被暂停、暂时拿不到实时画面）时用自绘同步画面，
+    // 画面/骨架/实时分同源；送帧中断且原生预览可用时退回原生实时预览（Center
+    // 保证按相机比例居中，不被拉伸变形），送帧恢复后自动切回同步画面。
     return Stack(
       fit: StackFit.expand,
       children: [
-        if (recording && !widget.camera.value.isPreviewPaused)
-          // 录制中：原生预览持续渲染，保证用户画面实时不卡帧；
-          // 骨架/实时分依赖录像回调帧，能拿到就更新，拿不到也不影响画面
-          CameraPreview(widget.camera)
-        else if (image == null)
-          widget.camera.value.isPreviewPaused
-              ? const Center(
-                  child: Text(
-                    '正在连接摄像头…',
-                    style: TextStyle(color: Colors.white70),
-                  ),
-                )
-              : CameraPreview(widget.camera)
-        else
+        if (image != null && (_framesFresh() || paused))
           SyncedPosePreview(
             image: image,
             landmarks: _landmarks,
@@ -227,7 +274,16 @@ class FollowLiveStageState extends State<FollowLiveStage> {
             detected: _detected,
             focusJoints: rule == null ? const [] : focusJointsFor(rule),
             color: tint,
-          ),
+          )
+        else if (paused)
+          const Center(
+            child: Text(
+              '正在连接摄像头…',
+              style: TextStyle(color: Colors.white70),
+            ),
+          )
+        else
+          Center(child: CameraPreview(widget.camera)),
         if (widget.note != null && !scored)
           Positioned(
             top: 12,

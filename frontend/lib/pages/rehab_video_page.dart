@@ -339,6 +339,14 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
   // ── 初始化摄像头 ─────────────────────────────────────────────────────────
 
   Future<void> _initCamera() async {
+    // 重试/重录时旧控制器可能仍在：先释放，避免相机被两个控制器同时占用
+    final old = _camCtrl;
+    if (old != null) {
+      _camCtrl = null;
+      try {
+        await old.dispose();
+      } catch (_) {}
+    }
     final cameras = await availableCameras();
     if (cameras.isEmpty) throw Exception('没有可用的摄像头');
 
@@ -398,9 +406,15 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
     try {
       _startDemoLoop();
       await _liveKey.currentState?.releaseStreamForRecording();
-      // 录制期间不再暂停原生预览（历史上「暂停预览 + 录像回调送帧」在部分机型
-      // 会让用户画面卡在最后一帧）。跟做画面交给 CameraPreview 实时渲染；
-      // 平台若仍回调录制帧，骨架与实时分照常更新，回调不到也不影响画面实时性。
+      // CameraX 只在「预览已暂停」时才允许录像同时送帧：非 LEVEL_3 机型若
+      // 预览未暂停，插件会静默关闭送帧回调，骨架和实时分就停住了（表现为
+      // 骨架消失、右侧分值不动）。暂停后画面仍由帧驱动渲染；万一送帧中断，
+      // 跟做画面会自动恢复原生预览兜底，不再出现整屏冻结。
+      try {
+        await _camCtrl!.pausePreview();
+      } catch (_) {
+        // 个别机型暂停失败：继续录像，只是录制中拿不到骨架帧
+      }
       await _camCtrl!.startVideoRecording(
         onAvailable: (image) => _liveKey.currentState?.handleFrame(image),
         enablePersistentRecording: false,
@@ -415,6 +429,10 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
       AppFeedback.start();
       setState(() => _phase = _Phase.recording);
     } catch (e) {
+      // 录制没起来时恢复预览，避免界面停留在暂停态
+      try {
+        await _camCtrl?.resumePreview();
+      } catch (_) {}
       setState(() {
         _uploadError = '录制启动失败：$e';
         _phase = _Phase.result;
