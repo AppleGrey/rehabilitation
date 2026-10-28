@@ -4,6 +4,7 @@ import 'dart:io' show Platform;
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:video_player/video_player.dart';
@@ -23,7 +24,16 @@ import '../widgets/follow_live_stage.dart';
 //                                                          ↓
 //                                                        result
 
-enum _Phase { loading, watching, preview, countdown, recording, uploading, polling, result }
+enum _Phase {
+  loading,
+  watching,
+  preview,
+  countdown,
+  recording,
+  uploading,
+  polling,
+  result,
+}
 
 // ── 评估结果 ──────────────────────────────────────────────────────────────────
 
@@ -109,6 +119,12 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
   MotionStandard? _rule;
   String? _ruleNote;
   bool _pageDisposed = false;
+  bool _preparingCamera = false;
+  String? _cameraError;
+
+  // ── 录制计时，帮助用户控制训练节奏 ───────────────────────────────────────
+  Duration _recordingDuration = Duration.zero;
+  Timer? _recordingTimer;
 
   // ── 倒计时 ───────────────────────────────────────────────────────────────
   int _countdownValue = 3;
@@ -168,7 +184,9 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
     // 始终优先走 core-svc 播放接口，避免历史缓存里旧的 /assets/videos URL。
     var url = widget.videoId != null
         ? resolveBackendUrl('/api/videos/${widget.videoId}/play')
-        : (widget.videoUrl != null ? resolveBackendUrl(widget.videoUrl!) : null);
+        : (widget.videoUrl != null
+              ? resolveBackendUrl(widget.videoUrl!)
+              : null);
     if (url == null) {
       setState(() {
         _phase = _Phase.watching;
@@ -200,13 +218,31 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
   // ── 进入摄像头预览（点击"准备好了"后） ──────────────────────────────────
 
   Future<void> _enterPreview() async {
+    if (_preparingCamera) return;
     _videoCtrl?.pause();
-    await _initCamera();
-    if (!mounted) return;
-    await _loadMotionRule();
-    if (!mounted) return;
-    _startDemoLoop();
-    setState(() => _phase = _Phase.preview);
+    setState(() {
+      _preparingCamera = true;
+      _cameraError = null;
+    });
+    try {
+      await _initCamera();
+      if (!mounted) return;
+      await _loadMotionRule();
+      if (!mounted) return;
+      _startDemoLoop();
+      setState(() {
+        _phase = _Phase.preview;
+        _preparingCamera = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      await _camCtrl?.dispose();
+      _camCtrl = null;
+      setState(() {
+        _cameraError = '暂时无法打开摄像头。请确认已允许相机和麦克风权限，并关闭其他正在使用相机的应用后重试。';
+        _preparingCamera = false;
+      });
+    }
   }
 
   Future<void> _loadMotionRule() async {
@@ -251,7 +287,7 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
 
   Future<void> _initCamera() async {
     final cameras = await availableCameras();
-    if (cameras.isEmpty) return;
+    if (cameras.isEmpty) throw Exception('没有可用的摄像头');
 
     final front = cameras.firstWhere(
       (c) => c.lensDirection == CameraLensDirection.front,
@@ -305,6 +341,13 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
         onAvailable: (image) => _liveKey.currentState?.handleFrame(image),
         enablePersistentRecording: false,
       );
+      _recordingDuration = Duration.zero;
+      _recordingTimer?.cancel();
+      _recordingTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+        if (mounted) {
+          setState(() => _recordingDuration += const Duration(seconds: 1));
+        }
+      });
       setState(() => _phase = _Phase.recording);
     } catch (e) {
       if (Platform.isAndroid && _camCtrl != null) {
@@ -323,6 +366,8 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
 
   Future<void> _stopAndUpload() async {
     if (_camCtrl == null) return;
+    _recordingTimer?.cancel();
+    HapticFeedback.mediumImpact();
     setState(() => _phase = _Phase.uploading);
 
     try {
@@ -360,28 +405,33 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
         req = http.MultipartRequest(
           'POST',
           Uri.parse('$kBackendBase/api/ai/program/$pid/baseline'),
-        )
-          ..fields['video_id'] = widget.videoId ?? '';
+        )..fields['video_id'] = widget.videoId ?? '';
         if (widget.sessionId != null && widget.sessionId!.isNotEmpty) {
           req.fields['session_id'] = widget.sessionId!;
         }
       } else {
-        req = http.MultipartRequest(
-          'POST',
-          Uri.parse('$kBackendBase/api/assess/motion'),
-        )
-          ..fields['session_id'] = widget.sessionId ?? ''
-          ..fields['standard_video_id'] = widget.videoId ?? ''
-          ..fields['program_id'] = widget.programId ?? ''
-          ..fields['stage_no'] = '${widget.stageNo ?? 1}'
-          ..fields['video_id'] = widget.videoId ?? ''
-          ..fields['purpose'] = 'training';
+        req =
+            http.MultipartRequest(
+                'POST',
+                Uri.parse('$kBackendBase/api/assess/motion'),
+              )
+              ..fields['session_id'] = widget.sessionId ?? ''
+              ..fields['standard_video_id'] = widget.videoId ?? ''
+              ..fields['program_id'] = widget.programId ?? ''
+              ..fields['stage_no'] = '${widget.stageNo ?? 1}'
+              ..fields['video_id'] = widget.videoId ?? ''
+              ..fields['purpose'] = 'training';
       }
       if (notes.isNotEmpty) req.fields['user_notes'] = notes;
       if (pain != null) req.fields['pain_reported'] = '$pain';
       req.headers.addAll(AuthStore.headers());
-      req.files.add(await http.MultipartFile.fromPath(
-          'user_video', videoPath, filename: 'user_training.mp4'));
+      req.files.add(
+        await http.MultipartFile.fromPath(
+          'user_video',
+          videoPath,
+          filename: 'user_training.mp4',
+        ),
+      );
       final streamed = await req.send().timeout(const Duration(minutes: 2));
       await streamed.stream.drain<void>();
       if (!mounted) return;
@@ -415,16 +465,22 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(children: [
-                  const Text('这个动作有多疼？', style: TextStyle(fontSize: 14)),
-                  const Spacer(),
-                  Text(painTouched ? '${pain.round()} / 10' : '未选',
+                Row(
+                  children: [
+                    const Text('这个动作有多疼？', style: TextStyle(fontSize: 14)),
+                    const Spacer(),
+                    Text(
+                      painTouched ? '${pain.round()} / 10' : '未选',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: painTouched ? AppTheme.primary : AppTheme.textTertiary,
-                      )),
-                ]),
+                        color: painTouched
+                            ? AppTheme.primary
+                            : AppTheme.textTertiary,
+                      ),
+                    ),
+                  ],
+                ),
                 Slider(
                   value: pain,
                   min: 0,
@@ -436,8 +492,13 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
                     painTouched = true;
                   }),
                 ),
-                const Text('0 = 完全不疼，3 以内可继续，超过 3 建议降低强度',
-                    style: TextStyle(fontSize: 11.5, color: AppTheme.textTertiary)),
+                const Text(
+                  '0 = 完全不疼，3 以内可继续，超过 3 建议降低强度',
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    color: AppTheme.textTertiary,
+                  ),
+                ),
                 const SizedBox(height: 14),
                 TextField(
                   controller: controller,
@@ -485,18 +546,21 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
     }
 
     try {
-      final request = http.MultipartRequest(
-        'POST',
-        Uri.parse('$kBackendBase/api/assess/motion'),
-      )
-        ..fields['session_id'] = sid
-        ..fields['standard_video_id'] = vid
-        ..headers.addAll(AuthStore.headers())
-        ..files.add(await http.MultipartFile.fromPath(
-          'user_video',
-          videoPath,
-          filename: 'user_training.mp4',
-        ));
+      final request =
+          http.MultipartRequest(
+              'POST',
+              Uri.parse('$kBackendBase/api/assess/motion'),
+            )
+            ..fields['session_id'] = sid
+            ..fields['standard_video_id'] = vid
+            ..headers.addAll(AuthStore.headers())
+            ..files.add(
+              await http.MultipartFile.fromPath(
+                'user_video',
+                videoPath,
+                filename: 'user_training.mp4',
+              ),
+            );
 
       final streamed = await request.send().timeout(const Duration(minutes: 2));
       final body = await streamed.stream.bytesToString();
@@ -560,8 +624,10 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
   Future<Map<String, dynamic>?> _fetchTaskStatus(String taskId) async {
     try {
       final resp = await http
-          .get(Uri.parse('$kBackendBase/api/assess/status/$taskId'),
-              headers: AuthStore.headers())
+          .get(
+            Uri.parse('$kBackendBase/api/assess/status/$taskId'),
+            headers: AuthStore.headers(),
+          )
           .timeout(const Duration(seconds: 10));
       if (resp.statusCode == 200) {
         return jsonDecode(resp.body) as Map<String, dynamic>;
@@ -594,6 +660,7 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
   void dispose() {
     _pageDisposed = true;
     _countdownTimer?.cancel();
+    _recordingTimer?.cancel();
     _pollTimer?.cancel();
     _videoCtrl?.dispose();
     _camCtrl?.dispose();
@@ -604,27 +671,40 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-          onPressed: widget.onBack,
-        ),
-        title: Text(
-          widget.videoTitle ?? '康复训练',
-          style: const TextStyle(color: Colors.white, fontSize: 16),
-        ),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light.copyWith(
+        statusBarColor: Colors.transparent,
+        systemNavigationBarColor: Colors.black,
+        systemNavigationBarIconBrightness: Brightness.light,
       ),
-      body: switch (_phase) {
-        _Phase.loading   => const Center(child: CircularProgressIndicator(color: AppTheme.primary)),
-        _Phase.watching  => _buildWatching(),
-        _Phase.preview || _Phase.countdown || _Phase.recording => _buildLiveSession(),
-        _Phase.uploading => _buildUploading(),
-        _Phase.polling   => _buildPolling(),
-        _Phase.result    => _buildResult(),
-      },
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        appBar: AppBar(
+          backgroundColor: Colors.black,
+          foregroundColor: Colors.white,
+          systemOverlayStyle: SystemUiOverlayStyle.light,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+            onPressed: widget.onBack,
+          ),
+          title: Text(
+            widget.videoTitle ?? '康复训练',
+            style: const TextStyle(color: Colors.white, fontSize: 16),
+          ),
+        ),
+        body: switch (_phase) {
+          _Phase.loading => const Center(
+            child: CircularProgressIndicator(color: AppTheme.primary),
+          ),
+          _Phase.watching => _buildWatching(),
+          _Phase.preview ||
+          _Phase.countdown ||
+          _Phase.recording => _buildLiveSession(),
+          _Phase.uploading => _buildUploading(),
+          _Phase.polling => _buildPolling(),
+          _Phase.result => _buildResult(),
+        },
+      ),
     );
   }
 
@@ -635,11 +715,16 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
       children: [
         Expanded(
           child: _videoReady && _videoCtrl != null
-              ? AspectRatio(
-                  aspectRatio: _videoCtrl!.value.aspectRatio,
-                  child: Transform.flip(
-                    flipX: true,
-                    child: VideoPlayer(_videoCtrl!),
+              ? Center(
+                  child: AspectRatio(
+                    aspectRatio: _videoCtrl!.value.aspectRatio,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: Transform.flip(
+                        flipX: true,
+                        child: VideoPlayer(_videoCtrl!),
+                      ),
+                    ),
                   ),
                 )
               : Center(
@@ -654,102 +739,144 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
                 ),
         ),
         Container(
-          padding: const EdgeInsets.all(16),
-          color: Colors.black,
-          child: Column(
-            children: [
-              if (_videoReady && _videoCtrl != null)
-                ValueListenableBuilder<VideoPlayerValue>(
-                  valueListenable: _videoCtrl!,
-                  builder: (context2, val, child2) {
-                    final pos = val.position.inSeconds.toDouble();
-                    final dur = val.duration.inSeconds.toDouble();
-                    return Column(
-                      children: [
-                        Slider(
-                          value: pos.clamp(0, dur > 0 ? dur : 1),
-                          min: 0,
-                          max: dur > 0 ? dur : 1,
-                          activeColor: AppTheme.primary,
-                          onChanged: (v) =>
-                              _videoCtrl!.seekTo(Duration(seconds: v.toInt())),
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(_fmt(val.position),
-                                style: const TextStyle(
-                                    color: Colors.white70, fontSize: 12)),
-                            Text(_fmt(val.duration),
-                                style: const TextStyle(
-                                    color: Colors.white70, fontSize: 12)),
-                          ],
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            IconButton(
-                              icon: Icon(
-                                val.isPlaying ? Icons.pause : Icons.play_arrow,
-                                color: Colors.white,
-                                size: 32,
-                              ),
-                              onPressed: () => val.isPlaying
-                                  ? _videoCtrl!.pause()
-                                  : _videoCtrl!.play(),
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+          decoration: const BoxDecoration(
+            color: Color(0xFF14211C),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              children: [
+                if (_videoReady && _videoCtrl != null)
+                  ValueListenableBuilder<VideoPlayerValue>(
+                    valueListenable: _videoCtrl!,
+                    builder: (context2, val, child2) {
+                      final pos = val.position.inSeconds.toDouble();
+                      final dur = val.duration.inSeconds.toDouble();
+                      return Column(
+                        children: [
+                          Slider(
+                            value: pos.clamp(0, dur > 0 ? dur : 1),
+                            min: 0,
+                            max: dur > 0 ? dur : 1,
+                            activeColor: AppTheme.primary,
+                            onChanged: (v) => _videoCtrl!.seekTo(
+                              Duration(seconds: v.toInt()),
                             ),
-                          ],
-                        ),
-                      ],
-                    );
-                  },
-                ),
-              const SizedBox(height: 8),
-              const Text(
-                '请先完整观看标准动作演示，了解动作要领后再开始训练',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white54, fontSize: 12),
-              ),
-              if (_videoLoadError != null) ...[
+                          ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                _fmt(val.position),
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              Text(
+                                _fmt(val.duration),
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              IconButton(
+                                icon: Icon(
+                                  val.isPlaying
+                                      ? Icons.pause
+                                      : Icons.play_arrow,
+                                  color: Colors.white,
+                                  size: 32,
+                                ),
+                                onPressed: () => val.isPlaying
+                                    ? _videoCtrl!.pause()
+                                    : _videoCtrl!.play(),
+                              ),
+                            ],
+                          ),
+                        ],
+                      );
+                    },
+                  ),
                 const SizedBox(height: 8),
+                const Text(
+                  '请先完整观看标准动作演示，了解动作要领后再开始训练',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.white54, fontSize: 12),
+                ),
+                if (_videoLoadError != null) ...[
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton(
+                      onPressed: () {
+                        setState(() {
+                          _phase = _Phase.loading;
+                          _videoLoadError = null;
+                        });
+                        _initVideo();
+                      },
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        side: const BorderSide(color: Colors.white38),
+                      ),
+                      child: const Text('重新加载视频'),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 10),
                 SizedBox(
                   width: double.infinity,
-                  child: OutlinedButton(
-                    onPressed: () {
-                      setState(() {
-                        _phase = _Phase.loading;
-                        _videoLoadError = null;
-                      });
-                      _initVideo();
-                    },
-                    style: OutlinedButton.styleFrom(
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primary,
                       foregroundColor: Colors.white,
-                      side: const BorderSide(color: Colors.white38),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
-                    child: const Text('重新加载视频'),
+                    onPressed: _preparingCamera ? null : _enterPreview,
+                    icon: _preparingCamera
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(Icons.fitness_center, size: 20),
+                    label: Text(
+                      _preparingCamera ? '正在准备摄像头…' : '准备好了，开始训练',
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ),
+                if (_cameraError != null) ...[
+                  const SizedBox(height: 14),
+                  Text(
+                    _cameraError!,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Color(0xFFFFB3AE),
+                      fontSize: 12,
+                      height: 1.5,
+                    ),
+                  ),
+                ],
               ],
-              const SizedBox(height: 10),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                  ),
-                  onPressed: _enterPreview,
-                  icon: const Icon(Icons.fitness_center, size: 20),
-                  label: const Text(
-                    '准备好了，开始训练',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ],
@@ -797,17 +924,31 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
             right: 0,
             child: Center(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.red.withValues(alpha: 0.85),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.fiber_manual_record, color: Colors.white, size: 14),
+                    Icon(
+                      Icons.fiber_manual_record,
+                      color: Colors.white,
+                      size: 14,
+                    ),
                     SizedBox(width: 6),
-                    Text('录制中', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+                    Text(
+                      '录制中  ${_fmt(_recordingDuration)}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -827,11 +968,19 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
                         backgroundColor: const Color(0xFF4CAF50),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                       onPressed: _stopAndUpload,
                       icon: const Icon(Icons.check_circle, size: 20),
-                      label: const Text('训练完成', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                      label: const Text(
+                        '训练完成',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                   )
                 : _phase == _Phase.preview
@@ -842,11 +991,19 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
                         backgroundColor: AppTheme.primary,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                       onPressed: _startCountdown,
                       icon: const Icon(Icons.videocam, size: 20),
-                      label: const Text('开始录制', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                      label: const Text(
+                        '开始录制',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                   )
                 : const SizedBox.shrink(),
@@ -977,12 +1134,15 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
                         Text(
                           '$score',
                           style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 44,
-                              fontWeight: FontWeight.bold),
+                            color: Colors.white,
+                            fontSize: 44,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                        const Text('综合评分',
-                            style: TextStyle(color: Colors.white60, fontSize: 12)),
+                        const Text(
+                          '综合评分',
+                          style: TextStyle(color: Colors.white60, fontSize: 12),
+                        ),
                       ],
                     ),
                   ],
@@ -991,11 +1151,14 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
             ),
             const SizedBox(height: 12),
             Center(
-              child: Text(grade,
-                  style: TextStyle(
-                      color: color,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold)),
+              child: Text(
+                grade,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
             const SizedBox(height: 20),
             _ScoreRow(label: '姿势准确度', score: r.postureScore),
@@ -1014,14 +1177,16 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
               _SectionTitle(title: '纠正建议', icon: Icons.tips_and_updates),
               const SizedBox(height: 8),
               ...r.corrections.map(
-                  (s) => _BulletItem(text: s, color: const Color(0xFFFF9800))),
+                (s) => _BulletItem(text: s, color: const Color(0xFFFF9800)),
+              ),
               const SizedBox(height: 16),
             ],
             if (r.safetyNotes.isNotEmpty) ...[
               _SectionTitle(title: '安全提醒', icon: Icons.warning_amber_rounded),
               const SizedBox(height: 8),
               ...r.safetyNotes.map(
-                  (s) => _BulletItem(text: s, color: const Color(0xFFF44336))),
+                (s) => _BulletItem(text: s, color: const Color(0xFFF44336)),
+              ),
               const SizedBox(height: 16),
             ],
             if (r.encouragement.isNotEmpty)
@@ -1031,12 +1196,17 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
                 decoration: BoxDecoration(
                   color: AppTheme.primary.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppTheme.primary.withValues(alpha: 0.4)),
+                  border: Border.all(
+                    color: AppTheme.primary.withValues(alpha: 0.4),
+                  ),
                 ),
                 child: Text(
                   r.encouragement,
                   style: const TextStyle(
-                      color: Colors.white, fontSize: 14, fontStyle: FontStyle.italic),
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontStyle: FontStyle.italic,
+                  ),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -1054,9 +1224,10 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
                 child: Text(
                   r.summary,
                   style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.87),
-                      fontSize: 14,
-                      height: 1.6),
+                    color: Colors.white.withValues(alpha: 0.87),
+                    fontSize: 14,
+                    height: 1.6,
+                  ),
                 ),
               ),
             ],
@@ -1070,7 +1241,8 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
                       side: const BorderSide(color: Colors.white38),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                     onPressed: () async {
                       // 清除本次任务缓存，允许重新训练
@@ -1095,7 +1267,8 @@ class _RehabVideoPageState extends State<RehabVideoPage> {
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                     onPressed: widget.onBack,
                     icon: const Icon(Icons.home, size: 18),
@@ -1181,14 +1354,16 @@ class _ScoreRow extends StatelessWidget {
     final color = score >= 80
         ? const Color(0xFF4CAF50)
         : score >= 60
-            ? const Color(0xFFFF9800)
-            : const Color(0xFFF44336);
+        ? const Color(0xFFFF9800)
+        : const Color(0xFFF44336);
     return Row(
       children: [
         SizedBox(
           width: 100,
-          child: Text(label,
-              style: const TextStyle(color: Colors.white60, fontSize: 13)),
+          child: Text(
+            label,
+            style: const TextStyle(color: Colors.white60, fontSize: 13),
+          ),
         ),
         Expanded(
           child: ClipRRect(
@@ -1207,7 +1382,10 @@ class _ScoreRow extends StatelessWidget {
           child: Text(
             '$score',
             style: TextStyle(
-                color: color, fontSize: 14, fontWeight: FontWeight.bold),
+              color: color,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
             textAlign: TextAlign.right,
           ),
         ),
@@ -1227,11 +1405,14 @@ class _SectionTitle extends StatelessWidget {
       children: [
         Icon(icon, color: AppTheme.primary, size: 18),
         const SizedBox(width: 6),
-        Text(title,
-            style: const TextStyle(
-                color: Colors.white,
-                fontSize: 15,
-                fontWeight: FontWeight.w600)),
+        Text(
+          title,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ],
     );
   }
@@ -1251,8 +1432,10 @@ class _BulletItem extends StatelessWidget {
         children: [
           Text('• ', style: TextStyle(color: color, fontSize: 14, height: 1.5)),
           Expanded(
-            child: Text(text,
-                style: TextStyle(color: color, fontSize: 13, height: 1.5)),
+            child: Text(
+              text,
+              style: TextStyle(color: color, fontSize: 13, height: 1.5),
+            ),
           ),
         ],
       ),

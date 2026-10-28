@@ -16,6 +16,7 @@ import 'services/auth_api.dart';
 import 'services/auth_store.dart';
 import 'services/ota_updater.dart';
 import 'widgets/nav_bar.dart';
+import 'widgets/motion.dart';
 
 class RehabilitationApp extends StatelessWidget {
   const RehabilitationApp({super.key});
@@ -27,6 +28,17 @@ class RehabilitationApp extends StatelessWidget {
       theme: AppTheme.theme,
       debugShowCheckedModeBanner: false,
       home: const AuthGate(),
+      builder: (context, child) => AnnotatedRegion<SystemUiOverlayStyle>(
+        value: const SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: Brightness.dark,
+          statusBarBrightness: Brightness.light,
+          systemNavigationBarColor: AppTheme.bgPrimary,
+          systemNavigationBarIconBrightness: Brightness.dark,
+          systemNavigationBarDividerColor: Colors.transparent,
+        ),
+        child: child ?? const SizedBox.shrink(),
+      ),
     );
   }
 }
@@ -81,6 +93,7 @@ class _AppNavigatorState extends State<AppNavigator> {
   int _bottomNavIndex = 0;
   bool _showBottomNav = true;
   int _planRefreshTick = 0;
+  int _chatListRefreshTick = 0;
   bool _otaChecked = false;
 
   String? _rehabVideoUrl;
@@ -118,6 +131,7 @@ class _AppNavigatorState extends State<AppNavigator> {
   }
 
   void _navigateToChatList() {
+    setState(() => _chatListRefreshTick++);
     _navigateToMain(tabIndex: 3);
   }
 
@@ -185,10 +199,7 @@ class _AppNavigatorState extends State<AppNavigator> {
     }
     _lastBackPress = now;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('再按一次退出应用'),
-        duration: Duration(seconds: 2),
-      ),
+      const SnackBar(content: Text('再按一次退出应用'), duration: Duration(seconds: 2)),
     );
   }
 
@@ -250,26 +261,25 @@ class _AppNavigatorState extends State<AppNavigator> {
   }
 
   Widget _buildMainPages() {
-    return IndexedStack(
-      index: _bottomNavIndex,
-      children: [
-        HomePage(
-          refreshTick: _planRefreshTick,
-          onConsult: () => _navigateToMain(tabIndex: 3),
-        ),
-        PlanPage(refreshTick: _planRefreshTick),
-        ProgressPage(refreshTick: _planRefreshTick),
-        ChatListPage(
-          onOpenChat: (existing) => _navigateToChat(existing: existing),
-        ),
-        ProfileCenterPage(
-          onLogout: widget.onLoggedOut,
-          onOpenFreeFollow: () => setState(() {
-            _currentPage = 5;
-            _showBottomNav = false;
-          }),
-        ),
-      ],
-    );
+    final pages = [
+      HomePage(
+        refreshTick: _planRefreshTick,
+        onConsult: () => _navigateToMain(tabIndex: 3),
+      ),
+      PlanPage(refreshTick: _planRefreshTick),
+      ProgressPage(refreshTick: _planRefreshTick),
+      ChatListPage(
+        key: ValueKey('chat-list-$_chatListRefreshTick'),
+        onOpenChat: (existing) => _navigateToChat(existing: existing),
+      ),
+      ProfileCenterPage(
+        onLogout: widget.onLoggedOut,
+        onOpenFreeFollow: () => setState(() {
+          _currentPage = 5;
+          _showBottomNav = false;
+        }),
+      ),
+    ];
+    return AppTabStack(index: _bottomNavIndex, children: pages);
   }
 }

@@ -1,69 +1,51 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
 import '../theme/app_theme.dart';
+import 'motion.dart';
 
 class NavBar extends StatelessWidget {
   final int currentIndex;
-  final Function(int) onTap;
+  final ValueChanged<int> onTap;
 
-  const NavBar({
-    super.key,
-    required this.currentIndex,
-    required this.onTap,
-  });
+  const NavBar({super.key, required this.currentIndex, required this.onTap});
+
+  static const _items = [
+    (Icons.home_outlined, Icons.home_rounded, '首页'),
+    (Icons.assignment_outlined, Icons.assignment_rounded, '方案'),
+    (Icons.insights_outlined, Icons.insights_rounded, '进度'),
+    (Icons.forum_outlined, Icons.forum_rounded, '问诊'),
+    (Icons.person_outline_rounded, Icons.person_rounded, '我的'),
+  ];
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppTheme.bgPrimary,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 16, offset: const Offset(0, -4)),
-        ],
-      ),
+    return Material(
+      color: AppTheme.bgPrimary,
       child: SafeArea(
         top: false,
-        child: SizedBox(
-          height: 56,
+        child: Container(
+          height: 70,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+          decoration: const BoxDecoration(
+            border: Border(top: BorderSide(color: AppTheme.border)),
+          ),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _NavItem(
-                icon: Icons.home_outlined,
-                activeIcon: Icons.home_rounded,
-                label: '首页',
-                isActive: currentIndex == 0,
-                onTap: () => onTap(0),
-              ),
-              _NavItem(
-                icon: Icons.calendar_today_outlined,
-                activeIcon: Icons.calendar_today,
-                label: '方案',
-                isActive: currentIndex == 1,
-                onTap: () => onTap(1),
-              ),
-              _NavItem(
-                icon: Icons.bar_chart_outlined,
-                activeIcon: Icons.bar_chart_rounded,
-                label: '进度',
-                isActive: currentIndex == 2,
-                onTap: () => onTap(2),
-              ),
-              _NavItem(
-                icon: Icons.forum_outlined,
-                activeIcon: Icons.forum,
-                label: '问诊',
-                isActive: currentIndex == 3,
-                onTap: () => onTap(3),
-              ),
-              _NavItem(
-                icon: Icons.person_outline,
-                activeIcon: Icons.person,
-                label: '我的',
-                isActive: currentIndex == 4,
-                onTap: () => onTap(4),
-              ),
-            ],
+            children: List.generate(_items.length, (index) {
+              final item = _items[index];
+              return Expanded(
+                child: _NavItem(
+                  icon: item.$1,
+                  activeIcon: item.$2,
+                  label: item.$3,
+                  isActive: currentIndex == index,
+                  onTap: () {
+                    if (currentIndex != index) HapticFeedback.selectionClick();
+                    onTap(index);
+                  },
+                ),
+              );
+            }),
           ),
         ),
       ),
@@ -88,30 +70,47 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const iconSize = 22.0;
-    final color = isActive ? AppTheme.primary : AppTheme.textTertiary;
-
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+    final color = isActive ? AppTheme.primaryDark : AppTheme.textTertiary;
+    return Semantics(
+      selected: isActive,
+      button: true,
+      label: label,
+      excludeSemantics: true,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              isActive ? activeIcon : icon,
-              color: color,
-              size: iconSize,
+            AnimatedContainer(
+              duration: AppMotion.duration(context, AppMotion.standard),
+              curve: AppMotion.curve,
+              width: isActive ? 40 : 30,
+              height: 29,
+              decoration: BoxDecoration(
+                color: isActive ? AppTheme.primaryLight : Colors.transparent,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: AnimatedSwitcher(
+                duration: AppMotion.duration(context, AppMotion.quick),
+                transitionBuilder: (child, animation) => ScaleTransition(
+                  scale: animation,
+                  child: FadeTransition(opacity: animation, child: child),
+                ),
+                child: Icon(
+                  isActive ? activeIcon : icon,
+                  key: ValueKey(isActive),
+                  color: color,
+                  size: 21,
+                ),
+              ),
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: 3),
             Text(
               label,
               style: TextStyle(
-                fontSize: 11,
-                height: 1.1,
-                fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+                fontSize: 10.5,
+                fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
                 color: color,
               ),
             ),

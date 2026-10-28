@@ -57,15 +57,19 @@ class RehabOverview {
       final title = programTitle(p);
       for (final item in itemsOf(p)) {
         final training = item['training'];
-        final t = training is Map ? Map<String, dynamic>.from(training) : const <String, dynamic>{};
-        out.add(TrainingHit(
-          title: itemTitle(item),
-          programTitle: title,
-          programId: pid,
-          status: t['status']?.toString() ?? 'none',
-          score: _asDouble(t['overall_score']),
-          at: DateTime.tryParse(t['created_at']?.toString() ?? ''),
-        ));
+        final t = training is Map
+            ? Map<String, dynamic>.from(training)
+            : const <String, dynamic>{};
+        out.add(
+          TrainingHit(
+            title: itemTitle(item),
+            programTitle: title,
+            programId: pid,
+            status: t['status']?.toString() ?? 'none',
+            score: _asDouble(t['overall_score']),
+            at: DateTime.tryParse(t['created_at']?.toString() ?? ''),
+          ),
+        );
       }
     }
     out.sort((a, b) {
@@ -84,7 +88,10 @@ class RehabOverview {
 
   /// 连续有训练记录的天数，从今天或昨天往前数。没有记录就是 0。
   int get streak {
-    final days = hits.where((h) => h.done && h.at != null).map((h) => _day(h.at!)).toSet();
+    final days = hits
+        .where((h) => h.done && h.at != null)
+        .map((h) => _day(h.at!))
+        .toSet();
     if (days.isEmpty) return 0;
     var cursor = _day(DateTime.now());
     if (!days.contains(cursor)) {
@@ -100,7 +107,10 @@ class RehabOverview {
   }
 
   double? get averageScore {
-    final scores = hits.where((h) => h.done && h.score != null).map((h) => h.score!).toList();
+    final scores = hits
+        .where((h) => h.done && h.score != null)
+        .map((h) => h.score!)
+        .toList();
     if (scores.isEmpty) return null;
     return scores.reduce((a, b) => a + b) / scores.length;
   }
@@ -138,6 +148,8 @@ class RehabOverview {
   static String itemTitle(Map<String, dynamic> item) {
     final title = item['title']?.toString().trim() ?? '';
     if (title.isNotEmpty) return title;
+    final description = item['description_cn']?.toString().trim() ?? '';
+    if (description.isNotEmpty) return description;
     final notes = item['notes']?.toString().trim() ?? '';
     if (notes.isNotEmpty) return notes;
     final order = item['order'];

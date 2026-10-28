@@ -69,7 +69,9 @@ class FollowLiveStageState extends State<FollowLiveStage> {
 
   Future<void> ensureStreaming() async {
     final camera = widget.camera;
-    if (_closed || !camera.value.isInitialized || camera.value.isRecordingVideo) {
+    if (_closed ||
+        !camera.value.isInitialized ||
+        camera.value.isRecordingVideo) {
       return;
     }
     if (camera.value.isStreamingImages) return;
@@ -98,7 +100,8 @@ class FollowLiveStageState extends State<FollowLiveStage> {
       final rotation = cameraInputRotation(camera);
       final snap = CapturedCameraFrame.tryCapture(image);
       if (rotation == null || snap == null) return;
-      final front = camera.description.lensDirection == CameraLensDirection.front;
+      final front =
+          camera.description.lensDirection == CameraLensDirection.front;
       final detection = _detector.detect(
         image,
         camera,
@@ -109,7 +112,9 @@ class FollowLiveStageState extends State<FollowLiveStage> {
       final conversion = _decoder
           .decode(
             snap,
-            rotation: Platform.isIOS ? InputImageRotation.rotation0deg : rotation,
+            rotation: Platform.isIOS
+                ? InputImageRotation.rotation0deg
+                : rotation,
             mirror: !Platform.isIOS && front,
           )
           .then((value) => frameImage = value);
@@ -129,7 +134,9 @@ class FollowLiveStageState extends State<FollowLiveStage> {
         frame = evaluateLocal(scoredLandmarks, rule);
       }
       final angles = <String, double?>{
-        for (final metric in (rule?.metrics ?? const <FollowMetric>[]).where((item) => item.enabled))
+        for (final metric in (rule?.metrics ?? const <FollowMetric>[]).where(
+          (item) => item.enabled,
+        ))
           metric.id: frame?.metrics[metric.id],
       };
       setState(() {
@@ -174,18 +181,26 @@ class FollowLiveStageState extends State<FollowLiveStage> {
   Widget build(BuildContext context) {
     final image = _image;
     final rule = widget.rule;
-    final scoredMetrics = rule?.metrics.where((item) => item.enabled).toList() ?? const <FollowMetric>[];
+    final scoredMetrics =
+        rule?.metrics.where((item) => item.enabled).toList() ??
+        const <FollowMetric>[];
     final scored = _scored;
     final tint = scored ? null : const Color(0xFF80DEEA);
     final segments = rule?.barSegments ?? 10;
-    final filled = ((_score / 100) * segments).round().clamp(0, segments).toInt();
+    final filled = ((_score / 100) * segments)
+        .round()
+        .clamp(0, segments)
+        .toInt();
     return Stack(
       fit: StackFit.expand,
       children: [
         if (image == null)
           widget.camera.value.isPreviewPaused
               ? const Center(
-                  child: Text('正在连接摄像头…', style: TextStyle(color: Colors.white70)),
+                  child: Text(
+                    '正在连接摄像头…',
+                    style: TextStyle(color: Colors.white70),
+                  ),
                 )
               : CameraPreview(widget.camera)
         else
@@ -319,7 +334,9 @@ String followScoreLines(MotionStandard rule, Map<String, double?> angles) {
   final byId = {for (final metric in rule.metrics) metric.id: metric};
   final claimed = <String>{};
   final lines = <String>[];
-  final grouped = rule.peaks.length > 1 || rule.peaks.any((peak) => peak.metricIds.length > 1);
+  final grouped =
+      rule.peaks.length > 1 ||
+      rule.peaks.any((peak) => peak.metricIds.length > 1);
   for (final peak in rule.peaks) {
     final metrics = [
       for (final id in peak.metricIds)
@@ -336,8 +353,11 @@ String followScoreLines(MotionStandard rule, Map<String, double?> angles) {
     if (!metric.enabled || claimed.contains(metric.id)) continue;
     lines.add(line(metric));
   }
-  final measurements = lines.where((item) => item.contains('°') || item.endsWith('未入画'));
-  if (measurements.isEmpty || measurements.every((item) => item.endsWith('未入画'))) {
+  final measurements = lines.where(
+    (item) => item.contains('°') || item.endsWith('未入画'),
+  );
+  if (measurements.isEmpty ||
+      measurements.every((item) => item.endsWith('未入画'))) {
     return '请让全身入画';
   }
   return lines.join('\n');

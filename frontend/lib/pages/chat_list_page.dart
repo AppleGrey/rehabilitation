@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../theme/app_theme.dart';
+import '../widgets/common_widgets.dart';
 
 /// 存在本地的单条会话摘要
 class ConversationRecord {
@@ -26,23 +27,25 @@ class ConversationRecord {
   });
 
   Map<String, dynamic> toJson() => {
-        'sessionId': sessionId,
-        'title': title,
-        'previewText': previewText,
-        'createdAt': createdAt.toIso8601String(),
-        'messages': messages,
-        'recommendedVideoId': recommendedVideoId,
-        'recommendedVideoUrl': recommendedVideoUrl,
-      };
+    'sessionId': sessionId,
+    'title': title,
+    'previewText': previewText,
+    'createdAt': createdAt.toIso8601String(),
+    'messages': messages,
+    'recommendedVideoId': recommendedVideoId,
+    'recommendedVideoUrl': recommendedVideoUrl,
+  };
 
   factory ConversationRecord.fromJson(Map<String, dynamic> j) =>
       ConversationRecord(
         sessionId: j['sessionId'] as String,
         title: j['title'] as String? ?? '问诊记录',
         previewText: j['previewText'] as String? ?? '',
-        createdAt: DateTime.tryParse(j['createdAt'] as String? ?? '') ??
+        createdAt:
+            DateTime.tryParse(j['createdAt'] as String? ?? '') ??
             DateTime.now(),
-        messages: (j['messages'] as List<dynamic>?)
+        messages:
+            (j['messages'] as List<dynamic>?)
                 ?.map((e) => Map<String, String>.from(e as Map))
                 .toList() ??
             [],
@@ -62,8 +65,7 @@ class ConversationStorage {
     try {
       final list = jsonDecode(raw) as List<dynamic>;
       return list
-          .map((e) =>
-              ConversationRecord.fromJson(e as Map<String, dynamic>))
+          .map((e) => ConversationRecord.fromJson(e as Map<String, dynamic>))
           .toList()
         ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
     } catch (_) {
@@ -80,14 +82,20 @@ class ConversationStorage {
     } else {
       all.insert(0, record);
     }
-    await prefs.setString(_key, jsonEncode(all.map((r) => r.toJson()).toList()));
+    await prefs.setString(
+      _key,
+      jsonEncode(all.map((r) => r.toJson()).toList()),
+    );
   }
 
   static Future<void> delete(String sessionId) async {
     final prefs = await SharedPreferences.getInstance();
     final all = await loadAll();
     all.removeWhere((r) => r.sessionId == sessionId);
-    await prefs.setString(_key, jsonEncode(all.map((r) => r.toJson()).toList()));
+    await prefs.setString(
+      _key,
+      jsonEncode(all.map((r) => r.toJson()).toList()),
+    );
   }
 }
 
@@ -96,10 +104,7 @@ class ChatListPage extends StatefulWidget {
   /// 点击「开始新对话」或历史记录时回调，传入 null 表示新建
   final void Function(ConversationRecord? existing) onOpenChat;
 
-  const ChatListPage({
-    super.key,
-    required this.onOpenChat,
-  });
+  const ChatListPage({super.key, required this.onOpenChat});
 
   @override
   State<ChatListPage> createState() => _ChatListPageState();
@@ -117,12 +122,57 @@ class _ChatListPageState extends State<ChatListPage> {
 
   Future<void> _load() async {
     final list = await ConversationStorage.loadAll();
-    if (mounted) setState(() { _records = list; _loading = false; });
+    if (mounted) {
+      setState(() {
+        _records = list;
+        _loading = false;
+      });
+    }
   }
 
   Future<void> _delete(ConversationRecord r) async {
     await ConversationStorage.delete(r.sessionId);
     await _load();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..clearSnackBars()
+      ..showSnackBar(
+        SnackBar(
+          content: const Text('问诊记录已删除'),
+          action: SnackBarAction(
+            label: '撤销',
+            textColor: AppTheme.mint,
+            onPressed: () async {
+              await ConversationStorage.save(r);
+              await _load();
+            },
+          ),
+        ),
+      );
+  }
+
+  Future<void> _confirmDelete(ConversationRecord r) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('删除这条问诊记录？'),
+        content: const Text('将从本机的问诊历史中移除，之后短时间内可以撤销。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: AppTheme.error),
+            child: const Text('删除'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await _delete(r);
+    }
   }
 
   String _fmtDate(DateTime dt) {
@@ -142,112 +192,131 @@ class _ChatListPageState extends State<ChatListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.bgPrimary,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0.5,
-        automaticallyImplyLeading: false,
-        centerTitle: false,
-        title: const Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'AI 康复助手',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.textPrimary,
-              ),
-            ),
-            Text(
-              '智能问诊 · 精准推荐',
-              style: TextStyle(fontSize: 11, color: AppTheme.textTertiary),
-            ),
-          ],
-        ),
-      ),
-      body: Column(
-        children: [
-          // 发起新对话按钮
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 0,
-                ),
-                onPressed: () => widget.onOpenChat(null),
-                icon: const Icon(Icons.add_comment_outlined, size: 20),
-                label: const Text(
-                  '发起新问诊对话',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-                ),
-              ),
-            ),
-          ),
-          if (_records.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-              child: Row(
-                children: [
-                  const Text(
-                    '历史记录',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: AppTheme.textTertiary,
-                      fontWeight: FontWeight.w500,
+      body: SafeArea(
+        child: RefreshIndicator(
+          onRefresh: _load,
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    const AppPageHeader(
+                      eyebrow: 'YOUR AI COMPANION',
+                      title: 'AI 康复助手',
+                      subtitle: '认真倾听，陪你找到合适的康复方向',
                     ),
-                  ),
-                  const Spacer(),
-                  Text(
-                    '共 ${_records.length} 条',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppTheme.textTertiary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          Expanded(
-            child: _loading
-                ? const Center(child: CircularProgressIndicator())
-                : _records.isEmpty
-                    ? _buildEmptyState()
-                    : ListView.builder(
-                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                        itemCount: _records.length,
-                        itemBuilder: (_, i) => _buildItem(_records[i]),
+                    const SizedBox(height: 22),
+                    _newConsultCard(),
+                    const SizedBox(height: 26),
+                    if (!_loading && _records.isNotEmpty)
+                      SectionHeader(
+                        title: '历史问诊',
+                        subtitle: '共 ${_records.length} 条 · 左滑可删除',
                       ),
+                  ]),
+                ),
+              ),
+              if (_loading)
+                const SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: AppLoading(),
+                )
+              else if (_records.isEmpty)
+                SliverPadding(
+                  padding: const EdgeInsets.all(20),
+                  sliver: SliverToBoxAdapter(
+                    child: AppEmptyState(
+                      icon: Icons.chat_bubble_outline_rounded,
+                      title: '还没有问诊记录',
+                      body: '从一次简单的描述开始，我们会逐步了解你的情况。',
+                      actionLabel: '开始第一次问诊',
+                      onAction: () => widget.onOpenChat(null),
+                    ),
+                  ),
+                )
+              else
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(20, 14, 20, 30),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (_, index) => _buildItem(_records[index]),
+                      childCount: _records.length,
+                    ),
+                  ),
+                ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildEmptyState() {
-    return Center(
+  Widget _newConsultCard() {
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [AppTheme.primaryLight, Color(0xFFF0F4E6)],
+        ),
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(color: Colors.white),
+      ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.chat_bubble_outline,
-              size: 64, color: Colors.grey.shade300),
-          const SizedBox(height: 16),
-          Text(
-            '暂无问诊记录',
-            style: TextStyle(fontSize: 15, color: Colors.grey.shade500),
+          const Row(
+            children: [
+              AppIconBadge(
+                icon: Icons.forum_outlined,
+                color: Colors.white,
+                backgroundColor: AppTheme.primaryDark,
+              ),
+              SizedBox(width: 12),
+              Text(
+                '需要新的康复建议？',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.primaryDark,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            '点击上方按钮开始第一次问诊',
-            style: TextStyle(fontSize: 13, color: Colors.grey.shade400),
+          const SizedBox(height: 16),
+          const Text(
+            '描述你的不适与日常活动，AI 会逐步追问，帮你梳理康复方向。',
+            style: TextStyle(
+              fontSize: 13.5,
+              height: 1.65,
+              color: AppTheme.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 20),
+          ElevatedButton.icon(
+            onPressed: () => widget.onOpenChat(null),
+            icon: const Icon(Icons.add_rounded, size: 20),
+            label: const Text('发起新问诊'),
+          ),
+          const SizedBox(height: 12),
+          const Row(
+            children: [
+              Icon(
+                Icons.shield_outlined,
+                size: 14,
+                color: AppTheme.textTertiary,
+              ),
+              SizedBox(width: 5),
+              Expanded(
+                child: Text(
+                  '问诊建议仅供参考，不能替代医生诊断。',
+                  style: TextStyle(fontSize: 11, color: AppTheme.textTertiary),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -258,108 +327,95 @@ class _ChatListPageState extends State<ChatListPage> {
     return Dismissible(
       key: Key(r.sessionId),
       direction: DismissDirection.endToStart,
+      confirmDismiss: (_) async {
+        await _confirmDelete(r);
+        return false;
+      },
       background: Container(
-        margin: const EdgeInsets.symmetric(vertical: 6),
+        margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
-          color: Colors.red.shade400,
-          borderRadius: BorderRadius.circular(12),
+          color: AppTheme.error,
+          borderRadius: BorderRadius.circular(22),
         ),
         alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
-        child: const Icon(Icons.delete_outline, color: Colors.white, size: 24),
+        padding: const EdgeInsets.only(right: 24),
+        child: const Icon(
+          Icons.delete_outline_rounded,
+          color: Colors.white,
+          size: 24,
+        ),
       ),
-      onDismissed: (_) => _delete(r),
-      child: GestureDetector(
-        onTap: () => widget.onOpenChat(r),
-        child: Container(
-          margin: const EdgeInsets.symmetric(vertical: 6),
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [AppTheme.primary, AppTheme.primaryDark],
-                  ),
-                  borderRadius: BorderRadius.circular(22),
-                ),
-                child: const Icon(Icons.smart_toy, color: Colors.white, size: 22),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(22),
+            onTap: () => widget.onOpenChat(r),
+            child: AppCard(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  const AppIconBadge(icon: Icons.forum_rounded, size: 44),
+                  const SizedBox(width: 13),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: Text(
-                            r.title,
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              color: AppTheme.textPrimary,
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                r.title,
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppTheme.textPrimary,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                            const SizedBox(width: 8),
+                            Text(
+                              _fmtDate(r.createdAt),
+                              style: const TextStyle(
+                                fontSize: 10.5,
+                                color: AppTheme.textTertiary,
+                              ),
+                            ),
+                          ],
                         ),
+                        const SizedBox(height: 7),
                         Text(
-                          _fmtDate(r.createdAt),
+                          r.previewText.isEmpty ? '暂无内容' : r.previewText,
                           style: const TextStyle(
-                            fontSize: 11,
-                            color: AppTheme.textTertiary,
+                            fontSize: 12.5,
+                            height: 1.5,
+                            color: AppTheme.textSecondary,
                           ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      r.previewText.isEmpty ? '暂无内容' : r.previewText,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: AppTheme.textSecondary,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    if (r.recommendedVideoId != null) ...[
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          const Icon(Icons.video_library_outlined,
-                              size: 13, color: AppTheme.primary),
-                          const SizedBox(width: 4),
-                          Text(
-                            '已推荐视频: ${r.recommendedVideoId}',
-                            style: const TextStyle(
-                              fontSize: 11,
-                              color: AppTheme.primary,
-                            ),
+                        if (r.recommendedVideoId != null) ...[
+                          const SizedBox(height: 8),
+                          const AppPill(
+                            label: '已推荐训练视频',
+                            icon: Icons.play_circle_outline_rounded,
                           ),
                         ],
-                      ),
-                    ],
-                  ],
-                ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    color: AppTheme.textTertiary,
+                    size: 14,
+                  ),
+                ],
               ),
-              const SizedBox(width: 8),
-              const Icon(Icons.chevron_right,
-                  color: AppTheme.textTertiary, size: 20),
-            ],
+            ),
           ),
         ),
       ),

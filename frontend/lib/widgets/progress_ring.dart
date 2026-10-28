@@ -6,24 +6,26 @@ class ProgressRing extends StatelessWidget {
   final double progress;
   final String centerText;
   final String subText;
+  final double size;
 
   const ProgressRing({
     super.key,
     required this.progress,
     required this.centerText,
     required this.subText,
+    this.size = 180,
   });
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 180,
-      height: 180,
+      width: size,
+      height: size,
       child: Stack(
         alignment: Alignment.center,
         children: [
           CustomPaint(
-            size: const Size(180, 180),
+            size: Size(size, size),
             painter: _ProgressRingPainter(progress: progress),
           ),
           Column(
@@ -31,8 +33,8 @@ class ProgressRing extends StatelessWidget {
             children: [
               Text(
                 centerText,
-                style: const TextStyle(
-                  fontSize: 36,
+                style: TextStyle(
+                  fontSize: size * 0.2,
                   fontWeight: FontWeight.bold,
                   color: AppTheme.primary,
                 ),

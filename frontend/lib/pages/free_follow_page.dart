@@ -11,6 +11,7 @@ import '../config/api_config.dart';
 import '../pose/follow_models.dart';
 import '../pose/keypoint_counter.dart';
 import '../theme/app_theme.dart';
+import '../widgets/common_widgets.dart';
 import '../widgets/follow_live_stage.dart';
 
 class FreeFollowPage extends StatefulWidget {
@@ -103,7 +104,9 @@ class _FreeFollowPageState extends State<FreeFollowPage> {
             .timeout(const Duration(seconds: 8));
         if (rulesResponse.statusCode == 200) {
           final data = jsonDecode(rulesResponse.body) as Map<String, dynamic>;
-          ruled = (data['video_ids'] as List<dynamic>? ?? const []).map((item) => item.toString()).toSet();
+          ruled = (data['video_ids'] as List<dynamic>? ?? const [])
+              .map((item) => item.toString())
+              .toSet();
         }
       } catch (_) {}
       final actions = [
@@ -112,10 +115,10 @@ class _FreeFollowPageState extends State<FreeFollowPage> {
             _ActionItem(
               videoId: video['video_id']?.toString() ?? '',
               title: _titleOf(video),
-              detail: [
-                video['target_joint'],
-                video['description_cn'],
-              ].whereType<String>().where((item) => item.isNotEmpty).join(' · '),
+              detail: [video['target_joint'], video['description_cn']]
+                  .whereType<String>()
+                  .where((item) => item.isNotEmpty)
+                  .join(' · '),
               hasRule: ruled.contains(video['video_id']?.toString()),
             ),
       ].where((item) => item.videoId.isNotEmpty).toList();
@@ -154,7 +157,10 @@ class _FreeFollowPageState extends State<FreeFollowPage> {
     final query = _search.text.trim();
     if (query.isEmpty) return _actions;
     return _actions
-        .where((item) => '${item.title} ${item.detail} ${item.videoId}'.contains(query))
+        .where(
+          (item) =>
+              '${item.title} ${item.detail} ${item.videoId}'.contains(query),
+        )
         .toList();
   }
 
@@ -184,7 +190,9 @@ class _FreeFollowPageState extends State<FreeFollowPage> {
         camera = CameraController(
           front,
           ResolutionPreset.medium,
-          imageFormatGroup: Platform.isAndroid ? ImageFormatGroup.nv21 : ImageFormatGroup.bgra8888,
+          imageFormatGroup: Platform.isAndroid
+              ? ImageFormatGroup.nv21
+              : ImageFormatGroup.bgra8888,
           enableAudio: false,
         );
         await camera.initialize();
@@ -225,7 +233,9 @@ class _FreeFollowPageState extends State<FreeFollowPage> {
     } catch (error) {
       if (!mounted) return;
       setState(() => _starting = false);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$error')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('$error')));
     }
   }
 
@@ -265,7 +275,9 @@ class _FreeFollowPageState extends State<FreeFollowPage> {
       _banner = null;
     });
     await video?.dispose();
-    if (camera != null && camera.value.isInitialized && camera.value.isStreamingImages) {
+    if (camera != null &&
+        camera.value.isInitialized &&
+        camera.value.isStreamingImages) {
       await camera.stopImageStream();
     }
     await camera?.dispose();
@@ -285,7 +297,13 @@ class _FreeFollowPageState extends State<FreeFollowPage> {
   void _onVideo() {
     final video = _video;
     final rule = _rule;
-    if (video == null || rule == null || _cues.isEmpty || _syncing || _waiting) return;
+    if (video == null ||
+        rule == null ||
+        _cues.isEmpty ||
+        _syncing ||
+        _waiting) {
+      return;
+    }
     if (!video.value.isInitialized) return;
     final guard = _resumeGuard;
     if (guard != null && DateTime.now().isBefore(guard)) return;
@@ -341,7 +359,9 @@ class _FreeFollowPageState extends State<FreeFollowPage> {
       _finishWait(standard: false);
       return;
     }
-    final passed = metrics.every((metric) => metric.pass.reached(frame.metrics[metric.id]));
+    final passed = metrics.every(
+      (metric) => metric.pass.reached(frame.metrics[metric.id]),
+    );
     if (passed) {
       _holdSince ??= at;
       if (at.difference(_holdSince!).inMilliseconds >= rule.holdMs) {
@@ -352,10 +372,14 @@ class _FreeFollowPageState extends State<FreeFollowPage> {
     _holdSince = null;
     final lifts = metrics.where((metric) => metric.pass.op != 'lte').toList();
     if (lifts.isNotEmpty) {
-      if (lifts.any((metric) => metric.attempt.reached(frame.metrics[metric.id]))) {
+      if (lifts.any(
+        (metric) => metric.attempt.reached(frame.metrics[metric.id]),
+      )) {
         _attempted = true;
       }
-      final backDown = lifts.every((metric) => metric.reset.reached(frame.metrics[metric.id]));
+      final backDown = lifts.every(
+        (metric) => metric.reset.reached(frame.metrics[metric.id]),
+      );
       if (_attempted && backDown) {
         _finishWait(standard: false);
         return;
@@ -394,11 +418,15 @@ class _FreeFollowPageState extends State<FreeFollowPage> {
   }
 
   List<_DemoCue> _cuesFor(MotionStandard rule) {
-    final enabled = {for (final metric in rule.metrics) if (metric.enabled) metric.id};
+    final enabled = {
+      for (final metric in rule.metrics)
+        if (metric.enabled) metric.id,
+    };
     final peaks = [...rule.peaks]..sort((a, b) => a.time.compareTo(b.time));
     final cues = <_DemoCue>[
       for (final peak in peaks)
-        if (peak.metricIds.any(enabled.contains)) _DemoCue(at: peak.time, peak: peak),
+        if (peak.metricIds.any(enabled.contains))
+          _DemoCue(at: peak.time, peak: peak),
     ];
     if (cues.isEmpty) return const [];
     if (rule.tEnd > cues.last.at) cues.add(_DemoCue(at: rule.tEnd));
@@ -428,8 +456,21 @@ class _FreeFollowPageState extends State<FreeFollowPage> {
     return Scaffold(
       backgroundColor: AppTheme.bgSecondary,
       appBar: AppBar(
-        leading: IconButton(onPressed: widget.onBack, icon: const Icon(Icons.arrow_back)),
+        leading: IconButton(
+          onPressed: widget.onBack,
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 19),
+        ),
         title: const Text('自由跟做'),
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(28),
+          child: Padding(
+            padding: EdgeInsets.only(bottom: 10),
+            child: Text(
+              '选择喜欢的动作，让运动成为习惯',
+              style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+            ),
+          ),
+        ),
       ),
       body: Column(
         children: [
@@ -472,59 +513,81 @@ class _FreeFollowPageState extends State<FreeFollowPage> {
     if (items.isEmpty) {
       return const Center(child: Text('没有可跟做的动作'));
     }
-    return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-      itemCount: items.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 8),
-      itemBuilder: (context, index) {
-        final item = items[index];
-        return Material(
-          color: AppTheme.bgPrimary,
-          borderRadius: BorderRadius.circular(12),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(12),
-            onTap: () => _open(item),
-            child: Padding(
-              padding: const EdgeInsets.all(14),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(item.title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                        if (item.detail.isNotEmpty) ...[
-                          const SizedBox(height: 4),
+    return RefreshIndicator(
+      onRefresh: _load,
+      child: ListView.separated(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
+        itemCount: items.length,
+        separatorBuilder: (context, index) => const SizedBox(height: 8),
+        itemBuilder: (context, index) {
+          final item = items[index];
+          return Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(22),
+              onTap: () => _open(item),
+              child: AppCard(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    const AppIconBadge(
+                      icon: Icons.directions_run_rounded,
+                      size: 44,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                           Text(
-                            item.detail,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+                            item.title,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
+                          if (item.detail.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              item.detail,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: AppTheme.textSecondary,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
                         ],
-                      ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    item.hasRule ? '可评分' : '仅跟做',
-                    style: TextStyle(
-                      color: item.hasRule ? AppTheme.primary : AppTheme.textTertiary,
-                      fontSize: 12,
+                    const SizedBox(width: 8),
+                    AppPill(
+                      label: item.hasRule ? '可评分' : '仅跟做',
+                      color: item.hasRule
+                          ? AppTheme.primary
+                          : AppTheme.textTertiary,
+                      backgroundColor: item.hasRule
+                          ? AppTheme.primaryLight
+                          : AppTheme.bgSecondary,
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
   Widget _followView(_ActionItem action, CameraController camera) {
     final video = _video;
-    final aspect = (video != null && video.value.isInitialized && video.value.aspectRatio > 0)
+    final aspect =
+        (video != null &&
+            video.value.isInitialized &&
+            video.value.aspectRatio > 0)
         ? video.value.aspectRatio
         : 0.75;
     return Scaffold(
@@ -532,7 +595,10 @@ class _FreeFollowPageState extends State<FreeFollowPage> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
-        leading: IconButton(onPressed: _closeFollow, icon: const Icon(Icons.arrow_back)),
+        leading: IconButton(
+          onPressed: _closeFollow,
+          icon: const Icon(Icons.arrow_back),
+        ),
         title: Text(action.title, overflow: TextOverflow.ellipsis),
       ),
       body: Stack(
@@ -547,7 +613,9 @@ class _FreeFollowPageState extends State<FreeFollowPage> {
             focusPeakId: _waiting ? _waitPeak?.id : null,
             demoWaiting: _waiting,
             repCount: _rule == null ? null : _count,
-            demo: video != null && video.value.isInitialized ? VideoPlayer(video) : null,
+            demo: video != null && video.value.isInitialized
+                ? VideoPlayer(video)
+                : null,
           ),
           if (_banner != null)
             Center(
@@ -582,7 +650,8 @@ class _VerdictFlash extends StatelessWidget {
         tween: Tween(begin: 0.55, end: 1),
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOutBack,
-        builder: (context, scale, child) => Transform.scale(scale: scale, child: child),
+        builder: (context, scale, child) =>
+            Transform.scale(scale: scale, child: child),
         child: Text(
           text,
           style: TextStyle(

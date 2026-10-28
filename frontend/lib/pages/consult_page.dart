@@ -8,6 +8,7 @@ import '../theme/app_theme.dart';
 import '../config/api_config.dart';
 import '../services/auth_store.dart';
 import '../services/program_api.dart';
+import '../widgets/common_widgets.dart';
 import 'baseline_page.dart';
 import 'chat_list_page.dart';
 import 'consult_report_page.dart';
@@ -26,7 +27,8 @@ class _Msg {
 
 /// 当前应展示的输入方式（来自 input_spec 事件）
 class _Spec {
-  final String answerType; // free_text/single_choice/multi_choice/scale_0_10/boolean
+  final String
+  answerType; // free_text/single_choice/multi_choice/scale_0_10/boolean
   final List<String> options;
   const _Spec(this.answerType, this.options);
 
@@ -45,11 +47,7 @@ class ConsultPage extends StatefulWidget {
   final VoidCallback onBack;
   final ConversationRecord? existingRecord;
 
-  const ConsultPage({
-    super.key,
-    required this.onBack,
-    this.existingRecord,
-  });
+  const ConsultPage({super.key, required this.onBack, this.existingRecord});
 
   @override
   State<ConsultPage> createState() => _ConsultPageState();
@@ -69,6 +67,7 @@ class _ConsultPageState extends State<ConsultPage> {
   bool _isSending = false;
   bool _isInitializing = true;
   bool _isDone = false;
+
   /// 本会话已有方案时的 program_id（结束卡传送门）
   String? _existingProgramId;
 
@@ -83,10 +82,12 @@ class _ConsultPageState extends State<ConsultPage> {
     if (existing != null) {
       _sessionId = existing.sessionId;
       for (final m in existing.messages) {
-        _messages.add(_Msg(
-          role: m['role'] == 'user' ? _Role.user : _Role.assistant,
-          text: m['text'] ?? '',
-        ));
+        _messages.add(
+          _Msg(
+            role: m['role'] == 'user' ? _Role.user : _Role.assistant,
+            text: m['text'] ?? '',
+          ),
+        );
       }
       await _restoreState(); // 恢复结论卡片 / 预选项 / 结束态
       if (mounted) {
@@ -105,11 +106,14 @@ class _ConsultPageState extends State<ConsultPage> {
     if (sid == null) return;
     try {
       final resp = await http
-          .get(Uri.parse('$kBackendBase/api/ai/consult/$sid/state'),
-              headers: AuthStore.headers())
+          .get(
+            Uri.parse('$kBackendBase/api/ai/consult/$sid/state'),
+            headers: AuthStore.headers(),
+          )
           .timeout(const Duration(seconds: 8));
       if (resp.statusCode != 200) return;
-      final data = jsonDecode(utf8.decode(resp.bodyBytes)) as Map<String, dynamic>;
+      final data =
+          jsonDecode(utf8.decode(resp.bodyBytes)) as Map<String, dynamic>;
       final rv = data['resume_view'] as Map<String, dynamic>?;
       if (rv == null) return;
       if (rv['is_done'] == true) {
@@ -121,7 +125,9 @@ class _ConsultPageState extends State<ConsultPage> {
         if (spec != null) {
           _spec = _Spec(
             spec['answer_type'] as String? ?? 'free_text',
-            ((spec['options'] as List<dynamic>?) ?? const []).map((e) => e.toString()).toList(),
+            ((spec['options'] as List<dynamic>?) ?? const [])
+                .map((e) => e.toString())
+                .toList(),
           );
         }
       }
@@ -131,7 +137,10 @@ class _ConsultPageState extends State<ConsultPage> {
   Future<void> _newSession() async {
     try {
       final resp = await http
-          .get(Uri.parse('$kBackendBase/api/ai/consult/new'), headers: AuthStore.headers())
+          .get(
+            Uri.parse('$kBackendBase/api/ai/consult/new'),
+            headers: AuthStore.headers(),
+          )
           .timeout(const Duration(seconds: 10));
       if (resp.statusCode == 200) {
         final data = jsonDecode(resp.body) as Map<String, dynamic>;
@@ -145,16 +154,20 @@ class _ConsultPageState extends State<ConsultPage> {
         }
         _streaming = null;
       } else {
-        _messages.add(_Msg(
-          role: _Role.assistant,
-          text: '⚠️ 创建问诊会话失败（HTTP ${resp.statusCode}）。',
-        ));
+        _messages.add(
+          _Msg(
+            role: _Role.assistant,
+            text: '⚠️ 创建问诊会话失败（HTTP ${resp.statusCode}）。',
+          ),
+        );
       }
     } catch (_) {
-      _messages.add(_Msg(
-        role: _Role.assistant,
-        text: '⚠️ 无法连接服务器，请检查网络与后端地址（当前：$kBackendBase）。',
-      ));
+      _messages.add(
+        _Msg(
+          role: _Role.assistant,
+          text: '⚠️ 无法连接服务器，请检查网络与后端地址（当前：$kBackendBase）。',
+        ),
+      );
     }
   }
 
@@ -179,7 +192,8 @@ class _ConsultPageState extends State<ConsultPage> {
         break;
       case 'done':
         _result = event;
-        _isDone = event['should_stop'] == true &&
+        _isDone =
+            event['should_stop'] == true &&
             (event['outcome'] as String?) != 'continue';
         _spec = null;
         if (_isDone) {
@@ -231,15 +245,18 @@ class _ConsultPageState extends State<ConsultPage> {
     _streaming = ai;
 
     try {
-      final request = http.Request(
-        'POST',
-        Uri.parse('$kBackendBase/api/ai/consult'),
-      )
-        ..headers['Content-Type'] = 'application/json'
-        ..headers.addAll(AuthStore.headers())
-        ..body = jsonEncode({'session_id': _sessionId, 'user_message': userText});
+      final request =
+          http.Request('POST', Uri.parse('$kBackendBase/api/ai/consult'))
+            ..headers['Content-Type'] = 'application/json'
+            ..headers.addAll(AuthStore.headers())
+            ..body = jsonEncode({
+              'session_id': _sessionId,
+              'user_message': userText,
+            });
 
-      final streamed = await request.send().timeout(const Duration(seconds: 40));
+      final streamed = await request.send().timeout(
+        const Duration(seconds: 40),
+      );
       if (streamed.statusCode != 200) {
         ai.text = '请求失败（${streamed.statusCode}）';
         ai.streaming = false;
@@ -252,21 +269,21 @@ class _ConsultPageState extends State<ConsultPage> {
           .timeout(const Duration(seconds: 120))
           .transform(utf8.decoder)
           .forEach((chunk) {
-        buffer.write(chunk);
-        final raw = buffer.toString();
-        final lines = raw.split('\n');
-        buffer
-          ..clear()
-          ..write(lines.last);
-        for (final line in lines.sublist(0, lines.length - 1)) {
-          if (!line.startsWith('data: ')) continue;
-          final jsonStr = line.substring(6).trim();
-          if (jsonStr.isEmpty) continue;
-          try {
-            _applyEvent(jsonDecode(jsonStr) as Map<String, dynamic>);
-          } catch (_) {}
-        }
-      });
+            buffer.write(chunk);
+            final raw = buffer.toString();
+            final lines = raw.split('\n');
+            buffer
+              ..clear()
+              ..write(lines.last);
+            for (final line in lines.sublist(0, lines.length - 1)) {
+              if (!line.startsWith('data: ')) continue;
+              final jsonStr = line.substring(6).trim();
+              if (jsonStr.isEmpty) continue;
+              try {
+                _applyEvent(jsonDecode(jsonStr) as Map<String, dynamic>);
+              } catch (_) {}
+            }
+          });
       // 末尾可能未换行的最后一行
       final tail = buffer.toString().trim();
       if (tail.startsWith('data: ')) {
@@ -295,7 +312,12 @@ class _ConsultPageState extends State<ConsultPage> {
     if (sid == null) return;
     final msgList = _messages
         .where((m) => m.text.isNotEmpty)
-        .map((m) => {'role': m.role == _Role.user ? 'user' : 'assistant', 'text': m.text})
+        .map(
+          (m) => {
+            'role': m.role == _Role.user ? 'user' : 'assistant',
+            'text': m.text,
+          },
+        )
         .toList();
     String title = '问诊记录';
     for (final m in msgList) {
@@ -313,13 +335,15 @@ class _ConsultPageState extends State<ConsultPage> {
         break;
       }
     }
-    await ConversationStorage.save(ConversationRecord(
-      sessionId: sid,
-      title: title,
-      previewText: preview,
-      createdAt: DateTime.now(),
-      messages: msgList,
-    ));
+    await ConversationStorage.save(
+      ConversationRecord(
+        sessionId: sid,
+        title: title,
+        previewText: preview,
+        createdAt: DateTime.now(),
+        messages: msgList,
+      ),
+    );
   }
 
   void _scrollToBottom({bool animate = true}) {
@@ -327,8 +351,11 @@ class _ConsultPageState extends State<ConsultPage> {
       if (!_scrollController.hasClients) return;
       final target = _scrollController.position.maxScrollExtent + 160;
       if (animate) {
-        _scrollController.animateTo(target,
-            duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
+        _scrollController.animateTo(
+          target,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+        );
       } else {
         _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
       }
@@ -346,12 +373,14 @@ class _ConsultPageState extends State<ConsultPage> {
   Widget build(BuildContext context) {
     final itemCount = _messages.length + (_result != null ? 1 : 0);
     return Scaffold(
-      backgroundColor: AppTheme.bgPrimary,
+      backgroundColor: AppTheme.bgSecondary,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0.5,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: AppTheme.textPrimary),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: AppTheme.textPrimary,
+            size: 19,
+          ),
           onPressed: () async {
             await _saveHistory();
             widget.onBack();
@@ -360,20 +389,34 @@ class _ConsultPageState extends State<ConsultPage> {
         title: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('AI 智能问诊',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
-            Text('图谱驱动 · 策略树自适应追问',
-                style: TextStyle(fontSize: 11, color: AppTheme.textTertiary)),
+            Text(
+              'AI 智能问诊',
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.textPrimary,
+              ),
+            ),
+            Text(
+              '耐心描述，我会逐步了解你的情况',
+              style: TextStyle(fontSize: 11, color: AppTheme.textTertiary),
+            ),
           ],
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.insights_outlined, color: AppTheme.textPrimary),
+            icon: const Icon(
+              Icons.insights_outlined,
+              color: AppTheme.textPrimary,
+            ),
             tooltip: '问诊过程与结果',
             onPressed: _sessionId == null
                 ? null
-                : () => Navigator.of(context).push(MaterialPageRoute<void>(
-                    builder: (_) => ConsultReportPage(sessionId: _sessionId!))),
+                : () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => ConsultReportPage(sessionId: _sessionId!),
+                    ),
+                  ),
           ),
         ],
       ),
@@ -385,15 +428,21 @@ class _ConsultPageState extends State<ConsultPage> {
                 ? const Center(child: CircularProgressIndicator())
                 : ListView.builder(
                     controller: _scrollController,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                     itemCount: itemCount,
                     itemBuilder: (ctx, i) {
-                      if (i < _messages.length) return _buildMessage(_messages[i]);
+                      if (i < _messages.length) {
+                        return _buildMessage(_messages[i]);
+                      }
                       return _buildResultCard(_result!);
                     },
                   ),
           ),
-          if (_spec != null && _spec!.chips.isNotEmpty && !_isDone) _buildChips(),
+          if (_spec != null && _spec!.chips.isNotEmpty && !_isDone)
+            _buildChips(),
           _buildInputBar(),
         ],
       ),
@@ -406,23 +455,28 @@ class _ConsultPageState extends State<ConsultPage> {
     final known = (_progress!['known'] as List<dynamic>? ?? []).length;
     return Container(
       color: AppTheme.primaryLight,
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-      child: Row(
+      padding: const EdgeInsets.fromLTRB(18, 12, 18, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: LinearProgressIndicator(
-                value: pct,
-                minHeight: 6,
-                backgroundColor: Colors.white,
-                valueColor: const AlwaysStoppedAnimation(AppTheme.primary),
-              ),
+          Text(
+            '已了解 $known 项 · 正在确认$pending',
+            style: const TextStyle(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.primaryDark,
             ),
           ),
-          const SizedBox(width: 10),
-          Text('已了解 $known 项 · 正在确认$pending',
-              style: const TextStyle(fontSize: 11, color: AppTheme.primaryDark)),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: pct,
+              minHeight: 5,
+              backgroundColor: Colors.white,
+              valueColor: const AlwaysStoppedAnimation(AppTheme.primary),
+            ),
+          ),
         ],
       ),
     );
@@ -439,7 +493,10 @@ class _ConsultPageState extends State<ConsultPage> {
         children: _spec!.chips.map((opt) {
           return ActionChip(
             label: Text(opt),
-            labelStyle: const TextStyle(fontSize: 13, color: AppTheme.primaryDark),
+            labelStyle: const TextStyle(
+              fontSize: 13,
+              color: AppTheme.primaryDark,
+            ),
             backgroundColor: AppTheme.primaryLight,
             side: const BorderSide(color: AppTheme.primary, width: 0.8),
             onPressed: _isSending ? null : () => _send(opt),
@@ -455,14 +512,16 @@ class _ConsultPageState extends State<ConsultPage> {
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
-        mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: isUser
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
         children: [
           if (!isUser) ...[_avatar(), const SizedBox(width: 8)],
           Flexible(
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: isUser ? AppTheme.primary : Colors.white,
+                color: isUser ? AppTheme.primaryDark : Colors.white,
                 borderRadius: BorderRadius.only(
                   topLeft: const Radius.circular(16),
                   topRight: const Radius.circular(16),
@@ -470,16 +529,23 @@ class _ConsultPageState extends State<ConsultPage> {
                   bottomRight: Radius.circular(isUser ? 4 : 16),
                 ),
                 boxShadow: [
-                  BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 6, offset: const Offset(0, 2)),
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.06),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
                 ],
               ),
               child: msg.streaming && msg.text.isEmpty
                   ? const _TypingDots()
-                  : Text(msg.text,
+                  : Text(
+                      msg.text,
                       style: TextStyle(
-                          fontSize: 15,
-                          color: isUser ? Colors.white : AppTheme.textPrimary,
-                          height: 1.5)),
+                        fontSize: 15,
+                        color: isUser ? Colors.white : AppTheme.textPrimary,
+                        height: 1.5,
+                      ),
+                    ),
             ),
           ),
           if (isUser) const SizedBox(width: 8),
@@ -488,15 +554,11 @@ class _ConsultPageState extends State<ConsultPage> {
     );
   }
 
-  Widget _avatar() => Container(
-        width: 32,
-        height: 32,
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(colors: [AppTheme.primary, AppTheme.primaryDark]),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: const Icon(Icons.smart_toy, color: Colors.white, size: 18),
-      );
+  Widget _avatar() => const AppIconBadge(
+    icon: Icons.spa_outlined,
+    size: 32,
+    color: AppTheme.primaryDark,
+  );
 
   Widget _buildResultCard(Map<String, dynamic> result) {
     final outcome = result['outcome'] as String? ?? '';
@@ -522,30 +584,63 @@ class _ConsultPageState extends State<ConsultPage> {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: color.withValues(alpha: 0.5)),
           boxShadow: [
-            BoxShadow(color: color.withValues(alpha: 0.12), blurRadius: 12, offset: const Offset(0, 4)),
+            BoxShadow(
+              color: color.withValues(alpha: 0.12),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
           ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(children: [
-              Icon(isRefer ? Icons.local_hospital_outlined : Icons.verified_outlined, color: color, size: 22),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(title,
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color)),
-              ),
-            ]),
+            Row(
+              children: [
+                Icon(
+                  isRefer
+                      ? Icons.local_hospital_outlined
+                      : Icons.verified_outlined,
+                  color: color,
+                  size: 22,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: color,
+                    ),
+                  ),
+                ),
+              ],
+            ),
             if (summary.isNotEmpty) ...[
               const SizedBox(height: 10),
-              Text(summary, style: const TextStyle(fontSize: 13.5, color: AppTheme.textSecondary, height: 1.5)),
+              Text(
+                summary,
+                style: const TextStyle(
+                  fontSize: 13.5,
+                  color: AppTheme.textSecondary,
+                  height: 1.5,
+                ),
+              ),
             ],
             if (impression.isNotEmpty) ...[
               const SizedBox(height: 14),
-              const Text('临床方向（内部参考，非诊断）',
-                  style: TextStyle(fontSize: 12, color: AppTheme.textTertiary, fontWeight: FontWeight.w600)),
+              const Text(
+                '临床方向（内部参考，非诊断）',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppTheme.textTertiary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
               const SizedBox(height: 8),
-              ...impression.map((h) => _impressionRow(h as Map<String, dynamic>)),
+              ...impression.map(
+                (h) => _impressionRow(h as Map<String, dynamic>),
+              ),
             ],
             const SizedBox(height: 14),
             if (!isRefer) ...[
@@ -557,16 +652,23 @@ class _ConsultPageState extends State<ConsultPage> {
                       foregroundColor: AppTheme.primary,
                       side: const BorderSide(color: AppTheme.primary),
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
-                    onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
-                          builder: (_) => ProgramPage(
-                            programId: _existingProgramId!,
-                            sessionId: _sessionId,
-                          ),
-                        )),
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => ProgramPage(
+                          programId: _existingProgramId!,
+                          sessionId: _sessionId,
+                        ),
+                      ),
+                    ),
                     icon: const Icon(Icons.open_in_new, size: 18),
-                    label: const Text('查看我的康复方案', style: TextStyle(fontWeight: FontWeight.w600)),
+                    label: const Text(
+                      '查看我的康复方案',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -578,18 +680,26 @@ class _ConsultPageState extends State<ConsultPage> {
                     backgroundColor: AppTheme.primary,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                     elevation: 0,
                   ),
                   onPressed: _sessionId == null
                       ? null
                       : () async {
-                          await Navigator.of(context).push(MaterialPageRoute<void>(
-                              builder: (_) => BaselinePage(sessionId: _sessionId!)));
+                          await Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) =>
+                                  BaselinePage(sessionId: _sessionId!),
+                            ),
+                          );
                           if (mounted) await _refreshExistingProgram();
                         },
                   icon: Icon(
-                    _existingProgramId != null ? Icons.refresh : Icons.assignment_turned_in,
+                    _existingProgramId != null
+                        ? Icons.refresh
+                        : Icons.assignment_turned_in,
                     size: 18,
                   ),
                   label: Text(
@@ -605,8 +715,12 @@ class _ConsultPageState extends State<ConsultPage> {
               child: OutlinedButton.icon(
                 onPressed: _sessionId == null
                     ? null
-                    : () => Navigator.of(context).push(MaterialPageRoute<void>(
-                        builder: (_) => ConsultReportPage(sessionId: _sessionId!))),
+                    : () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) =>
+                              ConsultReportPage(sessionId: _sessionId!),
+                        ),
+                      ),
                 icon: const Icon(Icons.insights_outlined, size: 18),
                 label: const Text('查看问诊过程与结果'),
               ),
@@ -622,26 +736,36 @@ class _ConsultPageState extends State<ConsultPage> {
     final conf = (h['confidence'] as num?)?.toDouble() ?? 0;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(children: [
-        Expanded(
-          flex: 5,
-          child: Text(name, style: const TextStyle(fontSize: 13, color: AppTheme.textPrimary), maxLines: 1, overflow: TextOverflow.ellipsis),
-        ),
-        Expanded(
-          flex: 4,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: conf.clamp(0.0, 1.0),
-              minHeight: 6,
-              backgroundColor: AppTheme.bgTertiary,
-              valueColor: const AlwaysStoppedAnimation(AppTheme.primary),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 5,
+            child: Text(
+              name,
+              style: const TextStyle(fontSize: 13, color: AppTheme.textPrimary),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
-        ),
-        const SizedBox(width: 8),
-        Text(conf.toStringAsFixed(2), style: const TextStyle(fontSize: 12, color: AppTheme.textTertiary)),
-      ]),
+          Expanded(
+            flex: 4,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: conf.clamp(0.0, 1.0),
+                minHeight: 6,
+                backgroundColor: AppTheme.bgTertiary,
+                valueColor: const AlwaysStoppedAnimation(AppTheme.primary),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            conf.toStringAsFixed(2),
+            style: const TextStyle(fontSize: 12, color: AppTheme.textTertiary),
+          ),
+        ],
+      ),
     );
   }
 
@@ -671,34 +795,61 @@ class _ConsultPageState extends State<ConsultPage> {
                   onSubmitted: (_) => _send(_textController.text),
                   decoration: InputDecoration(
                     hintText: hint,
-                    hintStyle: const TextStyle(color: AppTheme.textTertiary, fontSize: 14),
+                    hintStyle: const TextStyle(
+                      color: AppTheme.textTertiary,
+                      fontSize: 14,
+                    ),
                     border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
                   ),
-                  style: const TextStyle(fontSize: 15, color: AppTheme.textPrimary),
+                  style: const TextStyle(
+                    fontSize: 15,
+                    color: AppTheme.textPrimary,
+                  ),
                 ),
               ),
             ),
             const SizedBox(width: 8),
-            GestureDetector(
-              onTap: (_isSending || _isDone) ? null : () => _send(_textController.text),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  gradient: (_isSending || _isDone)
-                      ? null
-                      : const LinearGradient(colors: [AppTheme.primary, AppTheme.primaryDark]),
-                  color: (_isSending || _isDone) ? const Color(0xFFDDDDDD) : null,
-                  borderRadius: BorderRadius.circular(22),
+            Semantics(
+              button: true,
+              label: '发送回答',
+              child: InkWell(
+                borderRadius: BorderRadius.circular(22),
+                onTap: (_isSending || _isDone)
+                    ? null
+                    : () => _send(_textController.text),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    gradient: (_isSending || _isDone)
+                        ? null
+                        : const LinearGradient(
+                            colors: [AppTheme.primary, AppTheme.primaryDark],
+                          ),
+                    color: (_isSending || _isDone)
+                        ? const Color(0xFFDDDDDD)
+                        : null,
+                    borderRadius: BorderRadius.circular(22),
+                  ),
+                  child: _isSending
+                      ? const Padding(
+                          padding: EdgeInsets.all(12),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation(Colors.white),
+                          ),
+                        )
+                      : const Icon(
+                          Icons.arrow_upward_rounded,
+                          color: Colors.white,
+                          size: 22,
+                        ),
                 ),
-                child: _isSending
-                    ? const Padding(
-                        padding: EdgeInsets.all(12),
-                        child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(Colors.white)),
-                      )
-                    : const Icon(Icons.send, color: Colors.white, size: 20),
               ),
             ),
           ],
@@ -715,9 +866,12 @@ class _TypingDots extends StatefulWidget {
   State<_TypingDots> createState() => _TypingDotsState();
 }
 
-class _TypingDotsState extends State<_TypingDots> with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 900))..repeat();
+class _TypingDotsState extends State<_TypingDots>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 900),
+  )..repeat();
 
   @override
   void dispose() {
@@ -737,7 +891,10 @@ class _TypingDotsState extends State<_TypingDots> with SingleTickerProviderState
             mainAxisSize: MainAxisSize.min,
             children: List.generate(3, (i) {
               final t = (_ctrl.value * 3 - i).clamp(0.0, 1.0);
-              final o = (0.3 + 0.7 * (t < 0.5 ? t * 2 : (1 - t) * 2)).clamp(0.3, 1.0);
+              final o = (0.3 + 0.7 * (t < 0.5 ? t * 2 : (1 - t) * 2)).clamp(
+                0.3,
+                1.0,
+              );
               return Container(
                 width: 8,
                 height: 8,
