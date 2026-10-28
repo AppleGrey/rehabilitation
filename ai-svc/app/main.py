@@ -105,8 +105,10 @@ ASSETS_DIR.mkdir(parents=True, exist_ok=True)
 app.mount("/assets", StaticFiles(directory=str(ASSETS_DIR)), name="assets")
 
 from .consult.motion_rule_routes import router as motion_rule_router  # noqa: E402
+from .media.catalog_routes import router as catalog_router  # noqa: E402
 
 app.include_router(motion_rule_router)
+app.include_router(catalog_router)
 
 # ── 登录态 ────────────────────────────────────────────────────────────────────
 # 用户体系与令牌签发都在 core-svc；ai-svc 只解令牌拿 user_id，用于方案归属与列表过滤。

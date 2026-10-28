@@ -70,6 +70,27 @@ def list_configured_ids() -> list[str]:
     return sorted(list_saved_ids() & list_video_ids())
 
 
+def list_rule_titles() -> dict[str, str]:
+    """规则文件里的动作名称。没有写名称的不放进来。"""
+    titles: dict[str, str] = {}
+    if not RULES_DIR.exists():
+        return titles
+    library = list_video_ids()
+    for path in RULES_DIR.glob("*.json"):
+        if path.stem not in library or not _ID.fullmatch(path.stem):
+            continue
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(data, dict):
+            continue
+        title = str(data.get("title_cn") or "").strip()
+        if title and not title.upper().startswith("IMG_"):
+            titles[path.stem] = title
+    return titles
+
+
 def _number(value, name: str) -> float:
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise MotionRuleError(f"{name} 需要是数字")

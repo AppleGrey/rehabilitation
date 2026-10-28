@@ -94,10 +94,15 @@ def load_all_videos() -> list[dict]:
     try:
         with db_cursor(commit=False) as cur:
             cur.execute(
-                "SELECT metadata FROM videos ORDER BY video_id"
+                "SELECT metadata, enabled FROM videos ORDER BY video_id"
             )
             rows = cur.fetchall()
-        return [dict(row["metadata"]) for row in rows]
+        out = []
+        for row in rows:
+            meta = dict(row["metadata"])
+            meta["enabled"] = bool(row["enabled"])
+            out.append(meta)
+        return out
     except Exception:
         logger.exception("[VIDEO] 加载元数据失败")
         return []

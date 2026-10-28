@@ -16,6 +16,7 @@ import (
 	"rehabilitation/admin-svc/internal/ota"
 	"rehabilitation/admin-svc/internal/program"
 	"rehabilitation/admin-svc/internal/strategy"
+	"rehabilitation/admin-svc/internal/videolib"
 )
 
 type Deps struct {
@@ -23,6 +24,7 @@ type Deps struct {
 	Program      *program.Handler
 	OTA          *ota.Handler
 	LLM          *llmconfig.Handler
+	Videos       *videolib.Handler
 	Auth         *auth.Handler
 	Guard        *auth.Guard
 	StaticDir    string
@@ -72,6 +74,9 @@ func NewRouter(d Deps) *gin.Engine {
 			api.GET("/llm-configs", d.LLM.List)
 			api.PUT("/llm-configs/:profile", d.LLM.Update)
 		}
+		if d.Videos != nil {
+			api.POST("/videos/enabled", d.Videos.SetEnabled)
+		}
 
 		// 实时评分规则：页面在视频库，写入仍由 ai-svc 校验并落盘。
 		if d.AiSvcURL != "" {
@@ -86,6 +91,12 @@ func NewRouter(d Deps) *gin.Engine {
 			}))
 			api.DELETE("/motion-rules/:video_id", proxyAI(d.AiSvcURL, func(c *gin.Context) string {
 				return "/api/admin/motion-rules/" + c.Param("video_id")
+			}))
+			api.POST("/videos/prepare", proxyAI(d.AiSvcURL, func(*gin.Context) string {
+				return "/api/admin/videos/prepare"
+			}))
+			api.GET("/videos/prepare/:job_id", proxyAI(d.AiSvcURL, func(c *gin.Context) string {
+				return "/api/admin/videos/prepare/" + c.Param("job_id")
 			}))
 		}
 	}

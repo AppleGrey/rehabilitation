@@ -31,7 +31,6 @@ import requests
 from dotenv import load_dotenv
 
 ROOT = Path(__file__).resolve().parent.parent
-os.chdir(ROOT)
 sys.path.insert(0, str(ROOT / "ai-svc"))
 load_dotenv(ROOT / ".env")
 
@@ -55,16 +54,6 @@ MAX_WORKERS = 12
 RETRY = 2
 REQUEST_TIMEOUT = 300
 MAX_FILE_SIZE_MB = 12
-
-for _proxy in (
-    "HTTP_PROXY",
-    "HTTPS_PROXY",
-    "http_proxy",
-    "https_proxy",
-    "ALL_PROXY",
-    "all_proxy",
-):
-    os.environ.pop(_proxy, None)
 
 _LANDMARK_ALIASES = {name.replace("_", ""): name for name in LANDMARKS}
 _print_lock = threading.Lock()
@@ -243,10 +232,20 @@ def _message_text(message: dict) -> str:
     return reasoning if isinstance(reasoning, str) else ""
 
 
-def call_model(data_url: str, video_id: str, duration: float | None, hint: str, correction: str) -> dict:
+def call_model(
+    data_url: str,
+    video_id: str,
+    duration: float | None,
+    hint: str,
+    correction: str,
+    profile=None,
+    follow_profile_thinking: bool = False,
+) -> dict:
     global _omit_thinking_field
-    vision = vision_profile()
+    vision = profile or vision_profile()
     if not vision.api_key:
+        if getattr(vision, "profile", "") == "catalog":
+            raise RuntimeError("请先在配置管理里填写「视频库处理」的 API Key")
         raise RuntimeError("视觉大模型 API Key 未配置，请在管理平台的配置管理中填写")
     duration_text = f"{duration:.1f}" if duration else "未知"
     note = f"\n上次输出无法入库：{correction}。请只输出修正后的 JSON。" if correction else ""
@@ -258,7 +257,7 @@ def call_model(data_url: str, video_id: str, duration: float | None, hint: str, 
     body = {
         "model": vision.model,
         "temperature": 0.2,
-        "max_tokens": min(int(vision.max_tokens or 4096), 4096),
+        "max_tokens": _output_limit(vision, follow_profile_thinking),
         "messages": [
             {"role": "system", "content": SYSTEM_PROMPT},
             {
@@ -272,7 +271,9 @@ def call_model(data_url: str, video_id: str, duration: float | None, hint: str, 
     }
     with _request_lock:
         omit_thinking = _omit_thinking_field
-    if not omit_thinking:
+    if follow_profile_thinking:
+        body["enable_thinking"] = bool(vision.enable_thinking)
+    elif not omit_thinking:
         body["enable_thinking"] = False
 
     session = requests.Session()
@@ -699,7 +700,23 @@ def remember(video_id: str, status: str, detail: str = "") -> None:
                 _save_json(FAIL_FILE, failed)
 
 
-def process_video(path: Path, force: bool) -> str:
+def _output_limit(vision, follow_profile_thinking: bool) -> int:
+    try:
+        limit = int(vision.max_tokens or 4096)
+    except (TypeError, ValueError):
+        limit = 4096
+    limit = max(256, min(limit, 32768))
+    if not follow_profile_thinking:
+        limit = min(limit, 4096)
+    return limit
+
+
+def process_video(
+    path: Path,
+    force: bool,
+    profile=None,
+    follow_profile_thinking: bool = False,
+) -> str:
     video_id = path.stem
     if not force and (RULES_DIR / f"{video_id}.json").exists():
         log(f"[SKIP] {video_id} 已有评分规则")
@@ -736,7 +753,15 @@ def process_video(path: Path, force: bool) -> str:
         try:
             if attempt:
                 log(f"  [{video_id}] 第 {attempt + 1} 次重试")
-            parsed = call_model(data_url, video_id, duration, hint, correction)
+            parsed = call_model(
+                data_url,
+                video_id,
+                duration,
+                hint,
+                correction,
+                profile=profile,
+                follow_profile_thinking=follow_profile_thinking,
+            )
             rule, guide = assemble(parsed, duration)
             end_time = float(guide["cycle_end"])
             _sync_duration(video_id, duration, end_time if rule else None)
@@ -865,6 +890,16 @@ def self_test() -> None:
 
 
 def main() -> None:
+    os.chdir(ROOT)
+    for _proxy in (
+        "HTTP_PROXY",
+        "HTTPS_PROXY",
+        "http_proxy",
+        "https_proxy",
+        "ALL_PROXY",
+        "all_proxy",
+    ):
+        os.environ.pop(_proxy, None)
     parser = argparse.ArgumentParser(description="用视觉模型为康复视频生成实时评分规则")
     parser.add_argument("--workers", type=int, default=MAX_WORKERS)
     parser.add_argument("--only", default="", help="只处理一个视频编号")

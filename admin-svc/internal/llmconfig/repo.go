@@ -15,6 +15,7 @@ import (
 const (
 	Consult = "consult"
 	Vision  = "vision"
+	Catalog = "catalog"
 )
 
 type Profile struct {
@@ -68,7 +69,7 @@ ALTER TABLE llm_runtime_configs ADD COLUMN IF NOT EXISTS concat_standard_video B
 		return err
 	}
 	repo := NewRepo(pool)
-	for _, id := range []string{Consult, Vision} {
+	for _, id := range []string{Consult, Vision, Catalog} {
 		if err := repo.seedIfMissing(ctx, id); err != nil {
 			return err
 		}
@@ -82,8 +83,8 @@ func (r *Repo) List(ctx context.Context) ([]Profile, error) {
 		       concat_standard_video, updated_at
 		FROM llm_runtime_configs
 		WHERE profile = ANY($1)
-		ORDER BY CASE profile WHEN 'consult' THEN 0 WHEN 'vision' THEN 1 ELSE 2 END
-	`, []string{Consult, Vision})
+		ORDER BY CASE profile WHEN 'consult' THEN 0 WHEN 'vision' THEN 1 WHEN 'catalog' THEN 2 ELSE 3 END
+	`, []string{Consult, Vision, Catalog})
 	if err != nil {
 		return nil, err
 	}
@@ -193,6 +194,8 @@ func titleOf(id string) string {
 		return "问诊大模型"
 	case Vision:
 		return "视觉大模型"
+	case Catalog:
+		return "视频库处理"
 	default:
 		return id
 	}
@@ -203,7 +206,9 @@ func descriptionOf(id string) string {
 	case Consult:
 		return "策略问诊抽取事实、更新候选情况，并生成鉴别问题。建树的输出上限在这里调整，思考和正文共用这一额度。"
 	case Vision:
-		return "评估用户动作，以及预处理教学视频。评估时可选择是否拼接标准视频。"
+		return "评估用户跟做录像。可选择是否把标准视频和用户视频拼在一起，以及是否开启思考。"
+	case Catalog:
+		return "只用于视频库里的内容提取和实时评分规则。和跟做评估的视觉模型分开配置。"
 	default:
 		return ""
 	}
@@ -237,6 +242,15 @@ func envSeed(id string) envSeedValues {
 			model:          envOr("DEEPSEEK_MODEL", "deepseek-chat"),
 			enableThinking: false,
 			maxTokens:      32768,
+		}
+	}
+	if id == Catalog {
+		return envSeedValues{
+			apiKey:         strings.TrimSpace(os.Getenv("DASHSCOPE_API_KEY")),
+			baseURL:        strings.TrimRight(envOr("DASHSCOPE_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1"), "/"),
+			model:          envOr("DASHSCOPE_MODEL", "qwen3.6-plus"),
+			enableThinking: false,
+			maxTokens:      8192,
 		}
 	}
 	maxTokens := 4096

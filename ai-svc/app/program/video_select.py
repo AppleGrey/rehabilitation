@@ -46,9 +46,9 @@ def _contra_hit(video: dict, user_contra: list[str]) -> bool:
 
 
 def _index() -> list[dict]:
-    vids = load_all_videos()
+    vids = [v for v in load_all_videos() if v.get("enabled") is not False]
     if not vids:
-        logger.warning("[PROGRAM] 视频库为空")
+        logger.warning("[PROGRAM] 没有已启用的视频")
     return vids
 
 

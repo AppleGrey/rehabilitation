@@ -39,7 +39,7 @@ type updateBody struct {
 
 func (h *Handler) Update(c *gin.Context) {
 	id := strings.TrimSpace(c.Param("profile"))
-	if id != Consult && id != Vision {
+	if id != Consult && id != Vision && id != Catalog {
 		c.JSON(http.StatusNotFound, gin.H{"detail": "未知的配置项"})
 		return
 	}
@@ -80,10 +80,10 @@ func (h *Handler) Update(c *gin.Context) {
 		}
 		in.Temperature = body.Temperature
 	}
-	if body.EnableThinking != nil && (id == Consult || id == Vision) {
+	if body.EnableThinking != nil && (id == Consult || id == Vision || id == Catalog) {
 		in.EnableThinking = body.EnableThinking
 	}
-	if body.MaxTokens != nil && (id == Consult || id == Vision) {
+	if body.MaxTokens != nil && (id == Consult || id == Vision || id == Catalog) {
 		if *body.MaxTokens < 256 || *body.MaxTokens > 32768 {
 			c.JSON(http.StatusBadRequest, gin.H{"detail": "最大输出 token 需要在 256 到 32768 之间"})
 			return

@@ -4,8 +4,11 @@ import {
   deleteMotionRule,
   fetchMotionRule,
   fetchMotionRuleIds,
+  fetchVideoPrepare,
   fetchVideos,
   playUrl,
+  setVideosEnabled,
+  startVideoPrepare,
   saveMotionRule,
   type VideoItem,
 } from '../api'
@@ -16,7 +19,17 @@ const videos = ref<VideoItem[]>([])
 const selectedId = ref('')
 const filterJoint = ref('')
 const filterSeverity = ref('')
+const filterEquipment = ref('')
+const filterEnabled = ref('')
+const filterRule = ref('')
 const search = ref('')
+const picked = ref<string[]>([])
+const enabling = ref(false)
+const preparing = ref(false)
+const prepareNote = ref('')
+const prepareClearsPick = ref(false)
+const ruleTitles = ref<Record<string, string>>({})
+let prepareTimer = 0
 
 const uploadOpen = ref(false)
 const uploadFile = ref<File | null>(null)
@@ -159,14 +172,30 @@ const severities = computed(() => {
   return [...set].sort()
 })
 
+const equipments = computed(() => {
+  const set = new Set<string>()
+  for (const v of videos.value) {
+    const name = String(v.equipment || '').trim()
+    if (name) set.add(name)
+  }
+  return [...set].sort()
+})
+
 const filtered = computed(() => {
   const q = search.value.trim().toLowerCase()
   return videos.value.filter((v) => {
     if (filterJoint.value && v.target_joint !== filterJoint.value) return false
     if (filterSeverity.value && v.severity !== filterSeverity.value) return false
+    if (filterEquipment.value && String(v.equipment || '') !== filterEquipment.value) return false
+    if (filterEnabled.value === 'on' && v.enabled === false) return false
+    if (filterEnabled.value === 'off' && v.enabled !== false) return false
+    const hasRule = ruleIds.value.has(v.video_id)
+    if (filterRule.value === 'yes' && !hasRule) return false
+    if (filterRule.value === 'no' && hasRule) return false
     if (!q) return true
     const hay = [
       v.video_id,
+      videoName(v),
       v.description_cn,
       v.file_name,
       ...(v.action_keywords || []),
@@ -183,12 +212,14 @@ const metaRows = computed(() => {
   const v = selected.value
   if (!v) return []
   return [
+    { label: '动作名称', value: videoName(v) },
     { label: 'video_id', value: v.video_id },
     { label: '目标关节', value: v.target_joint },
     { label: '严重程度', value: v.severity },
     { label: '康复阶段', value: v.rehab_stage },
     { label: '难度', value: v.difficulty != null ? String(v.difficulty) : undefined },
     { label: '时长(秒)', value: v.duration_seconds != null ? String(v.duration_seconds) : undefined },
+    { label: '启用', value: v.enabled === false ? '未启用' : '已启用' },
     { label: '器械', value: v.equipment },
     { label: '空间', value: v.space_required },
     { label: '安全等级', value: v.safety_level },
@@ -196,6 +227,115 @@ const metaRows = computed(() => {
     { label: '播放路径', value: v.url || '（MinIO 未找到文件）' },
   ].filter((r) => r.value != null && r.value !== '')
 })
+
+const allFilteredPicked = computed(
+  () => filtered.value.length > 0 && filtered.value.every((v) => picked.value.includes(v.video_id)),
+)
+
+function togglePick(id: string, on: boolean) {
+  const next = new Set(picked.value)
+  if (on) next.add(id)
+  else next.delete(id)
+  picked.value = [...next]
+}
+
+function toggleFiltered(on: boolean) {
+  const next = new Set(picked.value)
+  for (const v of filtered.value) {
+    if (on) next.add(v.video_id)
+    else next.delete(v.video_id)
+  }
+  picked.value = [...next]
+}
+
+async function applyEnabled(enabled: boolean) {
+  await applyEnabledFor(picked.value, enabled, true)
+}
+
+async function applyEnabledFor(ids: string[], enabled: boolean, clearPick = false) {
+  if (!ids.length || enabling.value) return
+  enabling.value = true
+  error.value = ''
+  try {
+    const result = await setVideosEnabled(ids, enabled)
+    const updated = new Set(result.video_ids || [])
+    for (const v of videos.value) {
+      if (updated.has(v.video_id)) v.enabled = enabled
+    }
+    if (clearPick) picked.value = []
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : '更新启用状态失败'
+  } finally {
+    enabling.value = false
+  }
+}
+
+function videoName(v: VideoItem) {
+  const titled = String(v.action_name || v.name_cn || ruleTitles.value[v.video_id] || '').trim()
+  if (titled && !/^IMG_\d+$/i.test(titled)) return titled
+  const keyword = (v.action_keywords || []).find((item) => item && !/^IMG_\d+$/i.test(item))
+  if (keyword) return keyword
+  const desc = String(v.description_cn || '').trim()
+  if (desc) return desc.length > 22 ? `${desc.slice(0, 22)}…` : desc
+  return '未命名动作'
+}
+
+function applyPrepareItems(items: { video_id: string; status: string; name: string }[]) {
+  for (const item of items) {
+    if (item.status === 'saved') {
+      ruleIds.value = new Set([...ruleIds.value, item.video_id])
+    }
+    if (!item.name) continue
+    const video = videos.value.find((entry) => entry.video_id === item.video_id)
+    if (video) video.action_name = item.name
+    ruleTitles.value[item.video_id] = item.name
+  }
+}
+
+async function pollPrepare(jobId: string) {
+  try {
+    const job = await fetchVideoPrepare(jobId)
+    applyPrepareItems(job.items || [])
+    const current = (job.items || []).find((item) => item.status === 'running')
+    prepareNote.value = current
+      ? `正在处理 ${job.done + 1}/${job.total}：${videoName(videos.value.find((item) => item.video_id === current.video_id) || { video_id: current.video_id })}`
+      : `已处理 ${job.done}/${job.total}`
+    if (job.status === 'running') {
+      prepareTimer = window.setTimeout(() => pollPrepare(jobId), 2000)
+      return
+    }
+    const failed = (job.items || []).filter((item) => item.status === 'fail')
+    prepareNote.value = failed.length
+      ? `完成 ${job.done}/${job.total}，${failed.length} 个失败`
+      : `完成 ${job.done}/${job.total}`
+    preparing.value = false
+    if (prepareClearsPick.value) picked.value = []
+    await load()
+  } catch (e) {
+    preparing.value = false
+    error.value = e instanceof Error ? e.message : '查询处理进度失败'
+  }
+}
+
+async function prepareSelected() {
+  await prepareIds([...picked.value], true)
+}
+
+async function prepareIds(ids: string[], clearPick = false) {
+  if (!ids.length || preparing.value) return
+  preparing.value = true
+  prepareClearsPick.value = clearPick
+  prepareNote.value = ''
+  error.value = ''
+  try {
+    const job = await startVideoPrepare(ids)
+    prepareNote.value = `已提交 ${job.total} 个，正在处理`
+    await pollPrepare(job.job_id)
+  } catch (e) {
+    preparing.value = false
+    error.value = e instanceof Error ? e.message : '提交处理失败'
+  }
+}
 
 async function load() {
   busy.value = true
@@ -206,6 +346,7 @@ async function load() {
     try {
       const rules = await fetchMotionRuleIds()
       ruleIds.value = new Set(rules.video_ids || [])
+      ruleTitles.value = rules.titles || {}
     } catch {
       ruleIds.value = new Set()
     }
@@ -716,6 +857,7 @@ onMounted(load)
 
 onBeforeUnmount(() => {
   clearUploadPreview()
+  if (prepareTimer) window.clearTimeout(prepareTimer)
 })
 </script>
 
@@ -725,7 +867,7 @@ onBeforeUnmount(() => {
       <div>
         <h1>视频库</h1>
         <p class="sub">
-          视频来自 core-svc。选中一条后，可以在右侧设定跟做时的实时评分规则。
+          列表显示模型起的动作名称。勾选多条后，可以用「视频库处理」模型提取内容并制定评分规则。
         </p>
       </div>
       <div class="head-actions">
@@ -847,6 +989,42 @@ onBeforeUnmount(() => {
             <option value="">全部严重度</option>
             <option v-for="s in severities" :key="s" :value="s">{{ s }}</option>
           </select>
+          <select v-model="filterEquipment">
+            <option value="">全部器械</option>
+            <option v-for="item in equipments" :key="item" :value="item">{{ item }}</option>
+          </select>
+          <select v-model="filterEnabled">
+            <option value="">全部状态</option>
+            <option value="on">仅已启用</option>
+            <option value="off">仅未启用</option>
+          </select>
+          <select v-model="filterRule">
+            <option value="">全部规则</option>
+            <option value="yes">已有规则</option>
+            <option value="no">没有规则</option>
+          </select>
+        </div>
+        <div class="bulk">
+          <label class="pick-all">
+            <input
+              type="checkbox"
+              :checked="allFilteredPicked"
+              :disabled="!filtered.length"
+              @change="toggleFiltered(($event.target as HTMLInputElement).checked)"
+            />
+            全选当前筛选
+          </label>
+          <span>{{ picked.length }} 已选</span>
+          <button type="button" class="btn" :disabled="!picked.length || enabling" @click="applyEnabled(true)">
+            启用
+          </button>
+          <button type="button" class="btn" :disabled="!picked.length || enabling" @click="applyEnabled(false)">
+            停用
+          </button>
+          <button type="button" class="btn btn-primary" :disabled="!picked.length || preparing" @click="prepareSelected">
+            {{ preparing ? '处理中…' : '提取并制定规则' }}
+          </button>
+          <p v-if="prepareNote" class="prepare-note">{{ prepareNote }}</p>
         </div>
 
         <div v-if="busy && !videos.length" class="empty">加载中…</div>
@@ -855,13 +1033,27 @@ onBeforeUnmount(() => {
           <li
             v-for="v in filtered"
             :key="v.video_id"
-            :class="{ active: v.video_id === selectedId, offline: !v.url }"
+            :class="{ active: v.video_id === selectedId, offline: !v.url, 'is-off': v.enabled === false }"
             @click="selectVideo(v.video_id)"
           >
-            <div class="vid-id">{{ v.video_id }}</div>
+            <label class="pick" @click.stop>
+              <input
+                type="checkbox"
+                :checked="picked.includes(v.video_id)"
+                @change="togglePick(v.video_id, ($event.target as HTMLInputElement).checked)"
+              />
+            </label>
+            <div class="vid-id">
+              <span class="vid-name">{{ videoName(v) }}</span>
+              <span class="state-tag" :class="{ off: v.enabled === false }">
+                {{ v.enabled === false ? '未启用' : '启用' }}
+              </span>
+            </div>
             <div class="vid-meta">
+              <span class="vid-code">{{ v.video_id }}</span>
               <span>{{ v.target_joint || '—' }}</span>
               <span>{{ v.severity || '—' }}</span>
+              <span>{{ v.equipment || '无器械' }}</span>
               <span v-if="v.difficulty != null">D{{ v.difficulty }}</span>
               <span v-if="!v.url" class="warn">无文件</span>
             </div>
@@ -875,8 +1067,37 @@ onBeforeUnmount(() => {
         <template v-if="selected">
           <section class="player-card">
             <div class="player-title">
-              <h2>{{ selected.video_id }}</h2>
-              <p>{{ selected.description_cn || '暂无描述' }}</p>
+              <div>
+                <h2>{{ videoName(selected) }}</h2>
+                <p>{{ selected.description_cn || '暂无描述' }}</p>
+              </div>
+              <div class="detail-actions">
+                <button
+                  type="button"
+                  class="btn"
+                  :disabled="enabling || selected.enabled !== false"
+                  @click="applyEnabledFor([selected.video_id], true)"
+                >
+                  启用
+                </button>
+                <button
+                  type="button"
+                  class="btn"
+                  :disabled="enabling || selected.enabled === false"
+                  @click="applyEnabledFor([selected.video_id], false)"
+                >
+                  停用
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-primary"
+                  :disabled="preparing"
+                  @click="prepareIds([selected.video_id])"
+                >
+                  {{ preparing ? '处理中…' : '提取并制定规则' }}
+                </button>
+              </div>
+              <p v-if="prepareNote" class="prepare-note">{{ prepareNote }}</p>
             </div>
             <div v-if="selected.url" class="player-layout">
             <div class="player-frame">
@@ -1378,12 +1599,55 @@ h1 {
   overflow: auto;
   flex: 1;
 }
+.bulk {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.prepare-note {
+  flex-basis: 100%;
+  margin: 0;
+}
+.bulk .btn:first-of-type {
+  margin-left: auto;
+}
+.bulk .btn {
+  padding: 4px 10px;
+}
+.pick-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--fg);
+}
 .video-list li {
-  padding: 10px 12px;
+  position: relative;
+  padding: 10px 12px 10px 36px;
   border-radius: 8px;
   cursor: pointer;
   border: 1px solid transparent;
   margin-bottom: 4px;
+}
+.video-list li.is-off {
+  opacity: 0.62;
+}
+.pick {
+  position: absolute;
+  left: 10px;
+  top: 12px;
+}
+.state-tag {
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: #8ddec8;
+}
+.state-tag.off {
+  color: #e0b15a;
 }
 .video-list li:hover {
   background: #132033;
@@ -1396,8 +1660,17 @@ h1 {
   color: var(--muted);
 }
 .vid-id {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
   font-weight: 600;
   font-size: 0.92rem;
+}
+.vid-name {
+  line-height: 1.35;
+}
+.vid-code {
+  font-variant-numeric: tabular-nums;
 }
 .vid-meta {
   display: flex;
@@ -1506,9 +1779,24 @@ h1 {
   border-radius: 10px;
   padding: 14px;
 }
+.player-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
 .player-title h2 {
   margin: 0 0 6px;
   font-size: 1.1rem;
+}
+.detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.player-title .prepare-note {
+  flex-basis: 100%;
 }
 .player-title p {
   margin: 0 0 12px;

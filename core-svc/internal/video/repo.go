@@ -25,7 +25,7 @@ func (r *Repo) ListMetadata(ctx context.Context, targetJoint, severity string, l
 	}
 
 	query := `
-		SELECT metadata
+		SELECT metadata, enabled
 		FROM videos
 		WHERE ($1 = '' OR target_joint = $1)
 		  AND ($2 = '' OR severity = $2)
@@ -41,13 +41,15 @@ func (r *Repo) ListMetadata(ctx context.Context, targetJoint, severity string, l
 	out := make([]map[string]any, 0)
 	for rows.Next() {
 		var raw []byte
-		if err := rows.Scan(&raw); err != nil {
+		var enabled bool
+		if err := rows.Scan(&raw, &enabled); err != nil {
 			return nil, err
 		}
 		var meta map[string]any
 		if err := json.Unmarshal(raw, &meta); err != nil {
 			return nil, fmt.Errorf("decode metadata: %w", err)
 		}
+		meta["enabled"] = enabled
 		out = append(out, meta)
 	}
 	return out, rows.Err()

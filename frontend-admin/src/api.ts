@@ -13,9 +13,12 @@ export interface VideoItem {
   action_keywords?: string[]
   symptom_tags?: string[]
   description_cn?: string
+  name_cn?: string
+  action_name?: string
   duration_seconds?: number
   difficulty?: number
   equipment?: string
+  enabled?: boolean
   space_required?: string
   body_parts_involved?: string[]
   pose_landmarks_required?: string[]
@@ -87,6 +90,14 @@ export function fetchHistory(sessionId: string) {
   )
 }
 
+export function setVideosEnabled(videoIds: string[], enabled: boolean) {
+  return sendJSON<{ ok: boolean; enabled: boolean; video_ids: string[] }>(
+    '/admin-api/videos/enabled',
+    'POST',
+    { video_ids: videoIds, enabled },
+  )
+}
+
 export function fetchVideos(opts?: {
   target_joint?: string
   severity?: string
@@ -155,7 +166,30 @@ export interface MotionRuleRecord {
 }
 
 export function fetchMotionRuleIds() {
-  return getJSON<{ video_ids: string[] }>('/admin-api/motion-rules')
+  return getJSON<{ video_ids: string[]; titles?: Record<string, string> }>('/admin-api/motion-rules')
+}
+
+export interface PrepareItem {
+  video_id: string
+  status: string
+  detail: string
+  name: string
+}
+
+export interface PrepareJob {
+  job_id: string
+  status: string
+  total: number
+  done: number
+  items: PrepareItem[]
+}
+
+export function startVideoPrepare(videoIds: string[]) {
+  return sendJSON<PrepareJob>('/admin-api/videos/prepare', 'POST', { video_ids: videoIds })
+}
+
+export function fetchVideoPrepare(jobId: string) {
+  return getJSON<PrepareJob>(`/admin-api/videos/prepare/${encodeURIComponent(jobId)}`)
 }
 
 /** 没有规则时返回 null，不把它当成请求失败。 */

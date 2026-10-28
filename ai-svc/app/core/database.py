@@ -74,6 +74,8 @@ CREATE TABLE IF NOT EXISTS videos (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+ALTER TABLE videos ADD COLUMN IF NOT EXISTS enabled BOOLEAN NOT NULL DEFAULT TRUE;
+
 CREATE INDEX IF NOT EXISTS idx_videos_target_joint ON videos (target_joint);
 CREATE INDEX IF NOT EXISTS idx_videos_severity ON videos (severity);
 CREATE INDEX IF NOT EXISTS idx_videos_rehab_stage ON videos (rehab_stage);

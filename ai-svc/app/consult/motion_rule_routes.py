@@ -8,6 +8,7 @@ from .motion_rules import (
     MotionRuleError,
     delete_rule,
     list_configured_ids,
+    list_rule_titles,
     load_rule,
     save_rule,
 )
@@ -28,7 +29,7 @@ def get_motion_rule(video_id: str):
 
 @router.get("/api/admin/motion-rules")
 def admin_motion_rules():
-    return {"video_ids": list_configured_ids()}
+    return {"video_ids": list_configured_ids(), "titles": list_rule_titles()}
 
 
 @router.put("/api/admin/motion-rules/{video_id}")

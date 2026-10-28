@@ -19,6 +19,7 @@ import (
 	"rehabilitation/admin-svc/internal/program"
 	"rehabilitation/admin-svc/internal/storage"
 	"rehabilitation/admin-svc/internal/strategy"
+	"rehabilitation/admin-svc/internal/videolib"
 )
 
 func main() {
@@ -52,6 +53,9 @@ func main() {
 	if err := llmconfig.EnsureSchema(ctx, pool); err != nil {
 		log.Fatalf("llm config schema: %v", err)
 	}
+	if err := videolib.EnsureSchema(ctx, pool); err != nil {
+		log.Fatalf("video schema: %v", err)
+	}
 
 	repo := strategy.NewRepo(pool)
 	handler := strategy.NewHandler(repo)
@@ -66,6 +70,7 @@ func main() {
 		Program:      programHandler,
 		OTA:          otaHandler,
 		LLM:          llmconfig.NewHandler(llmconfig.NewRepo(pool)),
+		Videos:       videolib.NewHandler(videolib.NewRepo(pool)),
 		Auth:         auth.NewHandler(cfg.CoreSvcURL),
 		Guard:        auth.NewGuard([]byte(cfg.JWTSecret), pool),
 		StaticDir:    cfg.StaticDir,

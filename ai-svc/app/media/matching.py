@@ -92,9 +92,9 @@ def match_videos(
             "reason": str,              # 推荐理由
         }
     """
-    index = _load_index()
+    index = [v for v in _load_index() if v.get("enabled") is not False]
     if not index:
-        return {"best": None, "alternatives": [], "reason": "暂无视频库数据"}
+        return {"best": None, "alternatives": [], "reason": "没有已启用的视频"}
 
     max_diff = DIFFICULTY_LIMIT.get(severity, 3)
 

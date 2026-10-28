@@ -25,7 +25,8 @@ logger = logging.getLogger(__name__)
 
 CONSULT = "consult"
 VISION = "vision"
-_PROFILES = (CONSULT, VISION)
+CATALOG = "catalog"
+_PROFILES = (CONSULT, VISION, CATALOG)
 _TTL_SECONDS = 2.0
 
 _DDL = """
@@ -72,6 +73,11 @@ def consult_profile() -> LlmProfile:
 
 def vision_profile() -> LlmProfile:
     return get_profile(VISION)
+
+
+def catalog_profile() -> LlmProfile:
+    """视频库批量提取内容和制定规则。不影响跟做评估用的视觉配置。"""
+    return get_profile(CATALOG)
 
 
 def get_profile(profile: str) -> LlmProfile:
@@ -186,6 +192,16 @@ def _env_profile(profile: str) -> LlmProfile:
         max_tokens = int(os.getenv("ASSESSMENT_MAX_TOKENS", "4096") or "4096")
     except ValueError:
         max_tokens = 4096
+    if profile == CATALOG:
+        return LlmProfile(
+            profile=profile,
+            api_key=DASHSCOPE_API_KEY,
+            base_url=DASHSCOPE_BASE_URL.rstrip("/"),
+            model=DASHSCOPE_MODEL or "qwen3.6-plus",
+            enable_thinking=False,
+            max_tokens=8192,
+            temperature=0.2,
+        )
     return LlmProfile(
         profile=profile,
         api_key=DASHSCOPE_API_KEY,
