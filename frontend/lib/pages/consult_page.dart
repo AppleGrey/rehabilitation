@@ -463,6 +463,11 @@ class _ConsultPageState extends State<ConsultPage> {
     final etaText = (etaMin != null && etaMax != null)
         ? '预计还需约 $etaMin–$etaMax 个问题'
         : null;
+    // 议程模式：进度按「议题覆盖 x/y」展示（tree 模式回落到已了解项数）
+    final coverage = _progress!['coverage'];
+    final coverageText = coverage is Map
+        ? '已覆盖 ${coverage['covered']}/${coverage['total']} 项'
+        : '已了解 $known 项';
     return Container(
       color: AppTheme.primaryLight,
       padding: const EdgeInsets.fromLTRB(18, 12, 18, 12),
@@ -473,7 +478,7 @@ class _ConsultPageState extends State<ConsultPage> {
             children: [
               Expanded(
                 child: Text(
-                  '已了解 $known 项 · 正在确认$pending',
+                  '$coverageText · 正在确认$pending',
                   style: const TextStyle(
                     fontSize: 11.5,
                     fontWeight: FontWeight.w600,

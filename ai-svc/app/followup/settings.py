@@ -62,3 +62,16 @@ KG_TOP_K_HYBRID: int = _i("KG_TOP_K_HYBRID", 20)
 
 # ── 延迟预算（§6.6）──
 TURN_BUDGET_MS: int = _i("FOLLOWUP_TURN_BUDGET_MS", 2500)  # 单轮 P95 目标
+
+
+# ── 问诊模式与议程参数（《问诊建树策略优化方案 v0.1》）──
+
+def followup_mode() -> str:
+    """agenda（默认，议程驱动）/ tree（原策略树，灰度回退）。每轮动态读取。"""
+    return (os.getenv("FOLLOWUP_MODE") or "agenda").strip().lower()
+
+
+AGENDA_COVERAGE: float = _f("FOLLOWUP_COVERAGE", 0.8)    # 议程覆盖度停止阈值
+AGENDA_ADHOC_MAX: int = _i("FOLLOWUP_ADHOC_MAX", 3)      # 每会话议程外追加上限
+# 议程阶段的问题预算（不含粗问轮）：9 条议题 + 少量子问题/ad_hoc 通常 8~12 问
+AGENDA_N_MAX: int = _i("FOLLOWUP_AGENDA_N_MAX", 12)

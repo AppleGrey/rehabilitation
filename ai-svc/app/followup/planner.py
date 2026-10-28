@@ -12,8 +12,8 @@ from __future__ import annotations
 import logging
 from typing import Any, Optional
 
-from .policy import catalog, scoring, stopping
-from .llm import extractor, tree_builder
+from .policy import agenda, catalog, scoring, stopping
+from .llm import agenda_phraser, extractor, tree_builder
 from .clients import kg_client
 from .clients import persistence
 from . import settings as fset
@@ -81,14 +81,23 @@ def _ev_progress(session: StrategySession) -> dict:
     total = max(1, len(session.slots))
     pct = round(len([s for s in session.slots if s.status == SlotStatus.KNOWN.value]) / total, 2)
     pending = "安全信息" if pending_s else ("训练偏好" if pending_p else "临床方向")
+    out = {"type": "progress", "known": known, "pending": pending, "pct": pct}
+    if session.agenda:
+        # 议程模式：进度按「议程覆盖 x/y」展示；预计问题数按覆盖度阈值折算（确定性）
+        covered, agenda_total = agenda.covered_count(session)
+        eta_min, eta_max = agenda.eta(session)
+        out["coverage"] = {"covered": covered, "total": agenda_total}
+        out["eta_min"], out["eta_max"] = eta_min, eta_max
+        out["asked"] = session.budget.asked
+        return out
     # 预计还要几个问题（给用户时长预期；不暴露内部推理，只是数量区间）
     n_max = int(getattr(session.budget, "n_max", 9) or 9)
     remaining = max(1, n_max - session.budget.asked)
     gap = len(pending_s) + len(pending_p)
     eta_min = max(1, min(gap, remaining))
     eta_max = max(eta_min, min(remaining, gap + 2))
-    return {"type": "progress", "known": known, "pending": pending, "pct": pct,
-            "eta_min": eta_min, "eta_max": eta_max, "asked": session.budget.asked}
+    out.update({"eta_min": eta_min, "eta_max": eta_max, "asked": session.budget.asked})
+    return out
 
 
 def _ev_done(outcome: str, session: StrategySession, *, summary: str = "") -> dict:
@@ -175,6 +184,8 @@ def consult_turn(session: StrategySession, user_message: str, conversation_text:
         _emit(emit, "thinking", "正在理解你的描述…")
         if session.phase == Phase.WARMUP.value:
             events = _warmup_turn(session, user_message, conversation_text, emit=emit)
+        elif fset.followup_mode() == "agenda" and session.agenda:
+            events = _agenda_turn(session, user_message, emit=emit)
         else:
             events = _tree_turn(session, user_message, emit=emit)
     except Exception:  # noqa: BLE001
@@ -200,6 +211,8 @@ def _warmup_turn(session: StrategySession, user_message: str, conversation_text:
                       trace=trace)
 
     if session.seed.ready_to_build():
+        if fset.followup_mode() == "agenda":
+            return _enter_agenda_phase(session, emit=emit)
         return _enter_tree_phase(session, emit=emit)
 
     # 信息还不够，继续粗问（留痕本轮粗问，便于后台看到问诊全过程）
@@ -345,6 +358,138 @@ def _select_and_ask(session: StrategySession, *, kg_context_used: str,
         events.append(_ev_input(node.answer_type, []))
     events.append(_ev_progress(session))
     return events
+
+
+# ─────────────────── 议程驱动阶段（FOLLOWUP_MODE=agenda）───────────────────
+
+def _enter_agenda_phase(session: StrategySession, emit=None) -> list[dict]:
+    """粗问达标 → 装配 P 槽 → 按部位生成议程 → 提第一个议题。"""
+    session.phase = Phase.TREE.value
+    catalog.init_tree_slots(session)          # P 槽 + seed 预填（与树模式共用）
+    trace: list = []
+    _emit(emit, "kg", "正在查询康复知识库…")
+    kg = kg_client.retrieve(session, "followup_points", trace=trace)
+    session.agenda = agenda.build_agenda(session, kg_context=kg)
+    trace.append({
+        "t": "agenda", "action": "按部位生成问诊议程",
+        "joint": session.agenda.get("joint"),
+        "items": [it.get("title") for it in session.agenda.get("items") or []],
+    })
+    return _ask_next_agenda(session, prev_answer=None, trace=trace)
+
+
+def _agenda_turn(session: StrategySession, user_message: str, emit=None) -> list[dict]:
+    """议程模式一轮：落槽(上一问) → LLM-A 感知 → 红旗 → 子问题排队 → 选点提问。"""
+    trace: list = []
+    cur = (session.agenda or {}).get("current")
+    rf_hit = agenda.apply_answer(session, cur, user_message)
+
+    _emit(emit, "kg", "正在查询康复知识库…")
+    kg = kg_client.retrieve(session, "followup_points", trace=trace)
+    percept = extractor.perceive(session, user_message, kg, trace=trace)
+    applied = extractor.apply_facts(session, percept.facts)
+    catalog.derive_slots(session)
+    extractor.update_hypotheses(session, percept.hypothesis_deltas)
+    _record_agenda_answer_event(session, cur, user_message, applied)
+
+    if percept.red_flag.hit or rf_hit:
+        return _refer(session, "根据你的描述，建议先到医院做进一步检查，暂缓自助训练。原因：" +
+                      (percept.red_flag.reason or "出现需优先排除的风险信号"), trace=trace)
+
+    # 子问题排队（如答「打软腿」→ 下一轮追频率），确定性、不依赖 LLM
+    agenda.queue_subquestions(session, user_message)
+    return _ask_next_agenda(session, prev_answer=user_message, trace=trace)
+
+
+def _ask_next_agenda(session: StrategySession, *, prev_answer: Optional[str],
+                     trace: Optional[list] = None) -> list[dict]:
+    """选议题（红旗→子问题→议程顺序）→ LLM-B' 措辞 → ad_hoc 闸门 → 推送问题。"""
+    stop = agenda.stop_decision(session)
+    if stop.outcome == "ready_for_plan":
+        return _to_plan(session, trace=trace)
+    if stop.outcome == "best_effort_impression":
+        return _best_effort(session, stop.reason or "", trace=trace)
+
+    item = agenda.pick_next(session)
+    if item is None:
+        if not stopping.missing_safety_slots(session):
+            return _to_plan(session, trace=trace)
+        return _best_effort(session, "议程已问完", trace=trace)
+
+    phrased = agenda_phraser.phrase(session, item, recent_text=prev_answer or "", trace=trace)
+
+    # ad_hoc 确定性闸门：红旗未清零不采纳；红旗议题本身不插话；不可重复；每会话限次
+    is_adhoc = False
+    if (phrased.ad_hoc
+            and not item.get("is_sub")
+            and item.get("intent") != "red_flag"
+            and not stopping.missing_safety_slots(session)
+            and session.agenda.get("ad_hoc_asked", 0) < fset.AGENDA_ADHOC_MAX
+            and not agenda.is_duplicate_question(session, phrased.ad_hoc)):
+        is_adhoc = True
+
+    if is_adhoc:
+        text = str(phrased.ad_hoc or "").strip()
+        options = list(phrased.ad_hoc_options or [])
+        atype = phrased.ad_hoc_answer_type or "free_text"
+        session.agenda["ad_hoc_asked"] = session.agenda.get("ad_hoc_asked", 0) + 1
+        session.agenda["current"] = {"is_adhoc": True, "question": text,
+                                     "intent": "ad_hoc", "slot_id": None}
+    else:
+        text = (phrased.question_text or "").strip() or str(item.get("question") or "")
+        options = list(phrased.options or item.get("options") or [])
+        atype = phrased.answer_type or item.get("answer_type") or "free_text"
+        if item.get("is_sub"):
+            session.agenda["pending_sub"] = [
+                sq for sq in session.agenda.get("pending_sub") or []
+                if sq.get("slot_id") != item.get("slot_id")
+            ]
+        item["asked_text"] = text
+        sid = item.get("slot_id")
+        if sid and sid not in session.asked_slot_ids:
+            session.asked_slot_ids.append(sid)
+        session.agenda["current"] = {
+            "slot_id": sid, "intent": item.get("intent"),
+            "title": item.get("title"), "question": text,
+            "is_sub": bool(item.get("is_sub")),
+        }
+
+    session.agenda["asked"] = agenda.asked_count(session) + 1   # 议程预算计数（不含粗问轮）
+    if text and text not in session.asked_question_texts:
+        session.asked_question_texts.append(text)
+    if trace is not None:
+        trace.append({"t": "ask", "action": "选定议题并措辞",
+                      "item": item.get("title"), "adhoc": is_adhoc, "question": text})
+
+    snap_id = persistence.save_snapshot(session, kg_sources=[], trace=trace)
+    persistence.save_question_event(
+        session, snapshot_id=snap_id, question_id=item.get("slot_id"),
+        tree_node_id=None, question_text=text,
+        target_slots=[item["slot_id"]] if item.get("slot_id") else [],
+        answer_type=atype, score=None, selected=True,
+    )
+
+    events = [_ev_text(text)]
+    if atype in ("single_choice", "multi_choice"):
+        events.append(_ev_input(atype, options))
+    else:
+        events.append(_ev_input(atype, []))
+    events.append(_ev_progress(session))
+    return events
+
+
+def _record_agenda_answer_event(session: StrategySession, cur: Optional[dict],
+                                user_message: str, applied: list[dict]) -> None:
+    """议程模式下记录「上一问的作答」事件（与树模式同表，后台可视化不变）。"""
+    if not cur:
+        return
+    persistence.save_question_event(
+        session, snapshot_id=None, question_id=cur.get("slot_id"),
+        tree_node_id=None, question_text=cur.get("question"),
+        target_slots=[cur["slot_id"]] if cur.get("slot_id") else [],
+        answer_type=None, score=None, selected=False,
+        user_answer=user_message, extracted_facts=applied,
+    )
 
 
 # ─────────────────── 终止分支 ───────────────────

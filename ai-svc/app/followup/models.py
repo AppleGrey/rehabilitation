@@ -309,6 +309,9 @@ class StrategySession(_Model):
     user_id: Optional[str] = None
     # 对话记录：[{role: user/assistant, text}]，供「问诊历史」列表与回看
     transcript: list[dict] = Field(default_factory=list)
+    # 议程驱动问诊状态（FOLLOWUP_MODE=agenda）：
+    # {joint, items[], current, pending_sub[], ad_hoc_asked, kg_context}
+    agenda: dict = Field(default_factory=dict)
 
     # ── 便捷查询 ──
     def slot(self, slot_id: str) -> Optional[Slot]:

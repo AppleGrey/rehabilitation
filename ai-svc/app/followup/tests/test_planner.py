@@ -2,11 +2,17 @@
 增量3 离线冒烟：驱动 planner 完整跑几轮，LLM / kg-svc / DB 全部打桩（不连网、不需 key、不连库）。
 
 验证：粗问→建树→按树问→S/P 兜底→ready_for_plan 的编排是否自洽，SSE 事件序列是否合理。
+本文件专门验证原「策略树」路径；议程驱动路径见 tests/test_agenda.py。
 
 运行：
-    python -m app.followup._smoke3
+    python -m app.followup.tests.test_planner
 """
 from __future__ import annotations
+
+import os
+
+# 模式下发给 SSE 层并每轮动态读取；这里强制 tree，保证本冒烟验证的是原策略树路径
+os.environ["FOLLOWUP_MODE"] = "tree"
 
 from ..llm import extractor, tree_builder
 from ..clients import kg_client, persistence
