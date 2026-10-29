@@ -389,11 +389,12 @@ func (r *Repo) currentPlan(ctx context.Context, programID string, stageNo int) (
 		precautions     []byte
 		expectedDays    *int
 		planCreatedAt   time.Time
+		planVersion     int
 	)
 	err = r.pool.QueryRow(ctx, `
-		SELECT id::text, COALESCE(summary_text,''), precautions, expected_duration_days, created_at
+		SELECT id::text, COALESCE(summary_text,''), precautions, expected_duration_days, created_at, version
 		FROM stage_plans WHERE stage_id=$1::uuid ORDER BY version DESC LIMIT 1
-	`, stageID).Scan(&planID, &summary, &precautions, &expectedDays, &planCreatedAt)
+	`, stageID).Scan(&planID, &summary, &precautions, &expectedDays, &planCreatedAt, &planVersion)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return map[string]any{"stage": stage, "plan": nil, "items": []any{}}, nil
@@ -436,6 +437,7 @@ func (r *Repo) currentPlan(ctx context.Context, programID string, stageNo int) (
 	return map[string]any{
 		"stage": stage,
 		"plan": map[string]any{
+			"version":                planVersion,
 			"summary_text":           summary,
 			"precautions":            decodeJSON(precautions, []any{}),
 			"expected_duration_days": expectedDays,

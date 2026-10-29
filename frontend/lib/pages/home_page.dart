@@ -611,8 +611,8 @@ class _HomePageState extends State<HomePage> {
         Expanded(
           child: _stat(
             Icons.task_alt_rounded,
-            '${overview.hits.where((h) => h.done).length}',
-            '已完成动作',
+            '${overview.totalTrainings}',
+            '累计训练 / 次',
             AppTheme.primary,
           ),
         ),

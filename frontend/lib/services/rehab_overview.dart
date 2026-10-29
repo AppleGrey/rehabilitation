@@ -28,11 +28,19 @@ class TrainingHit {
 class RehabOverview {
   final List<Map<String, dynamic>> programs;
 
-  const RehabOverview(this.programs);
+  /// 已完成训练的全量时间线（跨疗程、含历史轮次），来自 /api/ai/assess/timeline。
+  /// 「最近训练、得分趋势、本周节奏、连续天数」优先用它，取不到时回落到当前一轮。
+  final List<Map<String, dynamic>> timeline;
+
+  const RehabOverview(this.programs, {this.timeline = const []});
 
   static Future<RehabOverview> load() async {
     final views = await ProgramApi.listAll();
-    return RehabOverview(views);
+    List<Map<String, dynamic>> timeline = const [];
+    try {
+      timeline = await ProgramApi.timeline(limit: 60);
+    } catch (_) {}
+    return RehabOverview(views, timeline: timeline);
   }
 
   /// 还没结束的方案：生成中、进行中，或已经有分期内容但还没结业/转诊。
@@ -94,12 +102,20 @@ class RehabOverview {
   int doneOf(Map<String, dynamic>? program) =>
       itemsOf(program).where((it) => _status(it) == 'done').length;
 
+  /// 全部疗程累计完成的训练次数（含历史轮次，不受当前方案版本影响）。
+  int get totalTrainings {
+    var total = 0;
+    for (final p in programs) {
+      final stats = p['stats'];
+      final n = stats is Map ? stats['trainings_done'] : null;
+      if (n is num) total += n.toInt();
+    }
+    return total;
+  }
+
   /// 连续有训练记录的天数，从今天或昨天往前数。没有记录就是 0。
   int get streak {
-    final days = hits
-        .where((h) => h.done && h.at != null)
-        .map((h) => _day(h.at!))
-        .toSet();
+    final days = _activeDays().toSet();
     if (days.isEmpty) return 0;
     var cursor = _day(DateTime.now());
     if (!days.contains(cursor)) {
@@ -115,26 +131,47 @@ class RehabOverview {
   }
 
   double? get averageScore {
-    final scores = hits
+    final scores = timeline
+        .map((e) => e['score'])
+        .whereType<num>()
+        .map((v) => v.toDouble())
+        .toList();
+    if (scores.isNotEmpty) {
+      return scores.reduce((a, b) => a + b) / scores.length;
+    }
+    // 时间线拿不到时退回当前一轮已评分的动作
+    final fallback = hits
         .where((h) => h.done && h.score != null)
         .map((h) => h.score!)
         .toList();
-    if (scores.isEmpty) return null;
-    return scores.reduce((a, b) => a + b) / scores.length;
+    if (fallback.isEmpty) return null;
+    return fallback.reduce((a, b) => a + b) / fallback.length;
   }
 
-  /// 本周每天完成的动作数，下标 0 是周一。
+  /// 本周每天完成的训练组数，下标 0 是周一。
   List<int> get weekCounts {
     final now = DateTime.now();
     final monday = _day(now).subtract(Duration(days: now.weekday - 1));
     final counts = List<int>.filled(7, 0);
-    for (final h in hits) {
-      if (!h.done || h.at == null) continue;
-      final day = _day(h.at!);
+    for (final day in _activeDays()) {
       final delta = day.difference(monday).inDays;
       if (delta >= 0 && delta < 7) counts[delta]++;
     }
     return counts;
+  }
+
+  /// 有训练记录的那些天（本地日）。优先用全量时间线，没有时回落到当前一轮。
+  List<DateTime> _activeDays() {
+    final fromTimeline = timeline
+        .map((e) => DateTime.tryParse(e['created_at']?.toString() ?? ''))
+        .whereType<DateTime>()
+        .map((at) => _day(at.toLocal()))
+        .toList();
+    if (fromTimeline.isNotEmpty) return fromTimeline;
+    return hits
+        .where((h) => h.done && h.at != null)
+        .map((h) => _day(h.at!.toLocal()))
+        .toList();
   }
 
   static bool _isOpen(Map<String, dynamic> p) {

@@ -71,6 +71,12 @@ void main() {
         MaterialApp(theme: AppTheme.theme, home: const ProgressPage()),
       );
       await tester.pumpAndSettle();
+      // 新版进度页内容更长：矮横屏下先滚动到「本周节奏」，确认可滚动且完整渲染
+      await tester.scrollUntilVisible(
+        find.text('本周节奏'),
+        240,
+        scrollable: find.byType(Scrollable).first,
+      );
       expect(find.text('本周节奏'), findsOneWidget);
       expect(tester.takeException(), isNull);
     }, createHttpClient: (_) => _LayoutHttpClient());
