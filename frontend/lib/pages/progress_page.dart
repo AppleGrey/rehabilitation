@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../services/rehab_overview.dart';
@@ -5,11 +7,10 @@ import '../theme/app_theme.dart';
 import '../widgets/common_widgets.dart';
 import '../widgets/motion.dart';
 import 'assess_history_page.dart';
-import 'program_history_page.dart';
+import 'program_page.dart';
 
-/// 进度页展示：当前阶段与本轮进度、本阶段达标条件、全量训练记录、本周节奏与得分趋势。
-/// 「本轮完成几项、离下一阶段还差什么」来自当前方案；「练过哪些、得分趋势」来自全量训练时间线，
-/// 因此换轮/进阶后历史记录不会消失。
+/// 进度页：最近几个方案的进度（分期 + 本轮完成环）、训练统计、本周节奏、
+/// 得分趋势与最近训练记录。记录类数据全部来自全量训练时间线，换轮后不丢。
 class ProgressPage extends StatefulWidget {
   final int refreshTick;
 
@@ -144,16 +145,18 @@ class _ProgressPageState extends State<ProgressPage> {
   }
 
   List<Widget> _content(RehabOverview overview) {
-    final focus = overview.focus ?? overview.latest;
-    final items = overview.itemsOf(focus);
-    final done = overview.doneOf(focus);
-    final total = items.length;
     final historyPane = _stack([
       SectionHeader(
         title: '最近训练',
-        subtitle: _historyCount(overview) == 0
+        trailing: _historyCount(overview) == 0
             ? null
-            : '最近 ${_historyCount(overview)} 条记录',
+            : Text(
+                '最近 ${_historyCount(overview)} 条',
+                style: const TextStyle(
+                  fontSize: 11.5,
+                  color: AppTheme.textTertiary,
+                ),
+              ),
       ),
       const SizedBox(height: 14),
       if (_historyCount(overview) == 0)
@@ -166,27 +169,19 @@ class _ProgressPageState extends State<ProgressPage> {
         ..._historyTiles(overview),
     ]);
     return [
-      _stageCard(overview, focus, items, done, total),
+      ..._programsSection(overview),
       const SizedBox(height: 16),
-      _statsRow(overview),
-      if (_criteriaCard(focus) != null) ...[
-        const SizedBox(height: 16),
-        _criteriaCard(focus)!,
-      ],
+      _statsStrip(overview),
+      const SizedBox(height: 22),
+      _weekCard(overview.weekCounts),
+      const SizedBox(height: 20),
+      _trendCard(overview),
       const SizedBox(height: 24),
       historyPane,
-      const SizedBox(height: 24),
-      _weekCard(overview.weekCounts),
-      const SizedBox(height: 24),
-      _trendCard(overview),
     ];
   }
 
   Widget _landscapeBody(RehabOverview overview) {
-    final focus = overview.focus ?? overview.latest;
-    final items = overview.itemsOf(focus);
-    final done = overview.doneOf(focus);
-    final total = items.length;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -195,21 +190,15 @@ class _ProgressPageState extends State<ProgressPage> {
             key: const Key('landscape-progress-main'),
             // 横屏高度不足时整个左列可滚动，避免小高度平板溢出
             child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  _stageCard(overview, focus, items, done, total),
-                  const SizedBox(height: 12),
-                  _statsRow(overview),
-                  if (_criteriaCard(focus) != null) ...[
-                    const SizedBox(height: 12),
-                    _criteriaCard(focus)!,
-                  ],
-                  const SizedBox(height: 12),
-                  _weekCard(overview.weekCounts),
-                  const SizedBox(height: 12),
-                  _trendCard(overview, compact: true),
-                ],
-              ),
+              child: _stack([
+                ..._programsSection(overview),
+                const SizedBox(height: 12),
+                _statsStrip(overview),
+                const SizedBox(height: 12),
+                _weekCard(overview.weekCounts),
+                const SizedBox(height: 12),
+                _trendCard(overview, compact: true),
+              ]),
             ),
           ),
         ),
@@ -223,6 +212,394 @@ class _ProgressPageState extends State<ProgressPage> {
       ],
     );
   }
+
+  // ── 方案进度（最近 3 个疗程）────────────────────────────────────────
+
+  static const _stageNames = {
+    'acute': '保护期',
+    'sub_acute': '恢复期',
+    'strengthen': '强化期',
+    'return': '回归期',
+  };
+
+  List<Widget> _programsSection(RehabOverview overview) {
+    final programs = overview.programs.take(3).toList();
+    return [
+      SectionHeader(
+        title: '方案进度',
+        subtitle: overview.programs.length > 3
+            ? '共 ${overview.programs.length} 个疗程，展示最近 3 个'
+            : null,
+      ),
+      const SizedBox(height: 14),
+      if (programs.isEmpty)
+        const AppEmptyState(
+          icon: Icons.route_rounded,
+          title: '还没有康复方案',
+          body: '完成问诊并生成方案后，这里会显示每个疗程的进度。',
+        )
+      else
+        for (final p in programs)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: _programTile(p, overview),
+          ),
+    ];
+  }
+
+  Widget _programTile(Map<String, dynamic> p, RehabOverview overview) {
+    final pid = p['program_id']?.toString() ?? '';
+    final title = RehabOverview.programTitle(p);
+    final status = p['status']?.toString() ?? '';
+    final items = overview.itemsOf(p);
+    final done = overview.doneOf(p);
+    final total = items.length;
+    final current = p['current'];
+    final stage = current is Map ? current['stage'] : null;
+    final plan = current is Map ? current['plan'] : null;
+    final stageType = stage is Map ? stage['stage_type']?.toString() ?? '' : '';
+    final stageNo = (p['current_stage_no'] as num?)?.toInt() ?? 1;
+    final version = plan is Map ? (plan['version'] as num?)?.toInt() : null;
+    final stageName = _stageNames[stageType] ?? '第 $stageNo 阶段';
+    final roundDone = total > 0 && done >= total;
+
+    final subtitle = [
+      stageName,
+      if (version != null) '第 $version 轮',
+    ].join(' · ');
+
+    final Widget trailing;
+    switch (status) {
+      case 'generating':
+        trailing = const AppPill(
+          label: '生成中',
+          color: AppTheme.secondary,
+          backgroundColor: AppTheme.secondaryLight,
+        );
+      case 'discharged':
+        trailing = const AppPill(
+          label: '已结业',
+          color: AppTheme.success,
+          backgroundColor: AppTheme.primaryLight,
+        );
+      case 'refer':
+        trailing = const AppPill(
+          label: '已转诊',
+          color: AppTheme.warning,
+          backgroundColor: AppTheme.secondaryLight,
+        );
+      default:
+        trailing = const Icon(
+          Icons.chevron_right_rounded,
+          size: 22,
+          color: AppTheme.textTertiary,
+        );
+    }
+
+    final Widget leading = total == 0
+        ? Container(
+            width: 46,
+            height: 46,
+            decoration: const BoxDecoration(
+              color: AppTheme.bgSecondary,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              status == 'generating'
+                  ? Icons.auto_awesome_rounded
+                  : Icons.hourglass_empty_rounded,
+              size: 19,
+              color: AppTheme.primary,
+            ),
+          )
+        : _MiniRing(done: done, total: total, completed: roundDone);
+
+    return AppCard(
+      padding: const EdgeInsets.fromLTRB(16, 14, 14, 14),
+      onTap: pid.isEmpty
+          ? null
+          : () => Navigator.of(context)
+                .push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => ProgramPage(
+                      programId: pid,
+                      sessionId: p['session_id']?.toString(),
+                    ),
+                  ),
+                )
+                .then((_) => _load()),
+      child: Row(
+        children: [
+          leading,
+          const SizedBox(width: 13),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          trailing,
+        ],
+      ),
+    );
+  }
+
+  // ── 训练统计（一条紧凑数据带）──────────────────────────────────────
+
+  Widget _statsStrip(RehabOverview overview) {
+    final avg = overview.averageScore;
+    return AppCard(
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      child: Row(
+        children: [
+          _miniStat('${overview.streak}', '连续训练 / 天'),
+          Container(width: 1, height: 30, color: AppTheme.border),
+          _miniStat('${overview.totalTrainings}', '累计训练 / 次'),
+          Container(width: 1, height: 30, color: AppTheme.border),
+          _miniStat(avg == null ? '—' : avg.round().toString(), '平均得分'),
+        ],
+      ),
+    );
+  }
+
+  Widget _miniStat(String value, String label) {
+    return Expanded(
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 21,
+              height: 1.1,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.3,
+              color: AppTheme.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 5),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 11,
+                color: AppTheme.textSecondary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── 本周节奏 ──────────────────────────────────────────────────────
+
+  Widget _weekCard(List<int> counts) {
+    final maxCount = counts.fold<int>(0, (a, b) => a > b ? a : b);
+    final weekTotal = counts.fold<int>(0, (a, b) => a + b);
+    const days = ['一', '二', '三', '四', '五', '六', '日'];
+    final today = DateTime.now().weekday - 1;
+    return AppCard(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SectionHeader(
+            title: '本周节奏',
+            trailing: Text(
+              maxCount == 0 ? '还没有完成记录' : '本周 $weekTotal 组训练',
+              style: const TextStyle(
+                fontSize: 11.5,
+                color: AppTheme.textTertiary,
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            height: 96,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: List.generate(7, (i) {
+                final factor = maxCount == 0
+                    ? 0.08
+                    : (counts[i] / maxCount).clamp(0.08, 1.0);
+                final active = counts[i] > 0;
+                return Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      if (counts[i] > 0)
+                        Text(
+                          '${counts[i]}',
+                          style: const TextStyle(
+                            fontSize: 10.5,
+                            height: 1,
+                            color: AppTheme.textSecondary,
+                          ),
+                        ),
+                      const SizedBox(height: 4),
+                      Expanded(
+                        child: LayoutBuilder(
+                          builder: (context, constraints) => Align(
+                            alignment: Alignment.bottomCenter,
+                            child: AnimatedContainer(
+                              duration: AppMotion.duration(
+                                context,
+                                AppMotion.progress,
+                              ),
+                              curve: AppMotion.curve,
+                              width: 16,
+                              height: constraints.maxHeight * factor,
+                              decoration: BoxDecoration(
+                                color: active
+                                    ? AppTheme.primary
+                                    : const Color(0xFFE6EEEC),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 7),
+                      Text(
+                        days[i],
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: i == today
+                              ? FontWeight.w700
+                              : FontWeight.w400,
+                          color: i == today
+                              ? AppTheme.primary
+                              : AppTheme.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── 训练趋势 ──────────────────────────────────────────────────────
+
+  /// 最近 10 次训练的得分与疼痛随时间变化（数据来自全量训练时间线）。
+  Widget _trendCard(RehabOverview overview, {bool compact = false}) {
+    final entries = overview.timeline
+        .map(
+          (e) => (
+            at: DateTime.tryParse(
+              e['created_at']?.toString() ?? '',
+            )?.toLocal(),
+            score: (e['score'] as num?)?.toDouble(),
+            pain: (e['pain_reported'] as num?)?.toDouble(),
+          ),
+        )
+        .where((e) => e.at != null)
+        .toList()
+      ..sort((a, b) => a.at!.compareTo(b.at!));
+    final recent = entries.length > 10
+        ? entries.sublist(entries.length - 10)
+        : entries;
+    final scores = recent
+        .map((e) => e.score)
+        .where((s) => s != null)
+        .toList();
+    final pains = recent.map((e) => e.pain).toList();
+    final firstScore = scores.isEmpty ? null : scores.first;
+    final lastScore = scores.isEmpty ? null : scores.last;
+    final delta = (firstScore != null && lastScore != null && scores.length >= 2)
+        ? (lastScore - firstScore).round()
+        : null;
+    return AppCard(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SectionHeader(
+            title: '训练趋势',
+            trailing: Text(
+              scores.length < 2
+                  ? '完成 2 次后开始画趋势'
+                  : '最近 ${recent.length} 次 · ${_shortDate(recent.first.at!)}–${_shortDate(recent.last.at!)}',
+              style: const TextStyle(
+                fontSize: 11.5,
+                color: AppTheme.textTertiary,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          if (scores.length < 2)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 10),
+              child: Text(
+                '再多练几次，这里会画出你的进步曲线。',
+                style: TextStyle(fontSize: 12.5, color: AppTheme.textTertiary),
+              ),
+            )
+          else ...[
+            _TrendRow(
+              label: '得分',
+              trailing: delta == null
+                  ? null
+                  : (delta >= 0 ? '较首次 +$delta' : '较首次 $delta'),
+              trailingColor: (delta ?? 0) >= 0
+                  ? AppTheme.success
+                  : AppTheme.warning,
+              values: recent.map((e) => e.score).toList(),
+              color: AppTheme.primary,
+              fixedMin: 0,
+              fixedMax: 100,
+              height: compact ? 48 : 56,
+            ),
+            const SizedBox(height: 8),
+            if (pains.any((p) => p != null))
+              _TrendRow(
+                label: '疼痛',
+                values: pains,
+                color: AppTheme.secondary,
+                fixedMin: 0,
+                fixedMax: 10,
+                height: compact ? 48 : 56,
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  String _shortDate(DateTime at) {
+    final local = at.toLocal();
+    return '${local.month}/${local.day}';
+  }
+
+  // ── 最近训练 ──────────────────────────────────────────────────────
 
   Widget _historyPanel(RehabOverview overview) {
     final count = _historyCount(overview);
@@ -290,9 +667,7 @@ class _ProgressPageState extends State<ProgressPage> {
   }
 
   int _historyCount(RehabOverview overview) {
-    final pending = overview.hits
-        .where((h) => !h.done && h.at != null)
-        .length;
+    final pending = overview.hits.where((h) => !h.done && h.at != null).length;
     return pending + overview.timeline.take(8).length;
   }
 
@@ -320,564 +695,6 @@ class _ProgressPageState extends State<ProgressPage> {
     return tiles;
   }
 
-  /// 当前阶段卡片：阶段位置 + 本轮完成情况 + 为什么还没进下一阶段。
-  Widget _stageCard(
-    RehabOverview overview,
-    Map<String, dynamic>? focus,
-    List<Map<String, dynamic>> items,
-    int done,
-    int total,
-  ) {
-    final streak = overview.streak;
-    final streakPill = AppPill(
-      label: streak > 0 ? '已连续训练 $streak 天' : '从今天开始，每一步都算数',
-      icon: streak > 0
-          ? Icons.local_fire_department_rounded
-          : Icons.spa_outlined,
-      color: streak > 0 ? AppTheme.secondary : AppTheme.primary,
-      backgroundColor: streak > 0
-          ? AppTheme.secondaryLight
-          : AppTheme.primaryLight,
-    );
-    if (focus == null) {
-      return AppCard(
-        padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              '当前阶段',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.3,
-              ),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              '还没有进行中的康复方案。完成问诊并生成方案后，这里会显示所处阶段和本轮进度。',
-              style: TextStyle(
-                fontSize: 13,
-                height: 1.6,
-                color: AppTheme.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 14),
-            Align(alignment: Alignment.centerLeft, child: streakPill),
-          ],
-        ),
-      );
-    }
-    final status = focus['status']?.toString() ?? '';
-    final generating = status == 'generating';
-    final current = focus['current'];
-    final stage = current is Map ? current['stage'] : null;
-    final plan = current is Map ? current['plan'] : null;
-    final stageType = stage is Map ? stage['stage_type']?.toString() ?? '' : '';
-    final stageNo = (focus['current_stage_no'] as num?)?.toInt() ?? 1;
-    final version = plan is Map ? (plan['version'] as num?)?.toInt() : null;
-    final programId = focus['program_id']?.toString() ?? '';
-    var stageIndex = _stageOrder.indexOf(stageType);
-    if (stageIndex < 0) {
-      stageIndex = (stageNo - 1).clamp(0, _stageOrder.length - 1).toInt();
-    }
-    final remaining = (total - done).clamp(0, total);
-    final hasPending = items.any((it) {
-      final t = it['training'];
-      return t is Map && t['status'] == 'processing';
-    });
-
-    final String caption;
-    if (status == 'discharged') {
-      caption = '恭喜结业，整个疗程已完成，可随时在康复历程里回看每一轮训练。';
-    } else if (status == 'refer') {
-      caption = '已转入线下就医，康复历程里可以回看之前每一轮的训练与决策记录。';
-    } else if (generating) {
-      caption = '正在为你生成接下来的训练安排，稍后回来看看。';
-    } else if (total == 0) {
-      caption = '本阶段训练安排马上就绪。';
-    } else if (remaining > 0) {
-      caption = '完成本轮剩余 $remaining 项训练后，系统将评估能否进入下一阶段。';
-    } else {
-      caption = '本轮训练已完成，评估结果出来后决定下一步安排。';
-    }
-
-    return AppCard(
-      padding: const EdgeInsets.fromLTRB(18, 18, 18, 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Text(
-                '当前阶段',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.3,
-                ),
-              ),
-              const Spacer(),
-              streakPill,
-            ],
-          ),
-          const SizedBox(height: 16),
-          _stageRail(stageIndex),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  version != null
-                      ? '${RehabOverview.programTitle(focus)} · 第 $version 轮'
-                      : RehabOverview.programTitle(focus),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              if (total > 0)
-                Text(
-                  '本轮完成 $done / $total 项',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppTheme.textSecondary,
-                  ),
-                ),
-            ],
-          ),
-          if (total > 0) ...[
-            const SizedBox(height: 10),
-            _roundSegments(done, total, hasPending),
-          ],
-          const SizedBox(height: 12),
-          Text(
-            caption,
-            style: const TextStyle(
-              fontSize: 12.5,
-              height: 1.6,
-              color: AppTheme.textSecondary,
-            ),
-          ),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton.icon(
-              onPressed: programId.isEmpty
-                  ? null
-                  : () => Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) =>
-                            ProgramHistoryPage(programId: programId),
-                      ),
-                    ),
-              icon: const Icon(Icons.timeline_rounded, size: 17),
-              label: const Text('康复历程'),
-              style: TextButton.styleFrom(
-                foregroundColor: AppTheme.primary,
-                textStyle: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  static const _stageOrder = ['acute', 'sub_acute', 'strengthen', 'return'];
-  static const _stageLabels = {
-    'acute': '保护期',
-    'sub_acute': '恢复期',
-    'strengthen': '强化期',
-    'return': '回归期',
-  };
-
-  /// 四个分期小地图：走过的打勾，当前高亮，后面的留灰。
-  Widget _stageRail(int current) {
-    return Row(
-      children: List.generate(_stageOrder.length, (i) {
-        final passed = i < current;
-        final active = i == current;
-        final color = passed
-            ? AppTheme.success
-            : (active ? AppTheme.primary : AppTheme.bgTertiary);
-        return Expanded(
-          child: Column(
-            children: [
-              Container(
-                width: 26,
-                height: 26,
-                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-                child: passed
-                    ? const Icon(Icons.check_rounded, size: 15, color: Colors.white)
-                    : (active
-                          ? const Icon(
-                              Icons.circle,
-                              size: 8,
-                              color: Colors.white,
-                            )
-                          : null),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                _stageLabels[_stageOrder[i]] ?? '',
-                style: TextStyle(
-                  fontSize: 10.5,
-                  fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-                  color: active
-                      ? AppTheme.primary
-                      : (passed
-                            ? AppTheme.textSecondary
-                            : AppTheme.textTertiary),
-                ),
-              ),
-            ],
-          ),
-        );
-      }),
-    );
-  }
-
-  /// 本轮逐项进度条：已完成实心，正在评估的浅色，其余留灰。
-  Widget _roundSegments(int done, int total, bool hasPending) {
-    return Row(
-      children: [
-        for (var i = 0; i < total; i++) ...[
-          if (i > 0) const SizedBox(width: 6),
-          Expanded(
-            child: Container(
-              height: 7,
-              decoration: BoxDecoration(
-                color: i < done
-                    ? AppTheme.primary
-                    : (i == done && hasPending
-                          ? AppTheme.primaryLight
-                          : AppTheme.bgTertiary),
-                borderRadius: BorderRadius.circular(4),
-              ),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-
-  /// 本阶段达标条件：说明「怎样才算这一阶段练好了」。
-  Widget? _criteriaCard(Map<String, dynamic>? focus) {
-    final current = focus?['current'];
-    final stage = current is Map ? current['stage'] : null;
-    final raw = stage is Map ? stage['exit_criteria'] : null;
-    final criteria = (raw as List<dynamic>? ?? const [])
-        .map((e) => e?.toString().trim() ?? '')
-        .where((s) => s.isNotEmpty)
-        .toList();
-    if (criteria.isEmpty) return null;
-    return AppCard(
-      padding: const EdgeInsets.fromLTRB(18, 18, 18, 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SectionHeader(
-            title: '本阶段达标条件',
-            subtitle: '全部完成并达标后，才会进入下一阶段',
-          ),
-          const SizedBox(height: 14),
-          for (final c in criteria)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Padding(
-                    padding: EdgeInsets.only(top: 2),
-                    child: Icon(
-                      Icons.check_circle_outline_rounded,
-                      size: 16,
-                      color: AppTheme.primary,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      c,
-                      style: const TextStyle(
-                        fontSize: 12.5,
-                        height: 1.55,
-                        color: AppTheme.textSecondary,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _statsRow(RehabOverview overview) {
-    final avg = overview.averageScore;
-    return Row(
-      children: [
-        Expanded(
-          child: _stat(
-            '${overview.programs.length}',
-            '康复疗程',
-            Icons.assignment_outlined,
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _stat(
-            '${overview.totalTrainings}',
-            '累计训练 / 次',
-            Icons.task_alt_rounded,
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _stat(
-            avg == null ? '—' : avg.round().toString(),
-            '平均得分',
-            Icons.auto_graph_rounded,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _stat(String value, String label, IconData icon) {
-    return AppCard(
-      padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 8),
-      child: Column(
-        children: [
-          Icon(icon, size: 19, color: AppTheme.primary),
-          const SizedBox(height: 7),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 23,
-              fontWeight: FontWeight.w800,
-              color: AppTheme.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 3),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontSize: 11,
-                color: AppTheme.textSecondary,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _weekCard(List<int> counts) {
-    final maxCount = counts.fold<int>(0, (a, b) => a > b ? a : b);
-    final weekTotal = counts.fold<int>(0, (a, b) => a + b);
-    const days = ['一', '二', '三', '四', '五', '六', '日'];
-    final today = DateTime.now().weekday - 1;
-    return AppCard(
-      padding: const EdgeInsets.fromLTRB(18, 20, 18, 16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SectionHeader(title: '本周节奏', subtitle: '保持规律，比一次练很多更重要'),
-          const SizedBox(height: 4),
-          Align(
-            alignment: Alignment.centerRight,
-            child: Text(
-              maxCount == 0 ? '还没有完成记录' : '本周完成 $weekTotal 组训练',
-              style: const TextStyle(
-                fontSize: 11.5,
-                color: AppTheme.textTertiary,
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 120,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: List.generate(7, (i) {
-                final factor = maxCount == 0
-                    ? 0.08
-                    : (counts[i] / maxCount).clamp(0.08, 1.0);
-                final active = counts[i] > 0;
-                return Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      if (counts[i] > 0)
-                        Text(
-                          '${counts[i]}',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            height: 1,
-                            color: AppTheme.textSecondary,
-                          ),
-                        ),
-                      const SizedBox(height: 4),
-                      Expanded(
-                        child: LayoutBuilder(
-                          builder: (context, constraints) => Align(
-                            alignment: Alignment.bottomCenter,
-                            child: AnimatedContainer(
-                              duration: AppMotion.duration(
-                                context,
-                                AppMotion.progress,
-                              ),
-                              curve: AppMotion.curve,
-                              width: 18,
-                              height: constraints.maxHeight * factor,
-                              decoration: BoxDecoration(
-                                color: active
-                                    ? AppTheme.primary
-                                    : const Color(0xFFE6EEEC),
-                                borderRadius: BorderRadius.circular(9),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        days[i],
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: i == today
-                              ? FontWeight.w700
-                              : FontWeight.w400,
-                          color: i == today
-                              ? AppTheme.primary
-                              : AppTheme.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// F2 趋势：最近 10 次训练的得分与疼痛随时间变化（数据来自全量训练时间线）。
-  Widget _trendCard(RehabOverview overview, {bool compact = false}) {
-    final entries = overview.timeline
-        .map(
-          (e) => (
-            at: DateTime.tryParse(
-              e['created_at']?.toString() ?? '',
-            )?.toLocal(),
-            score: (e['score'] as num?)?.toDouble(),
-            pain: (e['pain_reported'] as num?)?.toDouble(),
-          ),
-        )
-        .where((e) => e.at != null)
-        .toList()
-      ..sort((a, b) => a.at!.compareTo(b.at!));
-    final recent = entries.length > 10
-        ? entries.sublist(entries.length - 10)
-        : entries;
-    final scores = recent
-        .map((e) => e.score)
-        .where((s) => s != null)
-        .toList();
-    final pains = recent.map((e) => e.pain).toList();
-    final firstScore = scores.isEmpty ? null : scores.first;
-    final lastScore = scores.isEmpty ? null : scores.last;
-    final delta = (firstScore != null && lastScore != null && scores.length >= 2)
-        ? (lastScore - firstScore).round()
-        : null;
-    return AppCard(
-      padding: compact
-          ? const EdgeInsets.fromLTRB(16, 14, 16, 12)
-          : const EdgeInsets.fromLTRB(18, 20, 18, 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SectionHeader(
-            title: '训练趋势',
-            subtitle: '最近的得分与疼痛，看疗效最直观',
-          ),
-          const SizedBox(height: 4),
-          Align(
-            alignment: Alignment.centerRight,
-            child: Text(
-              scores.length < 2
-                  ? '完成 2 次以上训练后开始画趋势'
-                  : '最近 ${recent.length} 次 · ${_shortDate(recent.first.at!)}–${_shortDate(recent.last.at!)}',
-              style: const TextStyle(
-                fontSize: 11.5,
-                color: AppTheme.textTertiary,
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-          if (scores.length < 2)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 14),
-              child: Text(
-                '再多练几次，这里会画出你的进步曲线。',
-                style: TextStyle(fontSize: 12.5, color: AppTheme.textTertiary),
-              ),
-            )
-          else ...[
-            _TrendRow(
-              label: '得分',
-              trailing: delta == null
-                  ? null
-                  : (delta >= 0 ? '较首次 +$delta' : '较首次 $delta'),
-              trailingColor: (delta ?? 0) >= 0
-                  ? AppTheme.success
-                  : AppTheme.warning,
-              values: recent.map((e) => e.score).toList(),
-              color: AppTheme.primary,
-              fixedMin: 0,
-              fixedMax: 100,
-              height: compact ? 52 : 62,
-            ),
-            const SizedBox(height: 8),
-            if (pains.any((p) => p != null))
-              _TrendRow(
-                label: '疼痛',
-                values: pains,
-                color: AppTheme.secondary,
-                fixedMin: 0,
-                fixedMax: 10,
-                height: compact ? 52 : 62,
-              ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  String _shortDate(DateTime at) {
-    final local = at.toLocal();
-    return '${local.month}/${local.day}';
-  }
-
   /// 已完成的一组训练：可点开回放录像并查看当时的评估。
   Widget _trainingTile(Map<String, dynamic> entry) {
     final taskId = entry['task_id']?.toString() ?? '';
@@ -896,7 +713,7 @@ class _ProgressPageState extends State<ProgressPage> {
       if (pain != null) '疼痛 $pain/10',
     ];
     return AppCard(
-      padding: const EdgeInsets.all(15),
+      padding: const EdgeInsets.all(13),
       onTap: taskId.isEmpty
           ? null
           : () => Navigator.of(context).push(
@@ -913,7 +730,7 @@ class _ProgressPageState extends State<ProgressPage> {
           const AppIconBadge(
             icon: Icons.check_rounded,
             color: AppTheme.success,
-            size: 42,
+            size: 40,
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -929,7 +746,7 @@ class _ProgressPageState extends State<ProgressPage> {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: 5),
+                const SizedBox(height: 4),
                 Text(
                   parts.join(' · '),
                   maxLines: 1,
@@ -953,7 +770,7 @@ class _ProgressPageState extends State<ProgressPage> {
                   color: AppTheme.textTertiary,
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 3),
               const Icon(
                 Icons.play_circle_outline_rounded,
                 size: 19,
@@ -970,13 +787,15 @@ class _ProgressPageState extends State<ProgressPage> {
   Widget _pendingTile(TrainingHit hit) {
     final failed = hit.status == 'error';
     return AppCard(
-      padding: const EdgeInsets.all(15),
+      padding: const EdgeInsets.all(13),
       child: Row(
         children: [
           AppIconBadge(
-            icon: failed ? Icons.error_outline_rounded : Icons.timelapse_rounded,
+            icon: failed
+                ? Icons.error_outline_rounded
+                : Icons.timelapse_rounded,
             color: failed ? AppTheme.warning : AppTheme.primary,
-            size: 42,
+            size: 40,
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -992,7 +811,7 @@ class _ProgressPageState extends State<ProgressPage> {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: 5),
+                const SizedBox(height: 4),
                 Text(
                   failed ? '评估失败，可到方案页重试' : '评估中，结果出来后会更新得分',
                   maxLines: 1,
@@ -1027,6 +846,87 @@ class _ProgressPageState extends State<ProgressPage> {
     if (day == today.subtract(const Duration(days: 1))) return '昨天 $hm';
     return '${local.month}/${local.day} $hm';
   }
+}
+
+/// 本轮完成度小圆环：中心直接写「已完成/总数」，不做百分比。
+class _MiniRing extends StatelessWidget {
+  final int done;
+  final int total;
+  final bool completed;
+
+  const _MiniRing({
+    required this.done,
+    required this.total,
+    required this.completed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final ratio = total == 0
+        ? 0.0
+        : (done / total).clamp(0.0, 1.0).toDouble();
+    final color = completed ? AppTheme.success : AppTheme.primary;
+    return SizedBox(
+      width: 46,
+      height: 46,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          CustomPaint(
+            size: const Size(46, 46),
+            painter: _MiniRingPainter(progress: ratio, color: color),
+          ),
+          Text(
+            '$done/$total',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.3,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MiniRingPainter extends CustomPainter {
+  final double progress;
+  final Color color;
+
+  _MiniRingPainter({required this.progress, required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const stroke = 4.0;
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = (size.width - stroke) / 2 - 1;
+    canvas.drawCircle(
+      center,
+      radius,
+      Paint()
+        ..color = AppTheme.bgTertiary
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = stroke,
+    );
+    if (progress <= 0) return;
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      -math.pi / 2,
+      2 * math.pi * progress,
+      false,
+      Paint()
+        ..color = color
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = stroke
+        ..strokeCap = StrokeCap.round,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _MiniRingPainter old) =>
+      old.progress != progress || old.color != color;
 }
 
 /// 带标签的迷你趋势行：一列值，缺口自动跳过。

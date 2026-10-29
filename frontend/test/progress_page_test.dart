@@ -10,7 +10,7 @@ import 'package:rehabilitation_app/theme/app_theme.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('进度页展示当前阶段、全量训练记录与本周节奏', (tester) async {
+  testWidgets('进度页：近 3 个方案进度，节奏与趋势在最近训练上方', (tester) async {
     tester.view.physicalSize = const Size(390, 2400);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -21,64 +21,107 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
-      // 当前阶段卡片：第 2 轮、阶段地图、本轮 0/2
-      expect(find.text('当前阶段'), findsOneWidget);
-      expect(find.text('颈痛康复 · 第 2 轮'), findsOneWidget);
-      expect(find.text('本轮完成 0 / 2 项'), findsOneWidget);
-      expect(find.textContaining('完成本轮剩余 2 项'), findsOneWidget);
-      // 达标条件
-      expect(find.text('本阶段达标条件'), findsOneWidget);
-      expect(find.text('训练中疼痛稳定 ≤2/10'), findsOneWidget);
-      // 最近训练：评估中的在前，已完成的可回放
+
+      // 近 3 个方案，每个一行进度
+      expect(find.text('方案进度'), findsOneWidget);
+      expect(find.text('颈痛康复'), findsOneWidget);
+      expect(find.text('腰背养护'), findsOneWidget);
+      expect(find.text('肩部调理'), findsOneWidget);
+      expect(find.text('恢复期 · 第 2 轮'), findsOneWidget);
+      expect(find.text('0/2'), findsOneWidget); // 本轮进度环
+      expect(find.text('2/2'), findsOneWidget);
+      expect(find.text('已结业'), findsOneWidget);
+      expect(find.text('生成中'), findsOneWidget);
+
+      // 达标条件卡片已移除
+      expect(find.text('本阶段达标条件'), findsNothing);
+      expect(find.text('当前阶段'), findsNothing);
+
+      // 顺序：方案进度 → 本周节奏 → 训练趋势 → 最近训练
+      double top(String t) => tester.getTopLeft(find.text(t)).dy;
+      expect(top('方案进度'), lessThan(top('本周节奏')));
+      expect(top('本周节奏'), lessThan(top('训练趋势')));
+      expect(top('训练趋势'), lessThan(top('最近训练')));
+
+      // 统计带
+      expect(find.text('累计训练 / 次'), findsOneWidget);
+      expect(find.text('连续训练 / 天'), findsOneWidget);
+      expect(find.text('80'), findsOneWidget); // 平均得分 (85+75)/2
+      expect(find.text('本周 2 组训练'), findsOneWidget);
+
+      // 最近训练：评估中在前，已完成可回放
       expect(find.text('颈侧屈'), findsOneWidget);
       expect(find.textContaining('评估中'), findsWidgets);
       expect(find.text('颈部旋转'), findsOneWidget);
       expect(find.text('肩部环绕'), findsOneWidget);
       expect(find.textContaining('第 2/2 组'), findsOneWidget);
-      expect(find.textContaining('85 分'), findsOneWidget);
-      // 统计与节奏来自全量时间线，而不是当前一轮
-      expect(find.text('累计训练 / 次'), findsOneWidget);
-      expect(find.text('80'), findsOneWidget); // 平均得分 (85+75)/2
-      expect(find.text('本周完成 2 组训练'), findsOneWidget);
-      expect(find.textContaining('已连续训练'), findsOneWidget);
       expect(tester.takeException(), isNull);
     }, createHttpClient: (_) => client);
   });
 }
 
-Map<String, dynamic> _programsPayload() => {
-  'programs': [
-    {
-      'program_id': 'p1',
-      'condition': '颈痛康复',
-      'status': 'active',
-      'current_stage_no': 1,
-      'stats': {'trainings_done': 10, 'avg_score': 83.0},
-      'current': {
-        'stage': {
-          'stage_type': 'sub_acute',
-          'exit_criteria': ['颈部旋转活动度维持达标', '训练中疼痛稳定 ≤2/10'],
-        },
-        'plan': {'version': 2, 'summary_text': '恢复期 v2'},
-        'items': [
-          {
-            'video_id': 'v1',
-            'title': '颈部旋转',
-            'training': {'status': 'none'},
-          },
-          {
-            'video_id': 'v2',
-            'title': '颈侧屈',
-            'training': {
-              'status': 'processing',
-              'created_at': DateTime.now().toUtc().toIso8601String(),
+Map<String, dynamic> _programsPayload() {
+  final now = DateTime.now().toUtc().toIso8601String();
+  return {
+    'programs': [
+      {
+        'program_id': 'p1',
+        'session_id': 's1',
+        'condition': '颈痛康复',
+        'status': 'active',
+        'current_stage_no': 1,
+        'stats': {'trainings_done': 10, 'avg_score': 83.0},
+        'current': {
+          'stage': {'stage_type': 'sub_acute'},
+          'plan': {'version': 2},
+          'items': [
+            {
+              'video_id': 'v1',
+              'title': '颈部旋转',
+              'training': {'status': 'none'},
             },
-          },
-        ],
+            {
+              'video_id': 'v2',
+              'title': '颈侧屈',
+              'training': {'status': 'processing', 'created_at': now},
+            },
+          ],
+        },
       },
-    },
-  ],
-};
+      {
+        'program_id': 'p2',
+        'session_id': 's2',
+        'condition': '腰背养护',
+        'status': 'discharged',
+        'current_stage_no': 4,
+        'stats': {'trainings_done': 20},
+        'current': {
+          'stage': {'stage_type': 'return'},
+          'plan': {'version': 1},
+          'items': [
+            {
+              'video_id': 'v9',
+              'title': '核心稳定',
+              'training': {'status': 'done'},
+            },
+            {
+              'video_id': 'v8',
+              'title': '臀桥',
+              'training': {'status': 'done'},
+            },
+          ],
+        },
+      },
+      {
+        'program_id': 'p3',
+        'session_id': 's3',
+        'condition': '肩部调理',
+        'status': 'generating',
+        'current_stage_no': 1,
+      },
+    ],
+  };
+}
 
 Map<String, dynamic> _timelinePayload() {
   final now = DateTime.now().toUtc();
@@ -92,7 +135,9 @@ Map<String, dynamic> _timelinePayload() {
         'pain_reported': 2,
         'set_no': 2,
         'set_total': 2,
-        'created_at': now.subtract(const Duration(minutes: 1)).toIso8601String(),
+        'created_at': now
+            .subtract(const Duration(minutes: 1))
+            .toIso8601String(),
       },
       {
         'task_id': 't2',
@@ -102,7 +147,9 @@ Map<String, dynamic> _timelinePayload() {
         'pain_reported': 1,
         'set_no': 1,
         'set_total': 1,
-        'created_at': now.subtract(const Duration(minutes: 2)).toIso8601String(),
+        'created_at': now
+            .subtract(const Duration(minutes: 2))
+            .toIso8601String(),
       },
     ],
   };
