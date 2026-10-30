@@ -123,5 +123,12 @@ docs/
 !docs/服务启动指南.md
 !docs/system-design.md
 
+# 完整知识图谱与大体积书稿不进 Git（单文件会超过 GitHub 100MB）
+kg-svc/LightRAG-KF-NEW/KangFu-Full-QwQ-32B-AWQ/
+kg-svc/LightRAG-KF-NEW/examples/KangFu-Full-QwQ-32B-AWQ/
+LightRAG-KF-NEW/KangFu-Full-QwQ-32B-AWQ/
+kg-svc/LightRAG-KF-NEW/books-kangfu/
+**/kv_store_llm_response_cache.json
+
 frp/
 .codex-tmp/
