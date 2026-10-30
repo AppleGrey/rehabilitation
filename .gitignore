@@ -120,6 +120,8 @@ Thumbs.db
 data/sessions/
 data/tasks/
 docs/
+!docs/服务启动指南.md
+!docs/system-design.md
 
 frp/
 .codex-tmp/
