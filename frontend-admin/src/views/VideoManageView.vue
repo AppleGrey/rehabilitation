@@ -9,6 +9,7 @@ import {
   playUrl,
   setVideosEnabled,
   startVideoPrepare,
+  updateVideoMetadata,
   saveMotionRule,
   type VideoItem,
 } from '../api'
@@ -28,6 +29,26 @@ const enabling = ref(false)
 const preparing = ref(false)
 const prepareNote = ref('')
 const prepareClearsPick = ref(false)
+const metaSaving = ref(false)
+const metaNote = ref('')
+const metaForm = reactive({
+  action_name: '',
+  description_cn: '',
+  target_joint: '髋部',
+  severity: '轻度',
+  rehab_stage: 'sub_acute',
+  difficulty: 2,
+  duration_seconds: 15,
+  equipment: 'none',
+  space_required: 'small',
+  safety_level: 'safe',
+  target_body_parts: '',
+  body_parts_involved: '',
+  action_keywords: '',
+  symptom_tags: '',
+  contraindications: '',
+  pose_landmarks_required: '',
+})
 const ruleTitles = ref<Record<string, string>>({})
 let prepareTimer = 0
 
@@ -208,26 +229,6 @@ const filtered = computed(() => {
   })
 })
 
-const metaRows = computed(() => {
-  const v = selected.value
-  if (!v) return []
-  return [
-    { label: '动作名称', value: videoName(v) },
-    { label: 'video_id', value: v.video_id },
-    { label: '目标关节', value: v.target_joint },
-    { label: '严重程度', value: v.severity },
-    { label: '康复阶段', value: v.rehab_stage },
-    { label: '难度', value: v.difficulty != null ? String(v.difficulty) : undefined },
-    { label: '时长(秒)', value: v.duration_seconds != null ? String(v.duration_seconds) : undefined },
-    { label: '启用', value: v.enabled === false ? '未启用' : '已启用' },
-    { label: '器械', value: v.equipment },
-    { label: '空间', value: v.space_required },
-    { label: '安全等级', value: v.safety_level },
-    { label: '文件名', value: v.file_name },
-    { label: '播放路径', value: v.url || '（MinIO 未找到文件）' },
-  ].filter((r) => r.value != null && r.value !== '')
-})
-
 const allFilteredPicked = computed(
   () => filtered.value.length > 0 && filtered.value.every((v) => picked.value.includes(v.video_id)),
 )
@@ -355,6 +356,7 @@ async function load() {
     } else if (selectedId.value && !videos.value.some((v) => v.video_id === selectedId.value)) {
       selectedId.value = videos.value[0]?.video_id || ''
     }
+    fillMetaForm(videos.value.find((item) => item.video_id === selectedId.value) || null)
   } catch (err) {
     error.value = String(err)
     videos.value = []
@@ -841,8 +843,80 @@ watch(
   { deep: true },
 )
 
+function joinList(value: unknown) {
+  return asList(value).join('，')
+}
+
+function splitList(text: string) {
+  return text
+    .split(/[,，、\n]/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+}
+
+function fillMetaForm(video: VideoItem | null) {
+  if (!video) return
+  metaNote.value = ''
+  metaForm.action_name = String(video.action_name || video.name_cn || ruleTitles.value[video.video_id] || '').trim()
+  metaForm.description_cn = String(video.description_cn || '')
+  metaForm.target_joint = String(video.target_joint || '髋部')
+  metaForm.severity = String(video.severity || '轻度')
+  metaForm.rehab_stage = String(video.rehab_stage || 'sub_acute')
+  metaForm.difficulty = Number(video.difficulty || 2)
+  metaForm.duration_seconds = Number(video.duration_seconds || 15)
+  metaForm.equipment = String(video.equipment || 'none')
+  metaForm.space_required = String(video.space_required || 'small')
+  metaForm.safety_level = String(video.safety_level || 'safe')
+  metaForm.target_body_parts = joinList(video.target_body_parts)
+  metaForm.body_parts_involved = joinList(video.body_parts_involved)
+  metaForm.action_keywords = joinList(video.action_keywords)
+  metaForm.symptom_tags = joinList(video.symptom_tags)
+  metaForm.contraindications = joinList(video.contraindications)
+  metaForm.pose_landmarks_required = joinList(video.pose_landmarks_required)
+}
+
+async function saveMetadata() {
+  const video = selected.value
+  if (!video || metaSaving.value) return
+  metaSaving.value = true
+  metaNote.value = ''
+  error.value = ''
+  try {
+    const saved = await updateVideoMetadata(video.video_id, {
+      action_name: metaForm.action_name.trim(),
+      description_cn: metaForm.description_cn.trim(),
+      target_joint: metaForm.target_joint,
+      severity: metaForm.severity,
+      rehab_stage: metaForm.rehab_stage,
+      difficulty: Number(metaForm.difficulty),
+      duration_seconds: Number(metaForm.duration_seconds),
+      equipment: metaForm.equipment,
+      space_required: metaForm.space_required,
+      safety_level: metaForm.safety_level,
+      target_body_parts: splitList(metaForm.target_body_parts),
+      body_parts_involved: splitList(metaForm.body_parts_involved),
+      action_keywords: splitList(metaForm.action_keywords),
+      symptom_tags: splitList(metaForm.symptom_tags),
+      contraindications: splitList(metaForm.contraindications),
+      pose_landmarks_required: splitList(metaForm.pose_landmarks_required),
+    })
+    const url = video.url
+    const enabled = video.enabled
+    Object.assign(video, saved.video)
+    video.url = url
+    video.enabled = enabled
+    if (metaForm.action_name.trim()) ruleTitles.value[video.video_id] = metaForm.action_name.trim()
+    metaNote.value = '已保存'
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : '保存元数据失败'
+  } finally {
+    metaSaving.value = false
+  }
+}
+
 watch(selectedId, (id) => {
   playhead.value = 0
+  fillMetaForm(videos.value.find((item) => item.video_id === id) || null)
   if (id) void loadRule(id)
 })
 
@@ -1168,47 +1242,90 @@ onBeforeUnmount(() => {
 
           <section class="meta-card">
             <h3>元数据</h3>
-            <dl class="meta-grid">
-              <template v-for="row in metaRows" :key="row.label">
-                <dt>{{ row.label }}</dt>
-                <dd>{{ row.value }}</dd>
-              </template>
-            </dl>
-
-            <div v-if="asList(selected.target_body_parts).length" class="chip-block">
-              <h4>目标部位</h4>
-              <div class="chips">
-                <span v-for="t in asList(selected.target_body_parts)" :key="t" class="chip">{{ t }}</span>
-              </div>
+            <p class="rule-lead">编号 {{ selected.video_id }} 和视频文件不能在这里改。多项内容用顿号或逗号分开。</p>
+            <div class="rule-grid meta-form">
+              <label class="rule-span">动作名称<input v-model="metaForm.action_name" type="text" maxlength="32" /></label>
+              <label class="rule-span">
+                描述
+                <textarea v-model="metaForm.description_cn" rows="3" maxlength="200" />
+              </label>
+              <label>
+                目标关节
+                <select v-model="metaForm.target_joint">
+                  <option>颈部</option>
+                  <option>肩部</option>
+                  <option>肘部</option>
+                  <option>腰部</option>
+                  <option>髋部</option>
+                  <option>膝关节</option>
+                  <option>踝关节</option>
+                </select>
+              </label>
+              <label>
+                严重程度
+                <select v-model="metaForm.severity">
+                  <option>轻度</option>
+                  <option>中度</option>
+                  <option>重度</option>
+                </select>
+              </label>
+              <label>
+                康复阶段
+                <select v-model="metaForm.rehab_stage">
+                  <option value="acute">急性</option>
+                  <option value="sub_acute">亚急性</option>
+                  <option value="chronic">慢性</option>
+                </select>
+              </label>
+              <label>
+                难度 1–5
+                <input v-model.number="metaForm.difficulty" type="number" min="1" max="5" />
+              </label>
+              <label>
+                时长（秒）
+                <input v-model.number="metaForm.duration_seconds" type="number" min="1" max="600" />
+              </label>
+              <label>
+                器械
+                <select v-model="metaForm.equipment">
+                  <option value="none">无器械</option>
+                  <option>弹力带</option>
+                  <option>椅子</option>
+                  <option>坐垫</option>
+                  <option>哑铃</option>
+                </select>
+              </label>
+              <label>
+                空间
+                <select v-model="metaForm.space_required">
+                  <option value="small">小</option>
+                  <option value="medium">中</option>
+                  <option value="large">大</option>
+                </select>
+              </label>
+              <label>
+                安全等级
+                <select v-model="metaForm.safety_level">
+                  <option value="safe">安全</option>
+                  <option value="caution">谨慎</option>
+                  <option value="contraindicated">禁忌</option>
+                </select>
+              </label>
+              <label>目标部位<input v-model="metaForm.target_body_parts" type="text" /></label>
+              <label>涉及部位<input v-model="metaForm.body_parts_involved" type="text" /></label>
+              <label>动作关键词<input v-model="metaForm.action_keywords" type="text" /></label>
+              <label>症状标签<input v-model="metaForm.symptom_tags" type="text" /></label>
+              <label class="rule-span">禁忌<input v-model="metaForm.contraindications" type="text" /></label>
+              <label class="rule-span">
+                姿态关键点
+                <input v-model="metaForm.pose_landmarks_required" type="text" placeholder="neck，shoulder，elbow，hip，knee，ankle" />
+              </label>
             </div>
-            <div v-if="asList(selected.action_keywords).length" class="chip-block">
-              <h4>动作关键词</h4>
-              <div class="chips">
-                <span v-for="t in asList(selected.action_keywords)" :key="t" class="chip">{{ t }}</span>
-              </div>
-            </div>
-            <div v-if="asList(selected.symptom_tags).length" class="chip-block">
-              <h4>症状标签</h4>
-              <div class="chips">
-                <span v-for="t in asList(selected.symptom_tags)" :key="t" class="chip">{{ t }}</span>
-              </div>
-            </div>
-            <div v-if="asList(selected.contraindications).length" class="chip-block">
-              <h4>禁忌</h4>
-              <div class="chips warn">
-                <span v-for="t in asList(selected.contraindications)" :key="t" class="chip">{{ t }}</span>
-              </div>
-            </div>
-            <div v-if="asList(selected.pose_landmarks_required).length" class="chip-block">
-              <h4>姿态关键点</h4>
-              <div class="chips">
-                <span
-                  v-for="t in asList(selected.pose_landmarks_required)"
-                  :key="t"
-                  class="chip mono"
-                  >{{ t }}</span
-                >
-              </div>
+            <div class="detail-actions meta-save">
+              <button type="button" class="btn btn-primary" :disabled="metaSaving" @click="saveMetadata">
+                {{ metaSaving ? '保存中…' : '保存元数据' }}
+              </button>
+              <span v-if="metaNote" class="meta-note">{{ metaNote }}</span>
             </div>
 
             <details class="raw">
@@ -1711,6 +1828,17 @@ h1 {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px 12px;
+}
+.meta-form .rule-span {
+  grid-column: 1 / -1;
+}
+.meta-save {
+  margin-top: 12px;
+  align-items: center;
+}
+.meta-note {
+  color: #8ddec8;
+  font-size: 0.82rem;
 }
 .rule-grid label,
 .rule-span {

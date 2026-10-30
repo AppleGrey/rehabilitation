@@ -76,6 +76,7 @@ func NewRouter(d Deps) *gin.Engine {
 		}
 		if d.Videos != nil {
 			api.POST("/videos/enabled", d.Videos.SetEnabled)
+			api.PUT("/videos/:video_id/metadata", d.Videos.UpdateMetadata)
 		}
 
 		// 实时评分规则：页面在视频库，写入仍由 ai-svc 校验并落盘。

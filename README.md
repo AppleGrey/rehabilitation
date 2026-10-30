@@ -1,12 +1,18 @@
 # 康复 AI 系统
 
-目录约定：`ai-svc/`（问诊与评估后端）、`kg-svc/`（知识图谱检索）、`frontend/`（Flutter 客户端）。  
-配置与数据：`/.env`（ai-svc）、`/kg-svc/.env`（图谱服务）、`data/`、`assets/`、`logs/` 在仓库根目录。
+目录约定：`ai-svc/`（问诊与评估）、`core-svc/`（用户与视频）、`admin-svc/`（管理 API）、`kg-svc/`（知识图谱）、`frontend/`（Flutter App）、`frontend-admin/`（管理平台）。  
+配置与数据：根目录 `/.env`、`/kg-svc/.env`，以及 `data/`、`assets/`、`logs/`。
 
 | 服务 | 端口 | 说明 |
 |------|------|------|
-| ai-svc | 8000 | 问诊 SSE、动作评估、视频播放 |
-| kg-svc | 8010 | LightRAG 图谱检索（只返回上下文，不生成回答） |
+| PostgreSQL / MinIO | 5432 / 9000 | 数据库与对象存储（见 `docker-compose.infra.yml`） |
+| core-svc | 8081 | 用户鉴权、视频播放、方案落库 |
+| admin-svc | 8092 | 管理 API 与反向代理 |
+| ai-svc | 8000 | 问诊 SSE、方案、动作评估 |
+| kg-svc | 8010 | LightRAG 图谱检索（只返回上下文） |
+| frontend-admin | 5173 | 管理平台开发服 |
+
+在另一台服务器上从仓库拉代码后，按顺序启动全部服务，见 **[docs/服务启动指南.md](docs/服务启动指南.md)**。
 
 ---
 

@@ -90,6 +90,33 @@ export function fetchHistory(sessionId: string) {
   )
 }
 
+export interface VideoMetadataInput {
+  action_name: string
+  description_cn: string
+  target_joint: string
+  severity: string
+  rehab_stage: string
+  difficulty: number
+  duration_seconds: number
+  equipment: string
+  space_required: string
+  safety_level: string
+  target_body_parts: string[]
+  body_parts_involved: string[]
+  action_keywords: string[]
+  symptom_tags: string[]
+  contraindications: string[]
+  pose_landmarks_required: string[]
+}
+
+export function updateVideoMetadata(videoId: string, body: VideoMetadataInput) {
+  return sendJSON<{ ok: boolean; video: VideoItem }>(
+    `/admin-api/videos/${encodeURIComponent(videoId)}/metadata`,
+    'PUT',
+    body,
+  )
+}
+
 export function setVideosEnabled(videoIds: string[], enabled: boolean) {
   return sendJSON<{ ok: boolean; enabled: boolean; video_ids: string[] }>(
     '/admin-api/videos/enabled',
